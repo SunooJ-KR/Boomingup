@@ -10,7 +10,9 @@
 #              - baseline: B1 동 직전 h분기 vintage 변화, B2 eligible 동 평균. 참고: B0 0, oracle 미래 평균
 #              - 판정: 모델 MAE < B1·B2 이고 동 block bootstrap(1,000회, seed 42) 95% CI 상한 < 0
 #              - 비교는 모델·B1·B2가 모두 있는 행에서만 한다
-#              --first-eval-origin은 파이프라인 점검용이다. 판정은 기본값 2016Q1로만 한다
+#              - 기준금리 원값은 쓰지 않고 전세가율 교호작용만 쓴다 (결정 15)
+#              --first/last-eval-origin, --drop-groups를 바꾼 실행은 점검·선별용(결정 14)이다.
+#              판정은 기본 평가 구간(2016Q1~)으로만 한다
 # ============================================================================
 
 # ============================================================================
@@ -37,14 +39,35 @@ NUM_BOOST_ROUND = 300
 N_BOOTSTRAP = 1000
 BOOTSTRAP_SEED = 42
 KEY_COLUMNS = {"dong", "sggCd", "umdNm", "as_of_quarter", "eligible"}
+RAW_MACRO_COLUMNS = {"base_rate_pct", "base_rate_change_4q"}   # 결정 15: 원값은 feature에서 제외
+
+# 결정 14의 선별 단위. 새 컬럼이 생기면 아래 검사가 실패해 묶음 배정을 강제한다
+FEATURE_GROUPS = {
+    "price_momentum": lambda column: column.startswith("mom_") or column == "n_sales_4q",
+    "trade": lambda column: column in {"sale_n_all_4q", "cancel_share_4q", "median_age_4q", "old30_share_4q",
+                                       "sale_ppm2_med_4q", "sale_n_log_change_4q"},
+    "jeonse": lambda column: column in {"rent_n_4q", "jeonse_share_4q", "jeonse_ppm2_med_4q", "jeonse_ratio_4q",
+                                        "rent_n_log_change_4q"},
+    "redevelop": lambda column: column.startswith("rz_"),
+    "supply": lambda column: column in {"completed_hh_4q", "completed_hh_8q", "stock_hh", "completed_share_8q"},
+    "location": lambda column: column.endswith("_med"),
+    "macro_regulation": lambda column: column in {"reg_overheated", "rate_x_jeonse_ratio", "rate_change_x_jeonse_ratio"},
+}
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--first-eval-origin", default="2016Q1")
+parser.add_argument("--last-eval-origin", default=None)
 parser.add_argument("--horizons", default="2,4,8,12")
+parser.add_argument("--drop-groups", default="", help="쉼표로 구분한 FEATURE_GROUPS 이름")
 args = parser.parse_args()
 first_eval_origin = pd.Period(args.first_eval_origin, freq="Q")
+last_eval_origin = pd.Period(args.last_eval_origin, freq="Q") if args.last_eval_origin else None
 horizons = [int(value) for value in args.horizons.split(",")]
-is_official = args.first_eval_origin == "2016Q1"
+drop_groups = [name for name in args.drop_groups.split(",") if name]
+unknown_groups = set(drop_groups) - set(FEATURE_GROUPS)
+if unknown_groups:
+    raise SystemExit(f"알 수 없는 feature 묶음: {sorted(unknown_groups)}")
+is_official = args.first_eval_origin == "2016Q1" and last_eval_origin is None
 
 
 def read_panel(path, quarter_column):
@@ -66,9 +89,20 @@ panel = (vintage
     .merge(features, on=["dong", "as_of_quarter"], how="left")
     .merge(macro, on=["sggCd", "as_of_quarter"], how="left"))
 panel = panel[panel["eligible"]].reset_index(drop=True)
-feature_columns = [column for column in panel.columns if column not in KEY_COLUMNS]
+panel["rate_x_jeonse_ratio"] = panel["base_rate_pct"] * panel["jeonse_ratio_4q"]
+panel["rate_change_x_jeonse_ratio"] = panel["base_rate_change_4q"] * panel["jeonse_ratio_4q"]
+
+candidate_columns = [column for column in panel.columns if column not in KEY_COLUMNS | RAW_MACRO_COLUMNS]
+group_of = {}
+for column in candidate_columns:
+    matched = [name for name, rule in FEATURE_GROUPS.items() if rule(column)]
+    if len(matched) != 1:
+        raise SystemExit(f"feature 묶음 배정 오류: {column} → {matched}")
+    group_of[column] = matched[0]
+feature_columns = [column for column in candidate_columns if group_of[column] not in drop_groups]
 print("===== 1. 입력 결합 완료 =====")
-print(f"  eligible 행 {len(panel):,} / feature {len(feature_columns)}개 / 기점 {panel['as_of_quarter'].min()} ~ {panel['as_of_quarter'].max()}")
+print(f"  eligible 행 {len(panel):,} / feature {len(feature_columns)}개 (제외 묶음: {drop_groups or '없음'}) / "
+      f"기점 {panel['as_of_quarter'].min()} ~ {panel['as_of_quarter'].max()}")
 
 
 def add_target(frame, horizon):
@@ -102,7 +136,10 @@ prediction_frames = []
 metric_rows = []
 for horizon in horizons:
     data = add_target(panel, horizon)
-    eval_origins = pd.period_range(first_eval_origin, LAST_COMPLETE_QUARTER - horizon, freq="Q")
+    last_origin = LAST_COMPLETE_QUARTER - horizon
+    if last_eval_origin is not None:
+        last_origin = min(last_origin, last_eval_origin)
+    eval_origins = pd.period_range(first_eval_origin, last_origin, freq="Q")
     momentum = f"mom_{horizon}q"
 
     horizon_frames = []
@@ -140,7 +177,7 @@ for horizon in horizons:
         "n_origins": compared["as_of_quarter"].nunique(), "dropped_missing_baseline": len(predictions) - len(compared),
         "mae_model": mae["pred"], "mae_b1": mae["b1"], "mae_b2": mae["b2"], "mae_b0_ref": mae["b0"], "mae_oracle_ref": mae["oracle"],
         "diff_b1_ci_low": ci_b1[0], "diff_b1_ci_high": ci_b1[1], "diff_b2_ci_low": ci_b2[0], "diff_b2_ci_high": ci_b2[1],
-        "passed": passed, "official": is_official,
+        "passed": passed, "official": is_official, "dropped_groups": ",".join(drop_groups) or "none",
     })
 print("\n===== 2. rolling-origin 평가 완료 =====")
 
@@ -149,7 +186,8 @@ print("\n===== 2. rolling-origin 평가 완료 =====")
 # 3. 저장 및 판정
 # ============================================================================
 
-suffix = "" if is_official else ".trial"
+run_label = f"{first_eval_origin}-{last_eval_origin or 'end'}_drop-{'+'.join(drop_groups) or 'none'}"
+suffix = "" if is_official and not drop_groups else f".trial_{run_label}"
 predictions_path = output_dir / f"44.1.oot_predictions{suffix}.txt"
 metrics_path = output_dir / f"44.2.oot_metrics{suffix}.txt"
 pd.concat(prediction_frames, ignore_index=True).to_csv(predictions_path, sep="\t", index=False, lineterminator="\n")
