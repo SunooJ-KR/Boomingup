@@ -1,50 +1,50 @@
-event_id	effective_date	category	label	verified	source
-M1	2008-09-15	macro	리먼 브러더스 Chapter 11 파산보호 신청	True	codex: https://www.sec.gov/Archives/edgar/data/806085/000110465908059632/a08-22764_48k.htm
-M2	2020-01-20	macro	국내 코로나19 첫 확진환자 확인	True	codex: https://www.kdca.go.kr/board/board.es?act=view&bid=0015&cg_code=&list_no=365794&mid=a21101000000&nPage=420&newsField=
-M3	2020-03-11	macro	WHO, COVID-19를 pandemic으로 평가	True	codex: https://www.who.int/news-room/speeches/item/who-director-general-s-opening-remarks-at-the-media-briefing-on-covid-19---11-march-2020
-R1	2008-10-09	rate	기준금리 인하 전환 (5.25% → 5.00%)	True	직접: 한국은행 기준금리 추이 목록
-R2	2009-02-12	rate	기준금리 저점 2.00% 도달	True	직접: 한국은행 기준금리 추이 목록
-R3	2010-07-09	rate	기준금리 인상 전환 (2.00% → 2.25%)	True	직접: 한국은행 기준금리 추이 목록
-R4	2012-07-12	rate	기준금리 인하 전환 (3.25% → 3.00%)	True	직접: 한국은행 기준금리 추이 목록
-R5	2017-11-30	rate	기준금리 인상 전환 (1.25% → 1.50%)	True	직접: 한국은행 기준금리 추이 목록
-R6	2019-07-18	rate	기준금리 인하 전환 (1.75% → 1.50%)	True	직접: 한국은행 기준금리 추이 목록
-R7	2020-03-17	rate	기준금리 긴급 인하 (1.25% → 0.75%)	True	직접: 한국은행 기준금리 추이 목록
-R8	2021-08-26	rate	기준금리 인상 전환 (0.50% → 0.75%)	True	직접: 한국은행 기준금리 추이 목록
-R9	2023-01-13	rate	기준금리 정점 3.50% 도달	True	직접: 한국은행 기준금리 추이 목록
-R10	2024-10-11	rate	기준금리 인하 전환 (3.50% → 3.25%)	True	직접: 한국은행 기준금리 추이 목록
-R11	2026-07-16	rate	기준금리 인상 전환 (2.50% → 2.75%)	True	직접: 한국은행 기준금리 추이 목록
-G1	2008-02-25	government	제17대 대통령 취임	True	codex: https://www.pa.go.kr/online_contents/inauguration/president17.jsp
-G2	2013-02-25	government	제18대 대통령 취임	True	codex: https://www.pa.go.kr/online_contents/inauguration/president18.jsp
-G3	2017-05-10	government	제19대 대통령 취임	True	codex: https://webarchives.pa.go.kr/19th/www.president.go.kr/event/1st
-G4	2022-05-10	government	제20대 대통령 취임	True	codex: https://www.pa.go.kr/online_contents/inauguration/president20.jsp
-G5	2025-06-04	government	제21대 대통령 임기 개시	True	직접: https://www.korea.kr/news/policyNewsView.do?newsId=148943945
-P16	2006-03-30	policy	3·30 서민주거복지 증진 및 주택시장 합리화 방안 (재건축초과이익 환수 등)	True	codex: https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=155079240
-P17	2006-11-15	policy	11·15 부동산시장 안정화 방안 (공급 확대 + LTV·DTI 강화)	True	codex: https://www.korea.kr/briefing/policyBriefingView.do?newsId=148610566
-P18	2007-01-11	policy	1·11 대책 (민간택지 분양가상한제 확대)	True	codex: https://www.korea.kr/news/policyFocusView.do?newsId=148619431&pkgId=49500194
-P19	2008-11-07	policy	서울 22개 구 투기과열지구 해제 (강남3구만 유지)	True	직접: https://www.molit.go.kr/USR/policyTarget/dtl.jsp?idx=85
-P20	2010-09-02	policy	8·29 실수요 주택거래 정상화 방안 (비투기지역 DTI 금융회사 자율)	True	codex: https://www.fsc.go.kr/po010101/69709?curPage=233&srchCtgry=1
-P21	2011-12-22	policy	강남3구 투기과열지구 해제	True	직접: 국토해양부고시 제2011-795호
-P22	2012-05-15	policy	강남3구 주택투기지역·주택거래신고지역 해제	True	codex: https://www.molit.go.kr/USR/I0204/m_45/dtl.jsp?idx=9254&lcmspage=16&psize=10&srch_usr_titl=Y
-P1	2014-09-01	policy	9·1 주택시장 활력회복 및 서민 주거안정 강화방안 (재건축 연한 상한 30년 등)	True	codex: https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95074431
-P23	2016-02-01	policy	가계부채 종합 관리방안·여신심사 선진화 수도권 시행	True	codex: https://www.fsc.go.kr/no010103/24607?curPage=21
-P2	2016-11-15	policy	11·3 대책 (청약 조정대상지역 지정, 1순위·재당첨 제한 강화)	True	codex: https://www.law.go.kr/LSW/lsRvsDocListP.do?chrClsCd=010102&lsId=008243
-P3	2017-06-19	policy	6·19 대책 (서울 전역 전매제한 강화, 조정대상지역 LTV·DTI 강화)	True	codex: https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95079312
-P4	2017-08-03	policy	8·2 대책, 서울 25개 구 투기과열지구 지정	True	직접: 정부 공감 2017-08-07
-P24	2018-08-28	policy	서울 4개 구(종로·중·동대문·동작) 투기지역 추가 지정	True	codex: https://www.korea.kr/news/policyFocusView.do?newsId=148853464&pkgId=49500702
-P5	2018-09-14	policy	9·13 주택시장 안정대책 (종부세·다주택자 대출·임대사업자 규제 강화)	True	codex: https://www.fsc.go.kr/no010101/73313
-P6	2019-12-17	policy	12·16 주택시장 안정화 방안 (15억 원 초과 아파트 주담대 금지 등)	True	codex: https://www.fsc.go.kr/no010101/74033
-P7	2020-06-19	policy	6·17 대책 (규제지역 확대, 갭투자·법인 주택대출 규제 강화)	True	codex: https://www.molit.go.kr/USR/I0204/m_45/dtl.jsp?idx=17018&lcmspage=2&psize=10&srch_usr_titl=Y
-P8	2020-07-10	policy	7·10 보완대책 (다주택자 취득·보유·양도세 강화, 등록임대 개편)	True	codex: https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95084142
-P9	2020-08-04	supply	8·4 서울권역 등 수도권 주택공급 확대방안	True	codex: https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95084254
-P10	2021-02-04	supply	2·4 공공주도 3080+ 공급대책	True	codex: https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95085147
-P25	2022-12-01	policy	규제지역 LTV 50% 단일화, 15억 원 초과 아파트 주담대 허용	True	codex: https://www.fsc.go.kr/no010101/78887
-P26	2022-12-21	policy	2023년 경제정책방향 다주택자 세제·대출 규제 완화 계획 발표	True	codex: https://www.moef.go.kr/nw/nes/detailNesDtaView.do?menuNo=4010100&searchBbsId1=MOSFBBS_000000000028&searchNttId1=MOSF_000000000062295
-P11	2023-01-05	policy	규제지역 해제 (강남3구·용산 제외)	True	직접: 국토교통부공고 2023-1·2호
-P27	2024-01-10	supply	1·10 주택공급 확대 및 건설경기 보완방안	True	codex: https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95089245
-P28	2024-08-08	supply	8·8 국민 주거안정을 위한 주택공급 확대방안	True	codex: https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95090063
-P12	2024-09-01	policy	스트레스 DSR 2단계 시행	True	codex: https://www.fsc.go.kr/po010102/82526
-P29	2025-02-13	policy	잠실·삼성·대치·청담 아파트 토지거래허가구역 대부분 해제	True	직접: https://mediahub.seoul.go.kr/news/article/newsArticlePrintPopup.do?articleNo=2013415
-P30	2025-03-24	policy	강남3구·용산구 전체 아파트 토지거래허가구역 지정	True	직접: https://m.korea.kr/news/policyNewsView.do?newsId=148940714
-P13	2025-06-28	policy	수도권·규제지역 주택구입 목적 주담대 최대 6억 원 시행	True	직접: https://www.korea.kr/news/policyNewsView.do?newsId=148945077
-P14	2025-10-16	policy	서울 25개 구 투기과열지구·조정대상지역 재지정	True	직접: 국토부 2025-10-15 주택시장 안정화 대책 원문 PDF
-P15	2025-10-20	policy	서울 전역 아파트 토지거래허가구역 지정	True	직접: 국토부 2025-10-15 주택시장 안정화 대책 원문 PDF
+event_id	effective_date	category	label	direction	verified	source
+M1	2008-09-15	macro	리먼 브러더스 Chapter 11 파산보호 신청	macro	True	codex: https://www.sec.gov/Archives/edgar/data/806085/000110465908059632/a08-22764_48k.htm
+M2	2020-01-20	macro	국내 코로나19 첫 확진환자 확인	macro	True	codex: https://www.kdca.go.kr/board/board.es?act=view&bid=0015&cg_code=&list_no=365794&mid=a21101000000&nPage=420&newsField=
+M3	2020-03-11	macro	WHO, COVID-19를 pandemic으로 평가	macro	True	codex: https://www.who.int/news-room/speeches/item/who-director-general-s-opening-remarks-at-the-media-briefing-on-covid-19---11-march-2020
+R1	2008-10-09	rate	기준금리 인하 전환 (5.25% → 5.00%)	rate	True	직접: 한국은행 기준금리 추이 목록
+R2	2009-02-12	rate	기준금리 저점 2.00% 도달	rate	True	직접: 한국은행 기준금리 추이 목록
+R3	2010-07-09	rate	기준금리 인상 전환 (2.00% → 2.25%)	rate	True	직접: 한국은행 기준금리 추이 목록
+R4	2012-07-12	rate	기준금리 인하 전환 (3.25% → 3.00%)	rate	True	직접: 한국은행 기준금리 추이 목록
+R5	2017-11-30	rate	기준금리 인상 전환 (1.25% → 1.50%)	rate	True	직접: 한국은행 기준금리 추이 목록
+R6	2019-07-18	rate	기준금리 인하 전환 (1.75% → 1.50%)	rate	True	직접: 한국은행 기준금리 추이 목록
+R7	2020-03-17	rate	기준금리 긴급 인하 (1.25% → 0.75%)	rate	True	직접: 한국은행 기준금리 추이 목록
+R8	2021-08-26	rate	기준금리 인상 전환 (0.50% → 0.75%)	rate	True	직접: 한국은행 기준금리 추이 목록
+R9	2023-01-13	rate	기준금리 정점 3.50% 도달	rate	True	직접: 한국은행 기준금리 추이 목록
+R10	2024-10-11	rate	기준금리 인하 전환 (3.50% → 3.25%)	rate	True	직접: 한국은행 기준금리 추이 목록
+R11	2026-07-16	rate	기준금리 인상 전환 (2.50% → 2.75%)	rate	True	직접: 한국은행 기준금리 추이 목록
+G1	2008-02-25	government	제17대 대통령 취임	government	True	codex: https://www.pa.go.kr/online_contents/inauguration/president17.jsp
+G2	2013-02-25	government	제18대 대통령 취임	government	True	codex: https://www.pa.go.kr/online_contents/inauguration/president18.jsp
+G3	2017-05-10	government	제19대 대통령 취임	government	True	codex: https://webarchives.pa.go.kr/19th/www.president.go.kr/event/1st
+G4	2022-05-10	government	제20대 대통령 취임	government	True	codex: https://www.pa.go.kr/online_contents/inauguration/president20.jsp
+G5	2025-06-04	government	제21대 대통령 임기 개시	government	True	직접: https://www.korea.kr/news/policyNewsView.do?newsId=148943945
+P16	2006-03-30	policy	3·30 서민주거복지 증진 및 주택시장 합리화 방안 (재건축초과이익 환수 등)	tighten	True	codex: https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=155079240
+P17	2006-11-15	policy	11·15 부동산시장 안정화 방안 (공급 확대 + LTV·DTI 강화)	tighten	True	codex: https://www.korea.kr/briefing/policyBriefingView.do?newsId=148610566
+P18	2007-01-11	policy	1·11 대책 (민간택지 분양가상한제 확대)	tighten	True	codex: https://www.korea.kr/news/policyFocusView.do?newsId=148619431&pkgId=49500194
+P19	2008-11-07	policy	서울 22개 구 투기과열지구 해제 (강남3구만 유지)	ease	True	직접: https://www.molit.go.kr/USR/policyTarget/dtl.jsp?idx=85
+P20	2010-09-02	policy	8·29 실수요 주택거래 정상화 방안 (비투기지역 DTI 금융회사 자율)	ease	True	codex: https://www.fsc.go.kr/po010101/69709?curPage=233&srchCtgry=1
+P21	2011-12-22	policy	강남3구 투기과열지구 해제	ease	True	직접: 국토해양부고시 제2011-795호
+P22	2012-05-15	policy	강남3구 주택투기지역·주택거래신고지역 해제	ease	True	codex: https://www.molit.go.kr/USR/I0204/m_45/dtl.jsp?idx=9254&lcmspage=16&psize=10&srch_usr_titl=Y
+P1	2014-09-01	policy	9·1 주택시장 활력회복 및 서민 주거안정 강화방안 (재건축 연한 상한 30년 등)	ease	True	codex: https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95074431
+P23	2016-02-01	policy	가계부채 종합 관리방안·여신심사 선진화 수도권 시행	tighten	True	codex: https://www.fsc.go.kr/no010103/24607?curPage=21
+P2	2016-11-15	policy	11·3 대책 (청약 조정대상지역 지정, 1순위·재당첨 제한 강화)	tighten	True	codex: https://www.law.go.kr/LSW/lsRvsDocListP.do?chrClsCd=010102&lsId=008243
+P3	2017-06-19	policy	6·19 대책 (서울 전역 전매제한 강화, 조정대상지역 LTV·DTI 강화)	tighten	True	codex: https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95079312
+P4	2017-08-03	policy	8·2 대책, 서울 25개 구 투기과열지구 지정	tighten	True	직접: 정부 공감 2017-08-07
+P24	2018-08-28	policy	서울 4개 구(종로·중·동대문·동작) 투기지역 추가 지정	tighten	True	codex: https://www.korea.kr/news/policyFocusView.do?newsId=148853464&pkgId=49500702
+P5	2018-09-14	policy	9·13 주택시장 안정대책 (종부세·다주택자 대출·임대사업자 규제 강화)	tighten	True	codex: https://www.fsc.go.kr/no010101/73313
+P6	2019-12-17	policy	12·16 주택시장 안정화 방안 (15억 원 초과 아파트 주담대 금지 등)	tighten	True	codex: https://www.fsc.go.kr/no010101/74033
+P7	2020-06-19	policy	6·17 대책 (규제지역 확대, 갭투자·법인 주택대출 규제 강화)	tighten	True	codex: https://www.molit.go.kr/USR/I0204/m_45/dtl.jsp?idx=17018&lcmspage=2&psize=10&srch_usr_titl=Y
+P8	2020-07-10	policy	7·10 보완대책 (다주택자 취득·보유·양도세 강화, 등록임대 개편)	tighten	True	codex: https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95084142
+P9	2020-08-04	supply	8·4 서울권역 등 수도권 주택공급 확대방안	supply	True	codex: https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95084254
+P10	2021-02-04	supply	2·4 공공주도 3080+ 공급대책	supply	True	codex: https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95085147
+P25	2022-12-01	policy	규제지역 LTV 50% 단일화, 15억 원 초과 아파트 주담대 허용	ease	True	codex: https://www.fsc.go.kr/no010101/78887
+P26	2022-12-21	policy	2023년 경제정책방향 다주택자 세제·대출 규제 완화 계획 발표	ease	True	codex: https://www.moef.go.kr/nw/nes/detailNesDtaView.do?menuNo=4010100&searchBbsId1=MOSFBBS_000000000028&searchNttId1=MOSF_000000000062295
+P11	2023-01-05	policy	규제지역 해제 (강남3구·용산 제외)	ease	True	직접: 국토교통부공고 2023-1·2호
+P27	2024-01-10	supply	1·10 주택공급 확대 및 건설경기 보완방안	supply	True	codex: https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95089245
+P28	2024-08-08	supply	8·8 국민 주거안정을 위한 주택공급 확대방안	supply	True	codex: https://www.molit.go.kr/USR/NEWS/m_71/dtl.jsp?id=95090063
+P12	2024-09-01	policy	스트레스 DSR 2단계 시행	tighten	True	codex: https://www.fsc.go.kr/po010102/82526
+P29	2025-02-13	policy	잠실·삼성·대치·청담 아파트 토지거래허가구역 대부분 해제	ease	True	직접: https://mediahub.seoul.go.kr/news/article/newsArticlePrintPopup.do?articleNo=2013415
+P30	2025-03-24	policy	강남3구·용산구 전체 아파트 토지거래허가구역 지정	tighten	True	직접: https://m.korea.kr/news/policyNewsView.do?newsId=148940714
+P13	2025-06-28	policy	수도권·규제지역 주택구입 목적 주담대 최대 6억 원 시행	tighten	True	직접: https://www.korea.kr/news/policyNewsView.do?newsId=148945077
+P14	2025-10-16	policy	서울 25개 구 투기과열지구·조정대상지역 재지정	tighten	True	직접: 국토부 2025-10-15 주택시장 안정화 대책 원문 PDF
+P15	2025-10-20	policy	서울 전역 아파트 토지거래허가구역 지정	tighten	True	직접: 국토부 2025-10-15 주택시장 안정화 대책 원문 PDF
