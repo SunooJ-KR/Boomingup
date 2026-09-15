@@ -18,7 +18,7 @@
 | 항목 | 내용 |
 |---|---|
 | 출처 | [한국은행 기준금리 추이(목록)](https://www.bok.or.kr/portal/singl/baseRate/list.do?dataSeCd=01&menuNo=200643) |
-| 확인 방법 | 2026-09-15 페이지 HTML을 `output/raw/macro/bok_base_rate.html`로 저장하고 표 행을 정규식으로 직접 파싱(`bok_base_rate_parsed.txt`, 61행, 1999-05-06 ~ 2026-08-27). 별도로 WebFetch 추출본과 행 수·처음·끝 값이 일치함 |
+| 확인 방법 | 2026-09-15 페이지 HTML을 `output/raw/macro/bok_base_rate.html`로 저장하고, `43`이 표 행을 정규식으로 직접 파싱한다(61행, 1999-05-06 ~ 2026-08-27). 별도로 WebFetch 추출본과 행 수·처음·끝 값이 일치함. 캐시를 지우면 43이 다시 받는다 |
 | 사용 | `43.1.gu_macro_regulation.txt`의 분기 말 `base_rate_pct`, 4분기 변화 `base_rate_change_4q` |
 
 ## 3. 투기과열지구 (서울 전환점)
@@ -45,8 +45,17 @@
 
 ## 5. 임앤장에서 가져온 산출물
 
-`/home/yjkim/test/imnjang/output/`에서 서버 복사(2026-09-15). SHA-256은 임앤장 `docs/reproduce.md` manifest와 일치 확인.
-건축물대장 표제부(`19.1`), 단지 마스터(`23.1`), 입지 지표(`23.2`), 정비사업 매칭(`31.1`) 등. 입지·용적률은 2026 현재 스냅샷이다.
+2026-09-15 이전 프로젝트에서 서버 복사한 뒤, 새 파이프라인이 쓰는 파일만 남기고 나머지 복사본은 지웠다.
+생성 스크립트도 옮겨 이 저장소 안에서 다시 만들 수 있다.
+
+| 파일 | 생성 스크립트 | 비고 |
+|---|---|---|
+| `output/14.1.geocoded_master.txt`, `output/cache_geocode.json` | `data/master/14.geocode_all.py` | 카카오 지오코딩. 19의 입력 |
+| `output/19.1.building_ledger.txt`, `output/raw/ledger/` | `data/collect/19.collect_building_ledger.py` | 건축물대장 표제부. 42 입주 feature |
+| `output/raw/reb/apt_registry.csv` | 수동 다운로드 | 한국부동산원 공동주택 단지 식별정보 파일(로그인 없이 받은 CSV). 19의 입력 |
+| `output/raw/redevelop/`, `output/raw/regulation/` | `data/collect/35.collect_regulation.py` | 정비사업 추진현황·토지거래허가 원본. 규제 고시 PDF는 직접 받은 원문 |
+
+입지 지표·단지 지표(`23.*`)와 정비사업 단지 매칭(`31.1`)은 쓰지 않는다. 입지·용적률 feature는 결정 14 선별에서 제외됐고, 정비사업은 42가 원천 파일에서 동 단위로 직접 집계한다.
 
 ## 6. 미수집
 

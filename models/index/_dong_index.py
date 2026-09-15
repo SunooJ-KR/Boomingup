@@ -14,7 +14,7 @@ import pandas as pd
 from scipy import sparse
 from scipy.sparse.linalg import lsqr
 
-AREA_BIN_M2 = 3        # 임앤장 결정 11: 1㎡ 반올림은 같은 평형을 가르고 5㎡는 다른 평형을 섞는다
+AREA_BIN_M2 = 3        # 1㎡ 반올림은 84.6/85.0㎡처럼 같은 평형을 가르고, 5㎡ 폭은 다른 평형을 섞는다
 RIDGE_LAMBDA = 5       # 결정 5a
 SALE_COLUMNS = ["aptSeq", "sggCd", "umdNm", "excluUseAr", "deal_ym", "is_cancelled", "deal_amount_manwon"]
 

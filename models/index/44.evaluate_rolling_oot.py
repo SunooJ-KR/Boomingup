@@ -6,7 +6,7 @@
 # Description: 사전 등록 docs/decisions.md 결정 7~11.
 #              - 표본: 기점 t에 eligible(직전 4분기 매매 20건 이상)인 동
 #              - target: 40 전체 데이터 지수의 t → t+h log 변화
-#              - 학습: s + h <= t 인 기점 s만 (h분기 gap), LightGBM(임앤장 33 채택 설정)
+#              - 학습: s + h <= t 인 기점 s만 (h분기 gap), LightGBM(아래 LGB_PARAMS 고정값)
 #              - baseline: B1 동 직전 h분기 vintage 변화, B2 eligible 동 평균. 참고: B0 0, oracle 미래 평균
 #              - 판정: 모델 MAE < B1·B2 이고 동 block bootstrap(1,000회, seed 42) 95% CI 상한 < 0
 #              - 비교는 모델·B1·B2가 모두 있는 행에서만 한다
@@ -50,6 +50,7 @@ FEATURE_GROUPS = {
                                         "rent_n_log_change_4q"},
     "redevelop": lambda column: column.startswith("rz_"),
     "supply": lambda column: column in {"completed_hh_4q", "completed_hh_8q", "stock_hh", "completed_share_8q"},
+    # location은 결정 14에서 제외된 뒤 42에서 만들지 않는다. 공식 --drop-groups 설정과 맞추려고 이름만 둔다
     "location": lambda column: column.endswith("_med"),
     "macro_regulation": lambda column: column in {"reg_overheated", "rate_x_jeonse_ratio", "rate_change_x_jeonse_ratio"},
 }

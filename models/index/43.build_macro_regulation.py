@@ -4,7 +4,8 @@
 # Author:      yjkim
 # Purpose:     기준금리와 투기과열지구 지정 여부를 자치구×기점(as_of_quarter) feature로 만든다
 # Description: 사전 등록 결정 13. 값은 분기 말 시점 상태다. 출처와 확인 방법은 docs/data-sources.md.
-#              - 기준금리: 한국은행 기준금리 추이 목록 HTML을 직접 파싱한 표(raw/macro)
+#              - 기준금리: 한국은행 기준금리 추이 목록 HTML을 raw/macro에 캐시하고 표를 직접 파싱한다
+#                (캐시를 지우면 다시 받는다. lxml 없이 정규식으로 읽는다)
 #              - 투기과열지구: 원문으로 확인한 서울 전환점만 상수로 둔다
 #              - 조정대상지역은 서울에서 확인된 전환점이 투기과열지구와 같아 따로 두지 않는다
 #              - 서울 전역에 같은 값인 기간이 길어 동끼리 구분하는 힘은 약하다 (handoff §6.3)
@@ -14,13 +15,17 @@
 # 0. 환경 설정
 # ============================================================================
 
+import html
+import re
 from pathlib import Path
 
 import pandas as pd
+import requests
 
 work_dir = Path(__file__).resolve().parents[2]   # 저장소 루트
 output_dir = work_dir / "output"
-BASE_RATE_PATH = output_dir / "raw" / "macro" / "bok_base_rate_parsed.txt"
+BASE_RATE_URL = "https://www.bok.or.kr/portal/singl/baseRate/list.do?dataSeCd=01&menuNo=200643"
+BASE_RATE_HTML = output_dir / "raw" / "macro" / "bok_base_rate.html"
 
 SEOUL_GU_CODES = [
     "11110", "11140", "11170", "11200", "11215", "11230", "11260", "11290", "11305", "11320",
@@ -39,11 +44,31 @@ FIRST_QUARTER = pd.Period("2006Q1", freq="Q")
 LAST_COMPLETE_QUARTER = pd.Period("2026Q2", freq="Q")
 
 
+def parse_base_rate_table(page):
+    """표에서 (연도, 'MM월 DD일', 금리) 3칸짜리 행만 꺼낸다."""
+    rows = []
+    for row in re.findall(r"<tr[^>]*>(.*?)</tr>", page, flags=re.S):
+        cells = [re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", "", cell))).strip()
+                 for cell in re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", row, flags=re.S)]
+        if len(cells) == 3 and re.fullmatch(r"\d{4}", cells[0]):
+            rows.append(cells)
+    return rows
+
+
 # ============================================================================
 # 1. 기준금리 (분기 말 값)
 # ============================================================================
 
-rate = pd.read_csv(BASE_RATE_PATH, sep="\t", dtype=str)
+if not BASE_RATE_HTML.exists():
+    BASE_RATE_HTML.parent.mkdir(parents=True, exist_ok=True)
+    response = requests.get(BASE_RATE_URL, headers={"User-Agent": "Mozilla/5.0"}, timeout=30)
+    response.raise_for_status()
+    BASE_RATE_HTML.write_text(response.text, encoding="utf-8")
+
+rate = pd.DataFrame(parse_base_rate_table(BASE_RATE_HTML.read_text(encoding="utf-8", errors="replace")),
+                    columns=["year", "month_day", "rate_pct"])
+if rate.empty:
+    raise SystemExit(f"기준금리 표를 찾지 못함: {BASE_RATE_HTML} (페이지 구조가 바뀌었는지 확인)")
 rate["date"] = pd.to_datetime(rate["year"] + " " + rate["month_day"], format="%Y %m월 %d일")
 rate["rate_pct"] = pd.to_numeric(rate["rate_pct"])
 rate = rate.sort_values("date")

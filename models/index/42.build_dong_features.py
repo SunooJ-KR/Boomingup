@@ -8,7 +8,7 @@
 #              - 정비사업: 서울시 추진현황 구역을 지번의 법정동으로 집계한 단계별 누적 구역 수
 #                ※ 2026-06 기준 파일 하나라 목록에서 빠진(해제·완료) 구역은 없다 → 생존 편향 한계
 #              - 입주: 건축물대장 사용승인일 기준 직전 4·8분기 준공 세대수와 누적 재고 대비 비율
-#              - 입지: 2026 현재 스냅샷의 동 중앙값 (시점 불변 가정 한계). 용적률은 t까지 준공된 단지만
+#              - 입지·용적률 feature는 결정 14 선별에서 제외돼 만들지 않는다
 #              기점 목록은 41.1.vintage_momentum.txt의 (dong, as_of_quarter)를 그대로 쓴다.
 # ============================================================================
 
@@ -43,7 +43,6 @@ ZONE_STAGE_COLUMNS = {
     "implementation": 16, "management": 18, "construction": 22,
 }
 ZONE_HOUSEHOLD_COLUMN = 10
-LOCATION_COLUMNS = ["station_dist_m", "elem_school_m", "park_m", "dept_store_m", "tertiary_hosp_m"]
 
 
 def to_quarter(values, fmt):
@@ -61,7 +60,11 @@ def trailing_windows(frame, width):
 
 
 def parse_zone_umd(value, gu):
-    """정비사업 대표 지번에서 법정동명만 꺼낸다. imnjang 31.match_redevelop.parse_zone_jibun과 같은 규칙."""
+    """정비사업 대표 지번에서 법정동명만 꺼낸다.
+
+    '번지·일대·일원' 범위 표기는 떼고, 동명 안의 숫자(신문로1가)는 동명으로 남긴다.
+    쉼표 등으로 지번을 여러 개 적은 값은 None이다.
+    """
     if pd.isna(value):
         return None
     address = re.sub(r"\s+", "", str(value).strip())
@@ -84,7 +87,7 @@ print(f"===== 0. 기점 키 {len(keys):,}행 (동 {keys['dong'].nunique()}개) =
 # ============================================================================
 
 raw_sale = pd.read_csv(output_dir / "11.1.trades_sale.txt", sep="\t", dtype=str,
-                       usecols=["sggCd", "umdNm", "aptSeq", "buildYear", "deal_ym", "is_cancelled"])
+                       usecols=["sggCd", "umdNm", "buildYear", "deal_ym", "is_cancelled"])
 raw_sale = raw_sale.dropna(subset=["sggCd", "umdNm", "deal_ym"]).copy()
 raw_sale["dong"] = raw_sale["sggCd"] + "_" + raw_sale["umdNm"]
 raw_sale["quarter"] = to_quarter(raw_sale["deal_ym"], "%Y%m")
@@ -201,31 +204,12 @@ print("===== 4. 입주 feature 완료 =====")
 
 
 # ============================================================================
-# 5. 입지 feature (현재 스냅샷)
-# ============================================================================
-
-apt_dong = (raw_sale.groupby("aptSeq")["dong"].agg(lambda values: values.mode().iloc[0])
-    .rename("dong").reset_index())
-metrics = pd.read_csv(output_dir / "23.2.complex_metrics.txt", sep="\t", usecols=["apt_seq", *LOCATION_COLUMNS])
-location_features = (metrics.merge(apt_dong, left_on="apt_seq", right_on="aptSeq", how="inner")
-    .groupby("dong")[LOCATION_COLUMNS].median().add_suffix("_med").reset_index())
-
-complexes = pd.read_csv(output_dir / "23.1.complex.txt", sep="\t", usecols=["apt_seq", "built_year", "far"])
-complexes = complexes.merge(apt_dong, left_on="apt_seq", right_on="aptSeq", how="inner").dropna(subset=["far", "built_year"])
-far_panel = keys[["dong", "as_of_quarter"]].merge(complexes[["dong", "built_year", "far"]], on="dong", how="inner")
-far_panel = far_panel[far_panel["built_year"] <= far_panel["as_of_quarter"].dt.year]
-far_features = far_panel.groupby(["dong", "as_of_quarter"])["far"].median().rename("far_med").reset_index()
-print("===== 5. 입지 feature 완료 =====")
-
-
-# ============================================================================
-# 6. 병합 및 저장
+# 5. 병합 및 저장
 # ============================================================================
 
 features = keys.copy()
-for frame in (sale_features, sale_price, rent_features, jeonse_price, zone_features, supply_features, far_features):
+for frame in (sale_features, sale_price, rent_features, jeonse_price, zone_features, supply_features):
     features = features.merge(frame, on=["dong", "as_of_quarter"], how="left")
-features = features.merge(location_features, on="dong", how="left")
 
 count_columns = ["sale_n_all_4q", "rent_n_4q", "completed_hh_4q", "completed_hh_8q", "rz_active_households",
                  "rz_events_4q", *[f"rz_{stage}_n" for stage in ZONE_STAGE_COLUMNS]]
@@ -243,7 +227,7 @@ features = features.drop(columns=["sale_n_all_4q_prev4q", "rent_n_4q_prev4q"])
 features_path = output_dir / "42.1.dong_features.txt"
 features.to_csv(features_path, sep="\t", index=False, lineterminator="\n")
 
-print("\n===== 6. 컬럼별 채움률 =====")
+print("\n===== 5. 컬럼별 채움률 =====")
 fill = features.drop(columns=["dong", "sggCd", "umdNm", "as_of_quarter"]).notna().mean().round(3)
 print(fill.to_string())
 print(f"\nfeature: {features_path} ({len(features):,}행, {features.shape[1]}열)")
