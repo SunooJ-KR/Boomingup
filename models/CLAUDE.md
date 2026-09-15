@@ -26,11 +26,11 @@ $PY models/index/44.evaluate_rolling_oot.py --drop-groups macro_regulation,locat
 $PY models/index/45.build_conformal_intervals.py      # 예측 구간
 ```
 
-## 사전 등록 규율
+## 결정 기록과 결과 표시
 
-- target·평가·채택 기준은 `docs/decisions.md` 결정 4~15가 정본이다. **결과를 본 뒤 규칙을 바꾸면 원래 규칙을 지우지 않고 deviation 표에 적고, 두 결과를 함께 보고한다**
-- 공식 판정은 `44`의 기본 평가 구간(2016Q1~)으로 한 번만 한다. `--first/last-eval-origin`을 바꾼 실행은 `.trial_*` 파일로 저장되며 판정에 쓰지 않는다
-- feature 선별은 2014Q1~2015Q4 기점에서만 한다 (결정 14)
+- 사전 등록 절차는 폐기했다 (`docs/decisions.md` 결정 18). 조정은 결과를 보면서 하되, 바꾼 내용과 이유를 결정 번호를 이어 기록한다
+- 결정 16·17(선별 고정 후 1회 실행한 공식 결과)은 그대로 유효하다. **그 뒤 2016Q1~ 평가 구간을 보며 조정한 수치는 "탐색적 결과"로 표시**하고, 사전 기준으로 검증한 수치처럼 인용하지 않는다
+- `44`에서 `--first/last-eval-origin`을 바꾼 실행은 `.trial_*` 파일로 저장된다. 공식 파일(`44.1`, `44.2`)을 덮어쓰는 재실행은 결정 기록과 함께 한다
 
 ## 데이터·feature 규칙
 
