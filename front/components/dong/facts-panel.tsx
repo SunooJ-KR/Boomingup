@@ -10,7 +10,14 @@ const STAGE_LABEL: Record<string, string> = {
   construction: "착공",
 };
 
-export function FactsPanel({ facts }: { facts: DongFacts }) {
+type FactsPanelProps = {
+  facts: DongFacts;
+  /** 서울 전체 아파트 토지거래허가구역 지정 여부 (regulation_summary 기준) */
+  permitZone: boolean;
+  regulationAsOf: string;
+};
+
+export function FactsPanel({ facts, permitZone, regulationAsOf }: FactsPanelProps) {
   const zones = facts.redevelop_zones;
   const zoneEntries = zones
     ? Object.entries(zones).filter(([, count]) => count > 0)
@@ -43,8 +50,8 @@ export function FactsPanel({ facts }: { facts: DongFacts }) {
             }
           />
           <Fact
-            label="투기과열지구"
-            value={facts.reg_overheated === null ? "-" : facts.reg_overheated ? "해당" : "해당 없음"}
+            label={`아파트 토지거래허가 (${regulationAsOf} 기준)`}
+            value={permitZone ? "서울 전체 지정" : "지정 없음"}
           />
         </dl>
 

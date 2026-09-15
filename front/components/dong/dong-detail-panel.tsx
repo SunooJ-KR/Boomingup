@@ -3,15 +3,20 @@ import { ComplexList } from "@/components/dong/complex-list";
 import { EmptyState } from "@/components/dong/empty-state";
 import { FactsPanel } from "@/components/dong/facts-panel";
 import { PredictionCard } from "@/components/dong/prediction-card";
+import { Button } from "@/components/ui/button";
 import type { DongDetail, DongSummary, Meta } from "@/lib/types";
+
+export type DetailState = "idle" | "loading" | "error" | "ready";
 
 type DongDetailPanelProps = {
   dong: DongSummary | null;
   detail: DongDetail | null;
   meta: Meta;
+  state: DetailState;
+  onRetry?: () => void;
 };
 
-export function DongDetailPanel({ dong, detail, meta }: DongDetailPanelProps) {
+export function DongDetailPanel({ dong, detail, meta, state, onRetry }: DongDetailPanelProps) {
   if (!dong) {
     return (
       <EmptyState
@@ -21,21 +26,44 @@ export function DongDetailPanel({ dong, detail, meta }: DongDetailPanelProps) {
     );
   }
 
-  if (!detail) {
+  const header = (
+    <div>
+      <p className="text-xs text-muted-foreground">{dong.gu_name}</p>
+      <h1 className="text-xl font-bold text-foreground">{dong.umd_name}</h1>
+    </div>
+  );
+
+  if (state === "loading") {
     return (
-      <EmptyState
-        title="상세 정보를 불러오지 못했습니다."
-        description="잠시 후 다시 선택해 주세요."
-      />
+      <div className="space-y-3">
+        {header}
+        <EmptyState title="상세 정보를 불러오는 중입니다." />
+      </div>
+    );
+  }
+
+  if (state === "error" || !detail) {
+    return (
+      <div className="space-y-3">
+        {header}
+        <EmptyState
+          title="상세 정보를 불러오지 못했습니다."
+          description="잠시 후 다시 시도해 주세요."
+          action={
+            onRetry ? (
+              <Button variant="outline" size="sm" onClick={onRetry}>
+                다시 시도
+              </Button>
+            ) : undefined
+          }
+        />
+      </div>
     );
   }
 
   return (
     <div className="space-y-3">
-      <div>
-        <p className="text-xs text-muted-foreground">{dong.gu_name}</p>
-        <h1 className="text-xl font-bold text-foreground">{dong.umd_name}</h1>
-      </div>
+      {header}
 
       <PredictionCard
         prediction={detail.prediction}
@@ -52,7 +80,11 @@ export function DongDetailPanel({ dong, detail, meta }: DongDetailPanelProps) {
         />
       ) : null}
 
-      <FactsPanel facts={detail.facts} />
+      <FactsPanel
+        facts={detail.facts}
+        permitZone={meta.seoul_apartment_permit_zone}
+        regulationAsOf={meta.regulation_as_of}
+      />
       <ComplexList complexes={detail.complexes} />
     </div>
   );

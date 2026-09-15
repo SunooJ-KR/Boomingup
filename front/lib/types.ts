@@ -73,4 +73,6 @@ export type Meta = {
   model_passed: boolean;
   interval_coverage_backtest: number;
   regulation_as_of: string;
+  /** 서울 전체 아파트 토지거래허가구역 지정 여부 */
+  seoul_apartment_permit_zone: boolean;
 };
