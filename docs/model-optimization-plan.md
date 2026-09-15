@@ -305,3 +305,12 @@ h ∈ {2, 4, 8, 12}에서 **아래만** h로 바꾼다. 나머지(모든 4분기
 ### 7.9 LightGBM 결정성 (K09)
 
 - `seed = bagging_seed = feature_fraction_seed = data_random_seed = 20260915`, `deterministic = True`, `force_row_wise = True`, `num_threads = 8`
+
+### 7.10 v3.1 확인 반영 (sol 확인 P1 3건)
+
+1. **h별 시장 예측식**: 모든 h에서 `M̂(M0) = S_mom_{h}q`, `M̂(M1~M3) = S_mom_{h}q + ridge(z)`. ridge 학습 target은 `M_rt[h][s] − S_mom_{h}q[s]`. z(`S_mom_1q − S_mom_4q`, `rate_chg_4q`, `S_sale_vol_chg_4q`, M2·M3 추가 feature)는 h와 무관하게 고정
+2. **48.1 컬럼**: §7.4 계보 컬럼에 `index_ridge_lambda`(값 5)를 추가한다. §5.3 assert는 분리된 이름으로 적용한다
+   - 시장 모델 행: `market_max_label_vintage ≤ prediction_origin`, `market_max_train_origin + h ≤ prediction_origin`
+   - 상대 모델 행(`r_model_status=ok`): `relative_max_label_vintage ≤ prediction_origin`, `relative_max_train_origin + h ≤ prediction_origin`
+   - baseline·historical_reference 행은 계보 수치가 결측이므로 assert 대상에서 제외
+3. **동 키 assert 범위**: `dong == sggCd + "_" + umdNm`과 1:1 검사는 세 컬럼이 모두 있는 파일(41.1, 42.1, 47.1, 47.4, 49.1)에서만 한다. `dong`과 `sggCd`만 있는 파일(47.2, 48.1)은 `dong.startswith(sggCd + "_")`만 검사한다. 동 단위가 아닌 파일(47.3, 48.2~48.5)은 대상이 아니다
