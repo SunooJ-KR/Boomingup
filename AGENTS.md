@@ -1,7 +1,7 @@
 # Boomingup 작업 지침
 
 이 파일은 `README.md`의 협업 규칙을 AI 에이전트가 따라야 할 형태로 정리한 것이다.
-규칙이 바뀌면 `README.md`, `CLAUDE.md`, `AGENTS.md`를 함께 갱신한다.
+규칙이 바뀌면 `README.md`와 `AGENTS.md`를 함께 갱신한다. `CLAUDE.md`는 `@AGENTS.md` 한 줄로 이 파일을 참조하므로 따로 고치지 않는다.
 
 ## 언어 규칙
 
