@@ -3,7 +3,7 @@ import "server-only";
 import { query } from "./db";
 import { buildTags, deriveStatus, logChangeToPct } from "./derive";
 import { shiftQuarter } from "./quarter";
-import type { Complex, DongDetail, DongSummary, Meta } from "./types";
+import type { AreaStat, Complex, DongDetail, DongSummary, Meta } from "./types";
 
 /**
  * active snapshot만 읽는다. snapshot_id를 코드에 박지 않는다.
@@ -182,7 +182,10 @@ export async function fetchDongDetail(
     [row.gu_name, asOfQuarter, baseQuarter],
   );
 
-  const complexes = await fetchComplexes(sggCd, umdNm);
+  const [complexes, areaStats] = await Promise.all([
+    fetchComplexes(sggCd, umdNm),
+    fetchAreaStats(sggCd, umdNm),
+  ]);
 
   return {
     dong_id: row.dong,
@@ -209,8 +212,82 @@ export async function fetchDongDetail(
       gu_change_pct: logChangeToPct(numberOrNull(comparison?.gu_log_change)),
       dong_change_pct: logChangeToPct(numberOrNull(row.dong_log_change)),
     },
+    area_stats: areaStats.bands,
+    area_stats_period: areaStats.period,
     complexes,
   };
+}
+
+/** 면적대 구분. 전용면적 기준이고, 화면에도 이 이름 그대로 쓴다. */
+const AREA_BANDS = ["60㎡ 미만", "60~85㎡", "85~135㎡", "135㎡ 이상"];
+
+/** 최근 24개월 집계 창 */
+const AREA_STATS_MONTHS = 24;
+
+/**
+ * 면적대별 과거 실적 조회(product-plan §4.2 B). 예측이 아니라 지나간 거래를 모은 값이다.
+ * 표본이 적은 동에서 중위값이 흔들리므로 거래 수를 항상 같이 돌려준다.
+ */
+async function fetchAreaStats(
+  sggCd: string,
+  umdNm: string,
+): Promise<{ bands: AreaStat[]; period: string }> {
+  const rows = await query<{
+    band_no: number;
+    n_sales: string;
+    median_price_manwon: string | null;
+    min_price_manwon: string | null;
+    max_price_manwon: string | null;
+    from_ym: string;
+    to_ym: string;
+  }>(
+    `with window_ym as (
+       select to_char(to_date(period_end, 'YYYYMM') - interval '${AREA_STATS_MONTHS - 1} months', 'YYYYMM') as from_ym,
+              period_end as to_ym
+         from app.trade_batch
+        where batch_id = ${ACTIVE_SALE_BATCH}
+     ),
+     banded as (
+       select case
+                when t.exclu_use_ar < 60 then 0
+                when t.exclu_use_ar < 85 then 1
+                when t.exclu_use_ar < 135 then 2
+                else 3
+              end as band_no,
+              t.deal_amount_manwon
+         from app.trade_sale t, window_ym w
+        where t.batch_id = ${ACTIVE_SALE_BATCH}
+          and t.sgg_cd = $1 and t.umd_nm = $2
+          and not t.is_cancelled
+          and t.deal_ym >= w.from_ym
+     )
+     select b.band_no,
+            count(*) as n_sales,
+            percentile_cont(0.5) within group (order by b.deal_amount_manwon) as median_price_manwon,
+            min(b.deal_amount_manwon) as min_price_manwon,
+            max(b.deal_amount_manwon) as max_price_manwon,
+            w.from_ym, w.to_ym
+       from banded b, window_ym w
+      group by b.band_no, w.from_ym, w.to_ym
+      order by b.band_no`,
+    [sggCd, umdNm],
+  );
+
+  const period = rows[0] ? `${formatYm(rows[0].from_ym)} ~ ${formatYm(rows[0].to_ym)}` : "-";
+  const bands = rows.map((row) => ({
+    band: AREA_BANDS[row.band_no] ?? "기타",
+    n_sales: Number(row.n_sales),
+    median_price_manwon: roundOrNull(row.median_price_manwon),
+    min_price_manwon: roundOrNull(row.min_price_manwon),
+    max_price_manwon: roundOrNull(row.max_price_manwon),
+  }));
+
+  return { bands, period };
+}
+
+function roundOrNull(value: string | number | null): number | null {
+  const parsed = numberOrNull(value);
+  return parsed === null ? null : Math.round(parsed);
 }
 
 /**

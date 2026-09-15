@@ -58,11 +58,23 @@ export type Complex = {
   } | null;
 };
 
+/** 면적대별 과거 실적 조회 결과. 예측이 아니라 지나간 거래를 모은 값이다. */
+export type AreaStat = {
+  band: string;
+  n_sales: number;
+  median_price_manwon: number | null;
+  min_price_manwon: number | null;
+  max_price_manwon: number | null;
+};
+
 export type DongDetail = {
   dong_id: string;
   prediction: Prediction;
   facts: DongFacts;
   comparison?: DongComparison;
+  area_stats?: AreaStat[];
+  /** 면적대 실적을 집계한 기간 (예: "2024-09 ~ 2026-08") */
+  area_stats_period?: string;
   complexes: Complex[];
 };
 

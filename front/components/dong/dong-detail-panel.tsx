@@ -1,3 +1,4 @@
+import { AreaStatsCard } from "@/components/dong/area-stats-card";
 import { ComparisonCard } from "@/components/dong/comparison-card";
 import { ComplexList } from "@/components/dong/complex-list";
 import { EmptyState } from "@/components/dong/empty-state";
@@ -85,6 +86,10 @@ export function DongDetailPanel({ dong, detail, meta, state, onRetry }: DongDeta
         permitZone={meta.seoul_apartment_permit_zone}
         regulationAsOf={meta.regulation_as_of}
       />
+      {detail.area_stats && detail.area_stats.length > 0 ? (
+        <AreaStatsCard stats={detail.area_stats} period={detail.area_stats_period ?? "-"} />
+      ) : null}
+
       <ComplexList complexes={detail.complexes} />
     </div>
   );
