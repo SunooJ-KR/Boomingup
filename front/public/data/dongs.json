@@ -9,7 +9,10 @@
     "lower_pct": -4.1,
     "upper_pct": 10.9,
     "n_sales_4q": 212,
-    "tags": ["정비사업 진행", "대단지 밀집"]
+    "tags": [
+      "정비사업 정보 있음",
+      "거래 많은 동"
+    ]
   },
   {
     "dong_id": "11680_대치동",
@@ -21,7 +24,9 @@
     "lower_pct": -5.4,
     "upper_pct": 9.3,
     "n_sales_4q": 188,
-    "tags": ["전세 비중 높음"]
+    "tags": [
+      "전세가율 높은 동"
+    ]
   },
   {
     "dong_id": "11710_잠실동",
@@ -33,7 +38,9 @@
     "lower_pct": -8.2,
     "upper_pct": 6.8,
     "n_sales_4q": 304,
-    "tags": ["대단지 밀집", "거래 활발"]
+    "tags": [
+      "거래 많은 동"
+    ]
   },
   {
     "dong_id": "11440_연남동",
@@ -45,7 +52,7 @@
     "lower_pct": null,
     "upper_pct": null,
     "n_sales_4q": 11,
-    "tags": ["소규모 단지 중심"]
+    "tags": []
   },
   {
     "dong_id": "11305_수유동",
@@ -57,7 +64,9 @@
     "lower_pct": -7.6,
     "upper_pct": 8.9,
     "n_sales_4q": 96,
-    "tags": ["노후 단지 비중 높음"]
+    "tags": [
+      "30년 이상 단지 많은 동"
+    ]
   },
   {
     "dong_id": "11230_답십리동",
@@ -69,7 +78,9 @@
     "lower_pct": null,
     "upper_pct": null,
     "n_sales_4q": 64,
-    "tags": ["정비사업 진행"]
+    "tags": [
+      "정비사업 정보 있음"
+    ]
   },
   {
     "dong_id": "11620_신림동",
@@ -81,7 +92,9 @@
     "lower_pct": -6.0,
     "upper_pct": 10.1,
     "n_sales_4q": 143,
-    "tags": ["전세 비중 높음", "소규모 단지 중심"]
+    "tags": [
+      "전세가율 높은 동"
+    ]
   },
   {
     "dong_id": "11500_화곡동",
@@ -93,6 +106,6 @@
     "lower_pct": null,
     "upper_pct": null,
     "n_sales_4q": 17,
-    "tags": ["소규모 단지 중심"]
+    "tags": []
   }
 ]

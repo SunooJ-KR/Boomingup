@@ -26,21 +26,47 @@ export function deriveStatus(
 }
 
 export type TagInput = {
+  n_sales_4q: number | null;
   jeonse_ratio_4q: number | null;
-  old30_share_4q: number | null;
   completed_share_8q: number | null;
+  old30_share_4q: number | null;
   redevelop_zone_count: number;
 };
 
+/** 상위 몇 %를 태그로 볼지. docs/front/product-plan.md §4.3의 "상위 30%"를 따른다. */
+const TOP_SHARE = 0.3;
+
 /**
  * 규칙 기반 지역 태그. 좋고 나쁨이 아니라 관측된 특징만 붙인다.
- * 임계값은 화면에서 바로 읽히는 수준으로 잡았고, 바뀌면 이 함수만 고친다.
+ * 기준값은 서비스 대상 동 전체의 분포에서 정하므로 동 하나만 보고는 만들 수 없다.
  */
-export function deriveTags(input: TagInput): string[] {
-  const tags: string[] = [];
-  if (input.redevelop_zone_count > 0) tags.push("정비사업 진행");
-  if ((input.jeonse_ratio_4q ?? 0) >= 0.6) tags.push("전세 비중 높음");
-  if ((input.old30_share_4q ?? 0) >= 0.5) tags.push("노후 단지 비중 높음");
-  if ((input.completed_share_8q ?? 0) >= 0.03) tags.push("최근 입주 많음");
-  return tags;
+export function buildTags(inputs: TagInput[]): string[][] {
+  const salesCut = topThreshold(inputs.map((row) => row.n_sales_4q));
+  const jeonseCut = topThreshold(inputs.map((row) => row.jeonse_ratio_4q));
+  const completedCut = topThreshold(inputs.map((row) => row.completed_share_8q));
+  const oldCut = topThreshold(inputs.map((row) => row.old30_share_4q));
+
+  return inputs.map((row) => {
+    const tags: string[] = [];
+    if (row.redevelop_zone_count > 0) tags.push("정비사업 정보 있음");
+    if (overCut(row.n_sales_4q, salesCut)) tags.push("거래 많은 동");
+    if (overCut(row.jeonse_ratio_4q, jeonseCut)) tags.push("전세가율 높은 동");
+    if (overCut(row.completed_share_8q, completedCut)) tags.push("최근 준공 많은 동");
+    if (overCut(row.old30_share_4q, oldCut)) tags.push("30년 이상 단지 많은 동");
+    return tags;
+  });
+}
+
+/** 값이 있는 동만 모아 상위 TOP_SHARE 경계값을 구한다. 쓸 값이 없으면 null */
+function topThreshold(values: (number | null)[]): number | null {
+  const sorted = values
+    .filter((value): value is number => value !== null && Number.isFinite(value) && value > 0)
+    .sort((a, b) => b - a);
+  if (sorted.length === 0) return null;
+  const index = Math.max(0, Math.ceil(sorted.length * TOP_SHARE) - 1);
+  return sorted[index];
+}
+
+function overCut(value: number | null, cut: number | null): boolean {
+  return cut !== null && value !== null && value > 0 && value >= cut;
 }

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { query } from "./db";
-import { deriveStatus, deriveTags, logChangeToPct } from "./derive";
+import { buildTags, deriveStatus, logChangeToPct } from "./derive";
 import { shiftQuarter } from "./quarter";
 import type { Complex, DongDetail, DongSummary, Meta } from "./types";
 
@@ -92,7 +92,18 @@ export async function fetchDongs(asOfQuarter: string): Promise<DongSummary[]> {
     [asOfQuarter],
   );
 
-  return rows.map((row) => ({
+  // 태그는 서비스 대상 동 전체 분포에서 정하므로 목록을 다 읽은 뒤에 붙인다
+  const tags = buildTags(
+    rows.map((row) => ({
+      n_sales_4q: row.n_sales_4q,
+      jeonse_ratio_4q: numberOrNull(row.jeonse_ratio_4q),
+      completed_share_8q: numberOrNull(row.completed_share_8q),
+      old30_share_4q: numberOrNull(row.old30_share_4q),
+      redevelop_zone_count: Number(row.redevelop_zone_count ?? 0),
+    })),
+  );
+
+  return rows.map((row, at) => ({
     dong_id: row.dong,
     sgg_cd: row.sgg_cd,
     gu_name: row.gu_name,
@@ -102,12 +113,7 @@ export async function fetchDongs(asOfQuarter: string): Promise<DongSummary[]> {
     lower_pct: numberOrNull(row.lower_pct),
     upper_pct: numberOrNull(row.upper_pct),
     n_sales_4q: row.n_sales_4q ?? 0,
-    tags: deriveTags({
-      jeonse_ratio_4q: numberOrNull(row.jeonse_ratio_4q),
-      old30_share_4q: numberOrNull(row.old30_share_4q),
-      completed_share_8q: numberOrNull(row.completed_share_8q),
-      redevelop_zone_count: Number(row.redevelop_zone_count ?? 0),
-    }),
+    tags: tags[at],
   }));
 }
 

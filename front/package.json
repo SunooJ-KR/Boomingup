@@ -6,9 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
     "test": "node --test lib/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:wording": "node scripts/check-wording.mjs",
+    "check": "npm run typecheck && npm run test && npm run check:wording"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
