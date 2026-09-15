@@ -187,7 +187,8 @@ print("\n===== 2. rolling-origin 평가 완료 =====")
 # ============================================================================
 
 run_label = f"{first_eval_origin}-{last_eval_origin or 'end'}_drop-{'+'.join(drop_groups) or 'none'}"
-suffix = "" if is_official and not drop_groups else f".trial_{run_label}"
+# 공식 평가는 결정 14에서 고정한 --drop-groups로 실행하므로 제외 묶음이 있어도 공식 파일명을 쓴다
+suffix = "" if is_official else f".trial_{run_label}"
 predictions_path = output_dir / f"44.1.oot_predictions{suffix}.txt"
 metrics_path = output_dir / f"44.2.oot_metrics{suffix}.txt"
 pd.concat(prediction_frames, ignore_index=True).to_csv(predictions_path, sep="\t", index=False, lineterminator="\n")
