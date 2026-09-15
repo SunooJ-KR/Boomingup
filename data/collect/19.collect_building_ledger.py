@@ -1,0 +1,333 @@
+# ============================================================================
+# 19.collect_building_ledger.py
+# ============================================================================
+# Author:      yjkim
+# Purpose:     건축물대장 표제부에서 단지별 동 정보(동명칭·층수·높이·세대수)를 받는다
+# Description: 지금까지의 검증은 전부 간접이었다. 한국부동산원 등록 정보는 단지의
+#              총 동수만 주므로 "동 수가 맞는가"까지만 재고, "맞는 동을 골랐는가"는
+#              사람 눈에 맡길 수밖에 없었다.
+#
+#              건축물대장 표제부는 동(棟) 단위로 동명칭·지상층수·높이·세대수·
+#              사용승인일을 준다. 이것을 OSM 건물의 name/levels/height/flats/
+#              start_date와 맞대보면 배정된 동이 실제로 그 단지 동인지 직접
+#              검증된다. 위성사진이 필요 없어진다.
+#
+#              엔드포인트 (2026-09 확인):
+#                https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo
+#              활용신청이 안 돼 있으면 403 SERVICE_KEY_IS_NOT_REGISTERED_ERROR가
+#              온다. https://www.data.go.kr/data/15134735/openapi.do 에서 신청
+#              (자동승인, 개발계정 일 10,000건).
+#
+#              호출 단위는 지번(시군구+법정동+본번+부번)이다. bjdongCd(법정동코드)는
+#              필수이며 빈 값이면 totalCount 0이 온다. 실거래에는 시군구코드만
+#              있으므로 한국부동산원 등록 정보의 필지고유번호(PNU 19자리)에서 뽑는다.
+#                PNU = 법정동코드(10) + 필지구분(1) + 본번(4) + 부번(4)
+#              한 번 호출하면 그 지번의 모든 동이 온다. 고유 지번 약 8,800개라
+#              일 한도에 근접하므로 캐시를 반드시 쓴다.
+#
+#              표제부에는 아파트 동 말고 부속건축물도 섞여 온다. 주용도는 주차장·
+#              주민운동시설까지 '공동주택'으로 오므로 쓸 수 없고, 세대수>0이
+#              정확한 필터다. 마곡동 744: 표제부 51건 -> 세대수>0 19건
+#              (901~919동, 세대 합계 1,529)로 등록 동수·세대수와 정확히 일치했다.
+#
+#              사용법:
+#                python data/collect/19.collect_building_ledger.py probe   # 1건만
+#                python data/collect/19.collect_building_ledger.py         # 전량
+# ============================================================================
+
+# ============================================================================
+# 0. 환경 설정
+# ============================================================================
+
+import json
+import re
+import sys
+import time
+from pathlib import Path
+
+import pandas as pd
+import requests
+
+work_dir = Path(__file__).resolve().parents[2]   # 저장소 루트
+output_dir = work_dir / "output"
+
+MASTER_PATH = output_dir / "14.1.geocoded_master.txt"
+REGISTRY_PATH = output_dir / "raw" / "reb" / "apt_registry.csv"
+CACHE_PATH = output_dir / "raw" / "ledger" / "cache_title_info.json"
+RESULT_PATH = output_dir / "19.1.building_ledger.txt"
+
+API_URL = "https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo"
+ROWS_PER_CALL = 100
+SLEEP_SEC = 0.06
+CACHE_FLUSH_EVERY = 100
+DAILY_LIMIT = 10000      # 개발계정. 넘기면 다음 날 이어서 돌린다
+
+PROBE = len(sys.argv) > 1 and sys.argv[1] == "probe"
+
+
+def load_env(key):
+    for line in (work_dir / ".env").read_text(encoding="utf-8").splitlines():
+        if line.startswith(f"{key}="):
+            return line.split("=", 1)[1].strip()
+    raise SystemExit(f".env에 {key} 없음")
+
+
+SERVICE_KEY = load_env("DATA_GO_KR_KEY")
+
+
+def mask_key(text):
+    """requests 예외 메시지에는 요청 URL이 통째로 들어간다. 키가 평문으로 새면 안 된다"""
+    return re.sub(re.escape(SERVICE_KEY), "<SERVICE_KEY>", str(text))
+
+
+# ============================================================================
+# 1. 호출 대상 지번 목록
+# ============================================================================
+# aptSeq는 시군구코드-일련번호라 그대로는 못 쓴다. 실거래의 법정동명+지번을
+# 시군구코드(5) + 법정동코드(5) + 본번(4) + 부번(4)로 바꿔야 한다.
+# sggCd는 실거래에 있으므로 법정동코드만 별도로 필요하다.
+
+print("===== 1. 호출 대상 =====")
+master = pd.read_csv(MASTER_PATH, sep="\t", dtype={"aptSeq": str})
+master = master.dropna(subset=["jibun"]).copy()
+
+
+def normalize_address(text):
+    text = text.fillna("").astype(str).str.strip()
+    text = text.str.replace(r"^서울(특별시)?\s*", "", regex=True)
+    text = text.str.replace(r"\s+", " ", regex=True)
+    return text.str.replace(r"산\s+(?=\d)", "산", regex=True)
+
+
+# 법정동코드는 등록 정보의 PNU에서 가져온다. 별도 코드표를 받을 필요가 없다
+registry = pd.read_csv(REGISTRY_PATH, encoding="utf-8-sig", dtype=str)
+registry = registry[registry["주소"].str.startswith("서울", na=False)
+                    & (registry["단지종류"] == "1")].copy()
+registry["join_key"] = normalize_address(registry["주소"])
+registry = registry.drop_duplicates("join_key")
+pnu = registry["필지고유번호"]
+registry["sigungu_cd"] = pnu.str[:5]
+registry["bjdong_cd"] = pnu.str[5:10]
+registry["bun"] = pnu.str[11:15]
+registry["ji"] = pnu.str[15:19]
+
+master["join_key"] = normalize_address(
+    master["gu"].fillna("") + " " + master["umd_name"].fillna("")
+    + " " + master["jibun"].fillna(""))
+master = master.merge(
+    registry[["join_key", "sigungu_cd", "bjdong_cd", "bun", "ji", "단지명_공시가격"]],
+    on="join_key", how="left")
+
+matched = master["bjdong_cd"].notna()
+print(f"  단지 {len(master)}개 / PNU 확보 {int(matched.sum())} ({100 * matched.mean():.1f}%)")
+
+targets = (master[matched][["sigungu_cd", "bjdong_cd", "bun", "ji", "join_key"]]
+           .drop_duplicates(subset=["sigungu_cd", "bjdong_cd", "bun", "ji"])
+           .reset_index(drop=True))
+print(f"  고유 지번 {len(targets)}개")
+if PROBE:
+    targets = targets[targets["join_key"].str.contains("마곡동 744")].head(1)
+    if targets.empty:
+        targets = master[matched].head(1)[["sigungu_cd", "bjdong_cd", "bun", "ji", "join_key"]]
+    print(f"  [probe] 1건만 호출: {targets.iloc[0]['join_key']}")
+
+
+# ============================================================================
+# 2. API 호출
+# ============================================================================
+
+print("\n===== 2. 건축물대장 표제부 호출 =====")
+
+CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+cache = json.loads(CACHE_PATH.read_text(encoding="utf-8")) if CACHE_PATH.exists() else {}
+print(f"  캐시 {len(cache)}건")
+
+n_calls = 0
+
+
+def save_cache():
+    CACHE_PATH.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
+
+
+def fetch_page(cache_key, sigungu_cd, bjdong_cd, bun, ji, page_no):
+    """표제부 1페이지 요청. 반환: (items, total_count, counted).
+    counted는 이 시도를 일 호출량(n_calls)에 반영해야 하는지 여부다 — 요청
+    자체가 서버에 닿지 못한 RequestException은 반영하지 않는다(기존 동작 유지).
+    파싱 실패(JSON 아님)와 요청 실패는 items=None으로 구분해 호출 쪽이
+    캐시하지 않도록 한다 (버그 3: 실패를 []로 캐시하면 totalCount=0인 정상
+    빈 응답과 구분이 안 돼 다음 실행에서도 재시도가 안 된다)."""
+    params = {"serviceKey": SERVICE_KEY, "sigunguCd": sigungu_cd,
+              "bjdongCd": bjdong_cd, "bun": bun, "ji": ji,
+              "numOfRows": ROWS_PER_CALL, "pageNo": page_no, "_type": "json"}
+    try:
+        response = requests.get(API_URL, params=params, timeout=20)
+    except requests.RequestException as error:
+        print(f"  [경고] 요청 실패 {cache_key} p{page_no}: {mask_key(error)[:120]}")
+        return None, None, False
+
+    if response.status_code in (401, 403):
+        save_cache()
+        raise SystemExit(
+            f"인증/권한 오류 [{response.status_code}] {mask_key(response.text)[:200]}\n"
+            "  -> https://www.data.go.kr/data/15134735/openapi.do 에서 활용신청 필요")
+
+    if response.status_code != 200:
+        print(f"  [경고] HTTP {response.status_code} {cache_key} p{page_no}")
+        return None, None, True
+
+    try:
+        body = response.json().get("response", {}).get("body", {})
+        raw_items = (body.get("items") or {}).get("item") or []
+        items = raw_items if isinstance(raw_items, list) else [raw_items]
+        total_count = int(body.get("totalCount") or 0)
+    except (ValueError, TypeError):
+        print(f"  [경고] JSON 아님 {cache_key} p{page_no}: {mask_key(response.text)[:120]}")
+        return None, None, True
+
+    return items, total_count, True
+
+
+def fetch(sigungu_cd, bjdong_cd, bun, ji):
+    """지번 하나의 표제부 전체를 모든 페이지에 걸쳐 모은다. 인증·권한 오류는
+    즉시 중단시킨다.
+    numOfRows=100만 요청하고 totalCount를 안 보면 정확히 100건인 지번에서
+    잘린다 — 캐시 조사 결과 5개 지번이 이 값과 정확히 일치했다(헬리오시티
+    송파구 가락동 913은 등록 84동인데 52동만 받아 잘림이 유력했다). totalCount
+    가 지금까지 받은 개수보다 크면 다음 페이지를 이어 받는다.
+    페이지 중 하나라도 파싱/요청에 실패하면 지금까지 모은 것을 버리고 None을
+    돌려준다 — 절반만 캐시하면 다음 실행에서 그 절반이 '완료'로 오인돼
+    나머지 페이지를 영영 못 받는다."""
+    global n_calls
+    cache_key = f"{sigungu_cd}|{bjdong_cd}|{bun}|{ji}"
+    if cache_key in cache:
+        return cache[cache_key]
+
+    all_items = []
+    page_no = 1
+    while True:
+        items, total_count, counted = fetch_page(
+            cache_key, sigungu_cd, bjdong_cd, bun, ji, page_no)
+        if counted:
+            n_calls += 1
+        if items is None:
+            return None
+        all_items.extend(items)
+        time.sleep(SLEEP_SEC)
+        if not items or len(all_items) >= total_count:
+            break
+        page_no += 1
+
+    cache[cache_key] = all_items
+    if n_calls % CACHE_FLUSH_EVERY == 0:
+        save_cache()
+    return all_items
+
+
+records = []
+for i, row in targets.iterrows():
+    if n_calls >= DAILY_LIMIT:
+        print(f"  [중단] 일 한도 {DAILY_LIMIT}건 도달. 캐시를 두고 내일 이어서 돌린다")
+        break
+    items = fetch(row["sigungu_cd"], row["bjdong_cd"], row["bun"], row["ji"])
+    if items is None:
+        print(f"  [건너뜀] {row['join_key']}: 파싱/요청 실패로 캐시 안 함 (다음 실행에 재시도)")
+        continue
+    for item in items:
+        records.append({
+            "join_key": row["join_key"],
+            "sigungu_cd": row["sigungu_cd"], "bjdong_cd": row["bjdong_cd"],
+            "bun": row["bun"], "ji": row["ji"],
+            "bld_nm": item.get("bldNm"),          # 동명칭
+            "dong_nm": item.get("dongNm"),
+            "plat_plc": item.get("platPlc"),      # 대지위치(지번주소)
+            "new_plat_plc": item.get("newPlatPlc"),
+            "grnd_flr_cnt": item.get("grndFlrCnt"),   # 지상층수
+            "heit": item.get("heit"),                 # 높이(m)
+            "hhld_cnt": item.get("hhldCnt"),          # 세대수
+            "use_apr_day": item.get("useAprDay"),     # 사용승인일
+            "main_purps_cd_nm": item.get("mainPurpsCdNm"),
+            "mgm_bldrgst_pk": item.get("mgmBldrgstPk"),
+            # --- 아래는 complex 스키마(23) 확장을 위해 추가한 필드. 캐시에는
+            # 이미 있었고 파싱만 새로 한다 (재호출 없음).
+            "bcr": item.get("bcRat"),                 # 건폐율
+            "far": item.get("vlRat"),                 # 용적률
+            "bjd_code": item.get("bjdongCd"),          # 법정동코드(API 에코백. bjdong_cd와 동일해야 정상)
+            "plat_area": item.get("platArea"),         # 대지면적
+            "tot_area": item.get("totArea"),           # 연면적
+            # 주차대수 4종. 실측 결과(캐시 8,181개 지번) bcr/far/plat_area와 같은 패턴:
+            # 같은 지번의 표제부 레코드끼리 90%는 동일값을 반복하고, 나머지 10%는
+            # 한 레코드에만 합계가 채워지고 다른 레코드는 0이다(부분 기재 누락).
+            # 즉 이 값들은 동별로 실제로 다른 개별 주차대수가 아니라 '단지(지번) 단위
+            # 총계'가 표제부 레코드마다 복제된 것이다 — 동별 합산이 아니라 지번별로
+            # 대표값(0이 아닌 값, 여러 개면 max) 하나만 취해야 총주차대수가 맞다.
+            # (예: 11110|18300|0108|0000, 16개 동 모두 total=375로 동일)
+            "indr_auto_utcnt": item.get("indrAutoUtcnt"),   # 옥내자주식
+            "oudr_auto_utcnt": item.get("oudrAutoUtcnt"),   # 옥외자주식
+            "indr_mech_utcnt": item.get("indrMechUtcnt"),   # 옥내기계식
+            "oudr_mech_utcnt": item.get("oudrMechUtcnt"),   # 옥외기계식
+            "ride_use_elvt_cnt": item.get("rideUseElvtCnt"),   # 승용승강기 (동마다 실제로 다름)
+            "emgen_use_elvt_cnt": item.get("emgenUseElvtCnt"),  # 비상용승강기 (동마다 실제로 다름)
+            "strct_cd_nm": item.get("strctCdNm"),      # 구조
+        })
+    if (i + 1) % 200 == 0:
+        print(f"  처리 중 [{i + 1}/{len(targets)}]: 신규 호출 {n_calls}건, 누적 동 {len(records)}")
+
+save_cache()
+print(f"  호출 {n_calls}건 / 수집 동 {len(records)}개")
+
+
+# ============================================================================
+# 3. 저장
+# ============================================================================
+
+if not records:
+    raise SystemExit("수집된 동이 없다. 활용신청 상태와 응답 스키마를 먼저 확인할 것")
+
+ledger = pd.DataFrame(records)
+NUMERIC_COLUMNS = [
+    "grnd_flr_cnt", "heit", "hhld_cnt",
+    "bcr", "far", "plat_area", "tot_area",
+    "indr_auto_utcnt", "oudr_auto_utcnt", "indr_mech_utcnt", "oudr_mech_utcnt",
+    "ride_use_elvt_cnt", "emgen_use_elvt_cnt",
+]
+for column in NUMERIC_COLUMNS:
+    ledger[column] = pd.to_numeric(ledger[column], errors="coerce")
+ledger["use_apr_year"] = pd.to_numeric(
+    ledger["use_apr_day"].astype(str).str[:4], errors="coerce")
+
+print("\n===== 3. 요약 =====")
+print(f"  표제부 {len(ledger)}건 / 고유 지번 {ledger['join_key'].nunique()}")
+residential = ledger[ledger["hhld_cnt"] > 0]
+print(f"  주거동(세대수>0) {len(residential)}건 — 주차장·부속동은 세대수 0으로 걸러진다")
+print(f"  지번당 주거동 중앙값 {residential.groupby('join_key').size().median():.0f}")
+print(f"  동명칭 있음 {int(ledger['bld_nm'].notna().sum())} / "
+      f"높이 있음 {int(ledger['heit'].notna().sum())} / "
+      f"층수 있음 {int(ledger['grnd_flr_cnt'].notna().sum())}")
+
+new_cols = ["bcr", "far", "bjd_code", "plat_area", "tot_area",
+            "indr_auto_utcnt", "oudr_auto_utcnt", "indr_mech_utcnt", "oudr_mech_utcnt",
+            "ride_use_elvt_cnt", "emgen_use_elvt_cnt", "strct_cd_nm"]
+print("  신규 컬럼 채움률:")
+for column in new_cols:
+    rate = 100 * ledger[column].notna().mean()
+    print(f"    {column:<20} {rate:5.1f}%")
+# bjd_code(API 응답)는 호출 파라미터로 넘긴 bjdong_cd의 에코백이라 동일해야 정상이다
+mismatch = (ledger["bjd_code"].dropna() != ledger.loc[ledger["bjd_code"].notna(), "bjdong_cd"])
+print(f"  bjd_code vs bjdong_cd 불일치 {int(mismatch.sum())}건 (0이어야 정상)")
+
+# --- 자체 검증 ---
+ORIGINAL_COLUMNS = ["join_key", "sigungu_cd", "bjdong_cd", "bun", "ji", "bld_nm",
+                     "dong_nm", "plat_plc", "new_plat_plc", "grnd_flr_cnt", "heit",
+                     "hhld_cnt", "use_apr_day", "main_purps_cd_nm", "mgm_bldrgst_pk",
+                     "use_apr_year"]
+assert set(ORIGINAL_COLUMNS).issubset(ledger.columns), "기존 컬럼이 깨졌다 — 19.1을 읽는 20/21/13이 죽는다"
+assert set(new_cols).issubset(ledger.columns), "신규 컬럼 파싱이 빠졌다"
+assert n_calls == 0, f"캐시가 있는데 API를 {n_calls}건 새로 불렀다 — 캐시 히트 로직 확인 필요"
+assert int(mismatch.sum()) == 0, "bjd_code(API 에코백)가 호출 파라미터와 다르다 — 응답 파싱 순서 확인"
+
+if PROBE:
+    print("\n  [probe] 첫 응답 전문:")
+    print(ledger.head(3).to_string())
+
+ledger.to_csv(RESULT_PATH, sep="\t", index=False, lineterminator="\n")
+print(f"\n결과: {RESULT_PATH}")
