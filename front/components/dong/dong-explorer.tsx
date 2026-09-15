@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { DongDetailPanel, type DetailState } from "@/components/dong/dong-detail-panel";
 import { DongList } from "@/components/dong/dong-list";
+import { MapPanel, type MapItem } from "@/components/dong/map-panel";
 import { EmptyState } from "@/components/dong/empty-state";
 import { SearchPanel } from "@/components/dong/search-panel";
 import { Button } from "@/components/ui/button";
@@ -15,9 +16,19 @@ type DongExplorerProps = {
   meta: Meta;
   guNames: string[];
   tags: string[];
+  /** 동 대표 좌표. 법정동 경계 GeoJSON이 없어 단지 좌표 평균을 쓴다 */
+  centers: Record<string, { lat: number; lng: number }>;
+  kakaoJsKey?: string;
 };
 
-export function DongExplorer({ dongs, meta, guNames, tags }: DongExplorerProps) {
+export function DongExplorer({
+  dongs,
+  meta,
+  guNames,
+  tags,
+  centers,
+  kakaoJsKey,
+}: DongExplorerProps) {
   const [filter, setFilter] = useState<DongFilter>(EMPTY_FILTER);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<DongDetail | null>(null);
@@ -28,6 +39,25 @@ export function DongExplorer({ dongs, meta, guNames, tags }: DongExplorerProps) 
 
   const visibleDongs = useMemo(() => filterDongs(dongs, filter), [dongs, filter]);
   const selectedDong = dongs.find((dong) => dong.dong_id === selectedId) ?? null;
+
+  const mapItems = useMemo<MapItem[]>(
+    () =>
+      visibleDongs.flatMap((dong) => {
+        const center = centers[dong.dong_id];
+        if (!center) return [];
+        return [
+          {
+            id: dong.dong_id,
+            title: dong.umd_name,
+            subtitle: dong.gu_name,
+            lat: center.lat,
+            lng: center.lng,
+            status: dong.status === "PREDICTED" ? ("default" as const) : ("muted" as const),
+          },
+        ];
+      }),
+    [visibleDongs, centers],
+  );
 
   // 상세는 API에서 선택 시점에 가져온다. 동이 300개가 넘어 첫 화면에 다 실어 보내지 않는다.
   useEffect(() => {
@@ -110,20 +140,36 @@ export function DongExplorer({ dongs, meta, guNames, tags }: DongExplorerProps) 
         )}
       </section>
 
-      <section
-        ref={detailRef}
-        aria-label="선택한 동 상세"
-        aria-busy={detailState === "loading"}
-        className="lg:sticky lg:top-20 lg:self-start"
-      >
-        <DongDetailPanel
-          dong={selectedDong}
-          detail={detail}
-          meta={meta}
-          state={detailState}
-          onRetry={retry}
-        />
-      </section>
+      <div className="space-y-4">
+        {/* 모바일에서는 목록과 상세 읽기가 먼저라 지도를 접어 둔다 */}
+        <details open>
+          <summary className="cursor-pointer list-none text-sm font-medium text-muted-foreground lg:hidden">
+            지도 보기
+          </summary>
+          <div className="mt-2 lg:mt-0">
+            <MapPanel
+              items={mapItems}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              kakaoJsKey={kakaoJsKey}
+            />
+          </div>
+        </details>
+
+        <section
+          ref={detailRef}
+          aria-label="선택한 동 상세"
+          aria-busy={detailState === "loading"}
+        >
+          <DongDetailPanel
+            dong={selectedDong}
+            detail={detail}
+            meta={meta}
+            state={detailState}
+            onRetry={retry}
+          />
+        </section>
+      </div>
     </div>
   );
 }

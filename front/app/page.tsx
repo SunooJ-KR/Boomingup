@@ -1,12 +1,15 @@
 import { DongExplorer } from "@/components/dong/dong-explorer";
 import { guNamesOf, loadIndex, tagsOf } from "@/lib/data";
+import { readRootEnv } from "@/lib/root-env";
 import { formatQuarter } from "@/lib/format";
 
 // 동 목록은 자주 바뀌지 않으므로 10분마다 다시 만든다. snapshot이 교체되면 그때 반영된다.
 export const revalidate = 600;
 
 export default async function Home() {
-  const { meta, dongs, source } = await loadIndex();
+  const { meta, dongs, centers, source } = await loadIndex();
+  // 공개용 JavaScript 키다. Kakao 콘솔에 등록한 도메인에서만 동작한다.
+  const kakaoJsKey = readRootEnv("NEXT_PUBLIC_KAKAO_JS_KEY") ?? readRootEnv("KAKAO_JS_KEY");
 
   return (
     <div className="min-h-screen">
@@ -31,6 +34,8 @@ export default async function Home() {
           meta={meta}
           guNames={guNamesOf(dongs)}
           tags={tagsOf(dongs)}
+          centers={centers}
+          kakaoJsKey={kakaoJsKey}
         />
       </main>
     </div>
