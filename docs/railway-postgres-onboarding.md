@@ -6,15 +6,17 @@
 
 ## 1. 현재 적재 상태
 
-Railway Postgres에 정제 데이터가 적재되어 있고, `snapshot_id = 1`이 active 상태다.
+Railway Postgres에 정제 데이터가 적재되어 있고, `snapshot_id = 3`이 active 상태다. 이전 `snapshot_id = 1`은 inactive 상태로 남아 있다.
 
 | 항목 | 값 |
 |---|---|
-| active `snapshot_id` | 1 |
-| `as_of` | 2026-08-16 |
-| 적재 시각 | 2026-09-15 03:50 (UTC) |
+| active `snapshot_id` | 3 |
+| `as_of` | 2026-08-31 |
+| `source` | `boomingup` |
+| `note` | 정제 데이터 snapshot 적재 |
+| 적재 시각 | 2026-09-15 08:55 (UTC) |
 
-`app` 스키마의 테이블별 행 수는 다음과 같다.
+active snapshot 기준 `app` 스키마의 테이블별 행 수는 다음과 같다.
 
 | 테이블 | 행 수 |
 |---|---|
@@ -29,6 +31,8 @@ Railway Postgres에 정제 데이터가 적재되어 있고, `snapshot_id = 1`�
 | `share` | 0 |
 
 `share`는 공유 링크 정보를 담는 테이블이라 스냅샷 적재 대상이 아니고, 서비스에서 링크를 만들 때 채워진다.
+
+현재 DB에는 inactive snapshot도 보관되어 있다. 그래서 `app` 스키마 전체를 단순 집계하면 snapshot별 테이블은 active 기준보다 크게 보인다. 서비스와 모델에서는 항상 `dataset_snapshot.is_active = true`인 snapshot만 join해서 읽는다.
 
 DB에는 원천 데이터 전체가 아니라 서비스와 모델이 공통으로 읽는 정제 테이블만 들어간다. 원천 데이터, 대용량 산출물, 재생성 가능한 payload는 Git에 올리지 않고 DB 또는 공유 스토리지로 관리한다.
 
@@ -97,8 +101,8 @@ psql $dbUrl -v ON_ERROR_STOP=1 -c "select ds.snapshot_id, ds.as_of, count(*) as 
 기대 결과:
 
 ```text
-snapshot_id = 1
-as_of = 2026-08-16
+snapshot_id = 3
+as_of = 2026-08-31
 complex_rows = 9160
 ```
 
