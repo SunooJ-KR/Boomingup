@@ -1,0 +1,37 @@
+# 실행 산출물 (재현 가능한 결과는 PR 설명으로 공유한다)
+output/*
+!output/.gitkeep
+
+# Node / 프론트엔드
+node_modules/
+dist/
+build/
+.vite/
+*.local
+npm-debug.log*
+yarn-error.log*
+
+# Python / 데이터·모델
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# 환경 변수와 개인 설정
+.env
+.env.*
+!.env.example
+
+# 편집기 / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 대용량 데이터 (필요하면 경로별로 예외를 추가한다)
+*.csv
+*.xlsx
+*.parquet
+*.db
+*.sqlite3
