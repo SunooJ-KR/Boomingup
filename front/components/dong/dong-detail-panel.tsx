@@ -80,6 +80,7 @@ export function DongDetailPanel({ dong, detail, meta, state, onRetry }: DongDeta
           comparison={detail.comparison}
           dongName={dong.umd_name}
           guName={dong.gu_name}
+          meta={meta}
         />
       ) : null}
 
