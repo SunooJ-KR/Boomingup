@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import { boundsOf, projectToBounds, type Bounds } from "@/lib/map";
 import { cn } from "@/lib/utils";
 
 export type MapItem = {
@@ -25,15 +26,6 @@ type Mode = "loading" | "kakao" | "fallback";
 const SDK_TIMEOUT_MS = 8000;
 const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 };
 
-/** 좌표 미리보기용 서울 경계. 다른 지역을 다루면 이 값만 바꾼다. */
-const BOUNDS = { minLng: 126.74, maxLng: 127.2, minLat: 37.42, maxLat: 37.72 };
-
-function projectToMap(lat: number, lng: number) {
-  const x = ((lng - BOUNDS.minLng) / (BOUNDS.maxLng - BOUNDS.minLng)) * 100;
-  const y = (1 - (lat - BOUNDS.minLat) / (BOUNDS.maxLat - BOUNDS.minLat)) * 100;
-  return { x: Math.max(4, Math.min(96, x)), y: Math.max(6, Math.min(94, y)) };
-}
-
 export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelProps) {
   const [mode, setMode] = useState<Mode>(kakaoJsKey ? "loading" : "fallback");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -42,6 +34,11 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
   // 마커 DOM은 매번 다시 만들지 않으므로 최신 콜백을 ref로 들고 있는다
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  // 동을 고를 때는 목록이 바뀐 것이 아니므로 범위를 다시 잡지 않는다
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
+  const bounds = useMemo(() => boundsOf(items), [items]);
 
   useEffect(() => {
     if (!kakaoJsKey) return;
@@ -95,14 +92,28 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
   }, [items, mode, selectedId]);
 
   // 선택한 동이 화면 밖이면 지도를 옮긴다
+  // 자치구를 고르는 등 조건이 바뀌어 보이는 동이 달라지면 그 범위로 지도를 맞춘다
+  useEffect(() => {
+    const kakao = getKakao();
+    const map = mapRef.current;
+    if (mode !== "kakao" || !kakao || !map || items.length === 0) return;
+    map.setBounds(
+      new kakao.maps.LatLngBounds(
+        new kakao.maps.LatLng(bounds.minLat, bounds.minLng),
+        new kakao.maps.LatLng(bounds.maxLat, bounds.maxLng),
+      ),
+    );
+  }, [bounds, items.length, mode]);
+
+  // 동을 고르면 확대 수준은 그대로 두고 그 동이 가운데에 오게만 옮긴다
   useEffect(() => {
     const kakao = getKakao();
     const map = mapRef.current;
     if (mode !== "kakao" || !kakao || !map || !selectedId) return;
-    const selected = items.find((item) => item.id === selectedId);
+    const selected = itemsRef.current.find((item) => item.id === selectedId);
     if (!selected) return;
     map.panTo(new kakao.maps.LatLng(selected.lat, selected.lng));
-  }, [selectedId, items, mode]);
+  }, [selectedId, mode]);
 
   return (
     // 좌측 동 목록 열과 같은 높이에서 --map-peek만큼 줄인다.
@@ -122,7 +133,12 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
       {mode === "kakao" || mode === "loading" ? (
         <div ref={containerRef} className="h-[320px] w-full bg-muted lg:h-auto lg:min-h-0 lg:flex-1" />
       ) : (
-        <FallbackPreview items={items} selectedId={selectedId} onSelect={onSelect} />
+        <FallbackPreview
+          items={items}
+          bounds={bounds}
+          selectedId={selectedId}
+          onSelect={onSelect}
+        />
       )}
 
       {mode === "fallback" ? (
@@ -140,11 +156,16 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
   );
 }
 
-function FallbackPreview({ items, selectedId, onSelect }: Omit<MapPanelProps, "kakaoJsKey">) {
+function FallbackPreview({
+  items,
+  bounds,
+  selectedId,
+  onSelect,
+}: Omit<MapPanelProps, "kakaoJsKey"> & { bounds: Bounds }) {
   return (
     <div className="relative h-[320px] w-full bg-muted lg:h-auto lg:min-h-0 lg:flex-1">
       {items.map((item) => {
-        const { x, y } = projectToMap(item.lat, item.lng);
+        const { x, y } = projectToBounds(item, bounds);
         return (
           <button
             key={item.id}
@@ -179,13 +200,18 @@ function markerClassName(status: MapItem["status"], selected: boolean) {
 /* ---------------------------------------------------------------- */
 
 type KakaoLatLng = object;
-type KakaoMap = { panTo: (latlng: KakaoLatLng) => void };
+type KakaoLatLngBounds = object;
+type KakaoMap = {
+  panTo: (latlng: KakaoLatLng) => void;
+  setBounds: (bounds: KakaoLatLngBounds) => void;
+};
 type KakaoOverlay = { setMap: (map: KakaoMap | null) => void };
 type Kakao = {
   maps: {
     load: (callback: () => void) => void;
     Map: new (container: HTMLElement, options: { center: KakaoLatLng; level: number }) => KakaoMap;
     LatLng: new (lat: number, lng: number) => KakaoLatLng;
+    LatLngBounds: new (sw: KakaoLatLng, ne: KakaoLatLng) => KakaoLatLngBounds;
     CustomOverlay: new (options: {
       position: KakaoLatLng;
       content: HTMLElement;
