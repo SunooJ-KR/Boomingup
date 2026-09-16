@@ -253,14 +253,14 @@ class _Section:
         self.y += Inches(h_in)
         return self
 
-    def callout(self, title, body, accent=TEAL, width_in=None, left_in=None):
+    def callout(self, title, body, accent=TEAL, width_in=None, left_in=None, fill=None):
         w = width_in if width_in is not None else WIDTH
         left = Inches(left_in) if left_in is not None else Inches(MARGIN)
         inner_w = w - 0.36
         body_lines = _wrap_lines(body, 10.5, inner_w)
         h_in = max(0.85, 0.24 + 0.10 + 0.205 * body_lines + 0.18)
         box = self.slide.shapes.add_shape(5, left, self.y, Inches(w), Inches(h_in))
-        box.fill.solid(); box.fill.fore_color.rgb = LIGHT
+        box.fill.solid(); box.fill.fore_color.rgb = fill if fill is not None else LIGHT
         box.line.color.rgb = accent; box.line.width = Pt(1.25)
         box.shadow.inherit = False
         tf = box.text_frame; tf.word_wrap = True
