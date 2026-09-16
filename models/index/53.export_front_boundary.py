@@ -2,10 +2,11 @@
 # 53.export_front_boundary.py
 # ============================================================================
 # Author:      yjkim
-# Purpose:     52.1 경계 GeoJSON을 프론트 지도용으로 줄여서 front/public/data에 둔다
-# Description: 지수 동(in_index)만 남기고 Douglas-Peucker로 점을 줄인 뒤 좌표를
-#              소수 5자리로 반올림한다. 결정 40의 출처 표기 문구를 파일 안에 함께
-#              넣어 화면이 출처를 따로 들고 있지 않아도 되게 한다.
+# Purpose:     52.1 경계 GeoJSON을 프론트 지도용 동·자치구 경계 두 벌로 내보낸다
+# Description: 동 경계는 지수 동(in_index)만 남기고, 자치구 경계는 서울 467개 동의
+#              경계에서 자치구 안쪽 선을 지워 만든다. 둘 다 Douglas-Peucker로 점을
+#              줄이고 좌표를 소수 5자리로 반올림한다. 결정 40의 출처 표기 문구를
+#              파일 안에 함께 넣어 화면이 출처를 따로 들고 있지 않아도 되게 한다.
 #              실행: python models/index/53.export_front_boundary.py
 # ============================================================================
 
@@ -16,13 +17,15 @@
 from __future__ import annotations
 
 import json
+from math import atan2, pi
 from pathlib import Path
 from typing import Any
 
 
 WORK_DIR = Path(__file__).resolve().parents[2]
 SOURCE_PATH = WORK_DIR / "output" / "52.1.seoul_bjd_boundary.geojson"
-TARGET_PATH = WORK_DIR / "front" / "public" / "data" / "dong-boundary.geojson"
+DONG_TARGET_PATH = WORK_DIR / "front" / "public" / "data" / "dong-boundary.geojson"
+GU_TARGET_PATH = WORK_DIR / "front" / "public" / "data" / "gu-boundary.geojson"
 
 SOURCE_LABEL = "행정구역 경계: GIS Developer(gisdeveloper.co.kr), 원본 도로명주소 DB"
 
@@ -36,6 +39,18 @@ COORD_DIGITS = 5
 MIN_RING_POINTS = 4
 
 EXPECTED_DONGS = 340
+EXPECTED_GUS = 25
+
+# 자치구 이름. data/db/50.load_db.py의 GU_BY_SGG_CD와 같은 표다.
+GU_BY_SGG_CD = {
+    "11110": "종로구", "11140": "중구", "11170": "용산구", "11200": "성동구",
+    "11215": "광진구", "11230": "동대문구", "11260": "중랑구", "11290": "성북구",
+    "11305": "강북구", "11320": "도봉구", "11350": "노원구", "11380": "은평구",
+    "11410": "서대문구", "11440": "마포구", "11470": "양천구", "11500": "강서구",
+    "11530": "구로구", "11545": "금천구", "11560": "영등포구", "11590": "동작구",
+    "11620": "관악구", "11650": "서초구", "11680": "강남구", "11710": "송파구",
+    "11740": "강동구",
+}
 
 
 # ============================================================================
@@ -144,10 +159,167 @@ def count_points(geometry: dict[str, Any]) -> int:
 
 
 # ============================================================================
-# 2. 변환과 저장
+# 2. 자치구 경계 만들기
 # ============================================================================
 
-def build_features(source: dict[str, Any]) -> tuple[list[dict[str, Any]], int, int]:
+def ring_edges(ring: list[list[float]]) -> list[tuple[tuple[float, float], tuple[float, float]]]:
+    """링을 방향이 있는 선분 목록으로 바꾼다."""
+    points = [(x, y) for x, y in ring]
+    return list(zip(points, points[1:]))
+
+
+def signed_area(ring: list[tuple[float, float]]) -> float:
+    """부호 있는 면적. 양수는 반시계 방향이고 GeoJSON에서 바깥 링을 뜻한다."""
+    return sum(x1 * y2 - x2 * y1 for (x1, y1), (x2, y2) in zip(ring, ring[1:])) / 2
+
+
+def point_in_ring(point: tuple[float, float], ring: list[tuple[float, float]]) -> bool:
+    """ray casting으로 점이 링 안에 있는지 본다. 구멍을 바깥 링에 붙일 때 쓴다."""
+    x, y = point
+    inside = False
+    for (x1, y1), (x2, y2) in zip(ring, ring[1:]):
+        crosses_y = (y1 > y) != (y2 > y)
+        if crosses_y and x < (x2 - x1) * (y - y1) / (y2 - y1) + x1:
+            inside = not inside
+    return inside
+
+
+def outer_edges(
+    edges: list[tuple[tuple[float, float], tuple[float, float]]],
+) -> list[tuple[tuple[float, float], tuple[float, float]]]:
+    """자치구 안쪽 선을 지운다.
+
+    붙어 있는 두 동은 같은 선분을 방향만 반대로 하나씩 갖는다. 그래서 양쪽 끝점이
+    같은 선분이 두 번 이상 나오면 자치구 안쪽 선이고, 한 번만 나오면 바깥 경계다.
+    이 판정은 좌표가 정확히 같아야 성립하므로, 점을 줄이기 전에 먼저 해야 한다.
+    """
+    seen: dict[tuple[tuple[float, float], tuple[float, float]], int] = {}
+    for start, end in edges:
+        seen[(start, end) if start <= end else (end, start)] = seen.get(
+            (start, end) if start <= end else (end, start), 0
+        ) + 1
+    return [
+        (start, end)
+        for start, end in edges
+        if seen[(start, end) if start <= end else (end, start)] == 1
+    ]
+
+
+def turn_angle(
+    incoming: tuple[float, float], outgoing: tuple[float, float]
+) -> float:
+    """들어온 방향에서 나가는 방향까지 반시계로 돈 각도. 0~2π로 맞춘다."""
+    angle = atan2(outgoing[1], outgoing[0]) - atan2(-incoming[1], -incoming[0])
+    return angle % (2 * pi)
+
+
+def stitch_rings(
+    edges: list[tuple[tuple[float, float], tuple[float, float]]],
+) -> list[list[tuple[float, float]]]:
+    """남은 선분을 이어서 닫힌 링으로 만든다.
+
+    한 점에서 갈 수 있는 선분이 여럿이면(자치구가 한 점에서만 닿는 자리) 가장
+    시계 방향으로 꺾이는 선분을 고른다. 그래야 면을 왼쪽에 둔 채로 돌게 된다.
+    """
+    remaining: dict[tuple[float, float], list[tuple[float, float]]] = {}
+    for start, end in edges:
+        remaining.setdefault(start, []).append(end)
+
+    rings: list[list[tuple[float, float]]] = []
+    for first in list(remaining):
+        while remaining.get(first):
+            ring = [first]
+            current = first
+            previous = None
+            while True:
+                candidates = remaining.get(current)
+                if not candidates:
+                    raise ValueError("이어지지 않는 경계 선분이 있습니다.")
+                if previous is None or len(candidates) == 1:
+                    nxt = candidates[0]
+                else:
+                    incoming = (current[0] - previous[0], current[1] - previous[1])
+                    nxt = min(
+                        candidates,
+                        key=lambda end: turn_angle(
+                            incoming, (end[0] - current[0], end[1] - current[1])
+                        ),
+                    )
+                candidates.remove(nxt)
+                if not candidates:
+                    del remaining[current]
+                ring.append(nxt)
+                previous, current = current, nxt
+                if current == first:
+                    break
+            if len(ring) >= MIN_RING_POINTS:
+                rings.append(ring)
+    return rings
+
+
+def rings_to_polygons(
+    rings: list[list[tuple[float, float]]],
+) -> list[list[list[list[float]]]]:
+    """링을 바깥과 구멍으로 나누고, 구멍을 담고 있는 바깥 링에 붙인다."""
+    outers = [ring for ring in rings if signed_area(ring) > 0]
+    holes = [ring for ring in rings if signed_area(ring) < 0]
+    if not outers:
+        raise ValueError("바깥 링이 없는 자치구가 있습니다.")
+
+    polygons: list[list[list[tuple[float, float]]]] = [[outer] for outer in outers]
+    for hole in holes:
+        containing = [index for index, outer in enumerate(outers) if point_in_ring(hole[0], outer)]
+        if len(containing) != 1:
+            raise ValueError("구멍을 담고 있는 바깥 링을 하나로 정할 수 없습니다.")
+        polygons[containing[0]].append(hole)
+
+    return [[[list(point) for point in ring] for ring in polygon] for polygon in polygons]
+
+
+def dissolve(features: list[dict[str, Any]]) -> dict[str, Any]:
+    """동 경계 여러 개를 자치구 경계 하나로 합친다."""
+    edges: list[tuple[tuple[float, float], tuple[float, float]]] = []
+    for feature in features:
+        geometry = feature["geometry"]
+        polygons = (
+            [geometry["coordinates"]]
+            if geometry["type"] == "Polygon"
+            else geometry["coordinates"]
+        )
+        for polygon in polygons:
+            for ring in polygon:
+                edges.extend(ring_edges(ring))
+
+    polygons = rings_to_polygons(stitch_rings(outer_edges(edges)))
+    if len(polygons) == 1:
+        return {"type": "Polygon", "coordinates": polygons[0]}
+    return {"type": "MultiPolygon", "coordinates": polygons}
+
+
+def label_point(geometry: dict[str, Any]) -> list[float]:
+    """이름을 적을 자리. 가장 넓은 조각의 무게중심을 쓴다.
+
+    ponytail: 심하게 굽은 모양이면 무게중심이 면 밖으로 나갈 수 있다. 서울 자치구는
+    대체로 둥글어 그런 경우가 없었다. 어긋나는 자치구가 생기면 그때 자리를 따로 적는다.
+    """
+    polygons = (
+        [geometry["coordinates"]]
+        if geometry["type"] == "Polygon"
+        else geometry["coordinates"]
+    )
+    outers = [[(x, y) for x, y in polygon[0]] for polygon in polygons]
+    ring = max(outers, key=lambda outer: abs(signed_area(outer)))
+    area = signed_area(ring)
+    x = sum((x1 + x2) * (x1 * y2 - x2 * y1) for (x1, y1), (x2, y2) in zip(ring, ring[1:]))
+    y = sum((y1 + y2) * (x1 * y2 - x2 * y1) for (x1, y1), (x2, y2) in zip(ring, ring[1:]))
+    return [round(x / (6 * area), COORD_DIGITS), round(y / (6 * area), COORD_DIGITS)]
+
+
+# ============================================================================
+# 3. 변환과 저장
+# ============================================================================
+
+def build_dong_features(source: dict[str, Any]) -> tuple[list[dict[str, Any]], int, int]:
     """지수 동만 남기고 도형을 줄인다. 줄이기 전후 좌표 수도 함께 돌려준다."""
     features: list[dict[str, Any]] = []
     before = 0
@@ -168,30 +340,67 @@ def build_features(source: dict[str, Any]) -> tuple[list[dict[str, Any]], int, i
     return features, before, after
 
 
+def build_gu_features(source: dict[str, Any]) -> list[dict[str, Any]]:
+    """자치구마다 동 경계를 합쳐 하나의 도형으로 만든다.
+
+    지수에 없는 동까지 모두 넣어야 자치구 안에 구멍이 생기지 않는다.
+    """
+    by_sgg_cd: dict[str, list[dict[str, Any]]] = {}
+    for feature in source["features"]:
+        by_sgg_cd.setdefault(feature["properties"]["sgg_cd"], []).append(feature)
+
+    features = []
+    for sgg_cd, dong_features in sorted(by_sgg_cd.items()):
+        gu_name = GU_BY_SGG_CD.get(sgg_cd)
+        if gu_name is None:
+            raise ValueError(f"이름을 모르는 자치구 코드입니다: {sgg_cd}")
+        merged = dissolve(dong_features)
+        # 이름 자리는 줄이기 전 도형에서 잡는다. 줄인 도형과 눈에 띄게 다르지 않으면서
+        # 점을 줄이다 생긴 어긋남이 자리에 섞이지 않는다.
+        features.append({
+            "type": "Feature",
+            "properties": {"sgg_cd": sgg_cd, "gu_name": gu_name, "label": label_point(merged)},
+            "geometry": shrink_geometry(merged),
+        })
+    return features
+
+
+def write_collection(path: Path, features: list[dict[str, Any]]) -> float:
+    """FeatureCollection을 저장하고 파일 크기(MiB)를 돌려준다."""
+    collection = {"type": "FeatureCollection", "source": SOURCE_LABEL, "features": features}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        json.dump(collection, handle, ensure_ascii=False, separators=(",", ":"))
+        handle.write("\n")
+    return path.stat().st_size / (1024 * 1024)
+
+
 def main() -> None:
-    """52.1을 읽어 프론트용 경계 파일을 만들고 결과를 요약한다."""
+    """52.1을 읽어 프론트용 동·자치구 경계 파일을 만들고 결과를 요약한다."""
     if not SOURCE_PATH.exists():
         raise SystemExit(
             f"{SOURCE_PATH}가 없습니다. models/index/52.build_dong_boundary.py를 먼저 실행하세요."
         )
 
     source = json.loads(SOURCE_PATH.read_text(encoding="utf-8"))
-    features, before, after = build_features(source)
-    if len(features) != EXPECTED_DONGS:
-        raise ValueError(f"지수 동 경계는 {EXPECTED_DONGS}개여야 합니다 (현재 {len(features)}개).")
 
-    collection = {"type": "FeatureCollection", "source": SOURCE_LABEL, "features": features}
-    TARGET_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with TARGET_PATH.open("w", encoding="utf-8", newline="\n") as handle:
-        json.dump(collection, handle, ensure_ascii=False, separators=(",", ":"))
-        handle.write("\n")
+    dong_features, before, after = build_dong_features(source)
+    if len(dong_features) != EXPECTED_DONGS:
+        raise ValueError(f"지수 동 경계는 {EXPECTED_DONGS}개여야 합니다 (현재 {len(dong_features)}개).")
 
-    size_mib = TARGET_PATH.stat().st_size / (1024 * 1024)
+    gu_features = build_gu_features(source)
+    if len(gu_features) != EXPECTED_GUS:
+        raise ValueError(f"자치구 경계는 {EXPECTED_GUS}개여야 합니다 (현재 {len(gu_features)}개).")
+
+    dong_mib = write_collection(DONG_TARGET_PATH, dong_features)
+    gu_mib = write_collection(GU_TARGET_PATH, gu_features)
     source_mib = SOURCE_PATH.stat().st_size / (1024 * 1024)
-    print(f"동 수: {len(features)}개")
-    print(f"좌표 수: {before:,}개 → {after:,}개 ({after / before:.1%})")
-    print(f"파일 크기: {source_mib:.2f} MiB → {size_mib:.2f} MiB")
-    print(f"저장: {TARGET_PATH}")
+
+    print(f"동 수: {len(dong_features)}개 / 자치구 수: {len(gu_features)}개")
+    print(f"동 좌표 수: {before:,}개 → {after:,}개 ({after / before:.1%})")
+    print(f"원본 {source_mib:.2f} MiB → 동 {dong_mib:.2f} MiB, 자치구 {gu_mib:.2f} MiB")
+    print(f"저장: {DONG_TARGET_PATH}")
+    print(f"저장: {GU_TARGET_PATH}")
 
 
 if __name__ == "__main__":

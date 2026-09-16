@@ -58,13 +58,18 @@ KAKAO_JS_KEY=...                         # 없으면 지도는 좌표 미리보�
 Kakao SDK는 클라이언트에서만 불러오고, 키가 없거나 로딩이 실패하면 좌표 미리보기로 폴백한다.
 실제 지도를 확인하려면 Kakao 개발자 콘솔에 실행 도메인(`http://localhost:3000` 등)을 등록해야 한다.
 
-동 대표 좌표 위에 법정동 경계를 덧그린다. 경계는 동을 고르는 넓은 클릭 영역이자 위치를
-알아보는 밑그림이고, 예측값으로 색을 칠하지는 않는다(결정 41). 경계 파일은 아래 두 스크립트로
-만들어 commit한다. 배포는 저장소 파일을 그대로 쓰므로 commit하지 않으면 배포 화면에 경계가 없다.
+지도는 두 단계다(결정 43). 넓게 보면 자치구 경계와 자치구 이름만 나오고, 자치구를 누르면
+그 자치구로 확대되면서 동 경계와 동 이름이 나온다. 갈리는 기준은 Kakao 확대 수준 7이라
+손으로 확대해도 같은 규칙이 적용된다. 자치구를 누르면 자치구 필터가 걸려 왼쪽 목록도 함께 좁혀진다.
+
+동 대표 좌표는 그대로 단지 좌표 평균을 쓰고(결정 21) 그 위에 경계를 덧그린다. 경계는 동을 고르는
+넓은 클릭 영역이자 위치를 알아보는 밑그림이고, 예측값으로 색을 칠하지는 않는다(결정 41).
+경계 파일은 아래 두 스크립트로 만들어 commit한다. 배포는 저장소 파일을 그대로 쓰므로
+commit하지 않으면 배포 화면에 경계가 없다.
 
 ```bash
 python models/index/52.build_dong_boundary.py      # output/52.1.seoul_bjd_boundary.geojson
-python models/index/53.export_front_boundary.py    # front/public/data/dong-boundary.geojson
+python models/index/53.export_front_boundary.py    # front/public/data/{dong,gu}-boundary.geojson
 ```
 
 경계 원천 SHP는 `output/raw/boundary/emd_20230729/`에 있어야 한다(`docs/data-sources.md` §6).

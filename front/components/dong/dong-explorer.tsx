@@ -62,6 +62,16 @@ export function DongExplorer({
     setPage(1);
   }, []);
 
+  // 지도 콜백은 다시 만들지 않으므로 최신 필터를 ref로 들고 있는다
+  const filterRef = useRef(filter);
+  filterRef.current = filter;
+
+  // 지도에서 자치구를 누르면 자치구 필터를 걸어 목록과 지도를 함께 좁힌다
+  const selectGu = useCallback(
+    (gu: string | null) => changeFilter({ ...filterRef.current, gu }),
+    [changeFilter],
+  );
+
   const changePage = useCallback((next: number) => {
     setPage(next);
     listBoxRef.current?.scrollTo({ top: 0 });
@@ -220,6 +230,8 @@ export function DongExplorer({
               items={mapItems}
               selectedId={selectedId}
               onSelect={setSelectedId}
+              gu={filter.gu}
+              onSelectGu={selectGu}
               kakaoJsKey={kakaoJsKey}
             />
           </div>

@@ -67,6 +67,13 @@ export type BoundaryFeature = {
 };
 export type BoundaryCollection = { source: string; features: BoundaryFeature[] };
 
+export type GuBoundaryFeature = {
+  /** label은 자치구 이름을 적을 자리다. [경도, 위도] 순이다 */
+  properties: { sgg_cd: string; gu_name: string; label: [number, number] };
+  geometry: BoundaryGeometry;
+};
+export type GuBoundaryCollection = { source: string; features: GuBoundaryFeature[] };
+
 /**
  * GeoJSON 도형을 지도에 그릴 경로로 바꾼다.
  * 결과는 [조각][링][좌표] 세 겹이다. 한 조각의 첫 링이 바깥이고 나머지는 구멍이라

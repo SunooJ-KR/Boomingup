@@ -27,6 +27,16 @@ def square(step: float = 0.001) -> list[list[float]]:
     return [*bottom, *right, *top, *left]
 
 
+def cell(x: float, y: float) -> list[list[float]]:
+    """단위 정사각형 링. 반시계 방향으로 닫는다."""
+    return [[x, y], [x + 1.0, y], [x + 1.0, y + 1.0], [x, y + 1.0], [x, y]]
+
+
+def feature(ring: list[list[float]]) -> dict:
+    """합치기 입력으로 쓸 최소한의 Feature."""
+    return {"geometry": {"type": "Polygon", "coordinates": [ring]}}
+
+
 def main():
     ex = exporter()
 
@@ -63,11 +73,44 @@ def main():
         {"properties": {"dong": "11110_효자동", "umd_nm": "효자동", "in_index": False},
          "geometry": {"type": "Polygon", "coordinates": [square()]}},
     ]}
-    features, before, after = ex.build_features(source)
+    features, before, after = ex.build_dong_features(source)
     assert len(features) == 1 and features[0]["properties"] == {"dong": "11110_청운동", "umd_nm": "청운동"}
     assert before == 41 and after == 5, f"좌표 수가 맞지 않습니다: {before} → {after}"
 
-    print("합성 도형 점검 통과: 직선 축약, 튀어나온 점 유지, 링 닫힘, 작은 구멍 제거, 속성 축소")
+    # 자치구 합치기: 맞붙은 두 동 사이의 선은 사라지고 바깥 테두리만 남는다.
+    left = cell(0, 0)
+    right = cell(1, 0)
+    merged = ex.dissolve([feature(left), feature(right)])
+    assert merged["type"] == "Polygon", merged["type"]
+    ring = merged["coordinates"][0]
+    assert ring[0] == ring[-1], "합친 경계가 닫혀 있지 않습니다"
+    # 맞닿은 선분 (1,0)-(1,1)이 사라진다. 그 위의 점 자체는 테두리 위에 남는다
+    edges = {(tuple(a), tuple(b)) for a, b in zip(ring, ring[1:])}
+    assert ((1.0, 0.0), (1.0, 1.0)) not in edges and ((1.0, 1.0), (1.0, 0.0)) not in edges
+    assert len(ring) == 7, f"테두리 점이 7개여야 합니다: {len(ring)}"
+    # 줄이고 나면 직선 위의 점이 빠져 직사각형 모서리 4개만 남는다
+    assert len(ex.shrink_ring([list(point) for point in ring])) == 5
+    assert ex.signed_area([(x, y) for x, y in ring]) > 0, "바깥 링은 반시계 방향이어야 합니다"
+
+    # 가운데가 빈 3x3은 바깥 링 하나와 구멍 하나가 된다.
+    donut = [feature(cell(x, y)) for x in range(3) for y in range(3) if (x, y) != (1, 1)]
+    holed = ex.dissolve(donut)
+    assert holed["type"] == "Polygon" and len(holed["coordinates"]) == 2
+    outer, hole = holed["coordinates"]
+    assert ex.signed_area([(x, y) for x, y in outer]) > 0
+    assert ex.signed_area([(x, y) for x, y in hole]) < 0, "구멍은 시계 방향이어야 합니다"
+    assert {x for x, _ in hole} == {1.0, 2.0}, "구멍 자리가 가운데 칸이 아닙니다"
+
+    # 떨어진 두 조각은 MultiPolygon이 된다.
+    apart = ex.dissolve([feature(cell(0, 0)), feature(cell(5, 5))])
+    assert apart["type"] == "MultiPolygon" and len(apart["coordinates"]) == 2
+
+    # 이름 자리는 가장 넓은 조각의 무게중심이다.
+    assert ex.label_point(ex.dissolve([feature(cell(0, 0))])) == [0.5, 0.5]
+    big = ex.dissolve([feature(cell(0, 0)), feature(cell(10, 0)), feature(cell(11, 0))])
+    assert ex.label_point(big) == [11.0, 0.5], "넓은 쪽 조각에 이름을 놓아야 합니다"
+
+    print("합성 도형 점검 통과: 직선 축약, 튀어나온 점 유지, 링 닫힘, 작은 구멍 제거, 속성 축소, 자치구 합치기, 이름 자리")
 
 
 if __name__ == "__main__": main()
