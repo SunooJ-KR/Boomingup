@@ -339,4 +339,38 @@ style_ax(ax, f"동별 인구 변화율 vs 1년 매매가 변화율 — 보광동
 fig.tight_layout()
 save(fig, "10_population_vs_price")
 
+# ============================================================
+# 13. 다변량 회귀 표준화 계수 (여러 요인을 동시에 통제한 뒤 각 요인의 효과)
+# ============================================================
+reg = pd.read_csv("../output/13_hedonic_regression_coefs.csv").set_index("variable")
+stds13 = pd.read_csv("../output/13_hedonic_regression_stds.csv", index_col=0).iloc[:, 0]
+
+reg["coef_std"] = reg["coef"] * stds13
+reg["ci_low_std"] = reg["ci_low"] * stds13
+reg["ci_high_std"] = reg["ci_high"] * stds13
+lo13 = reg[["ci_low_std", "ci_high_std"]].min(axis=1)
+hi13 = reg[["ci_low_std", "ci_high_std"]].max(axis=1)
+reg["ci_low_std"], reg["ci_high_std"] = lo13, hi13
+
+label_map13 = {
+    "age": "준공연차\n(+1표준편차≈11.4년)", "floor": "층수\n(+1표준편차≈6.4층)",
+    "log_area": "면적(log)\n(+1표준편차≈1.5배)", "station_dist_m": "역까지 거리\n(+1표준편차≈321m)",
+    "river_view_ratio": "한강조망 비율\n(+1표준편차≈0.32)", "elem_school_m": "초등학교 거리\n(+1표준편차≈161m)",
+    "mid_school_m": "중학교 거리\n(+1표준편차≈248m)", "high_school_m": "고등학교 거리\n(+1표준편차≈356m)",
+}
+# age2(제곱항)는 age와 같이 해석해야 하는 항이라 단독 막대로 그리면 오해의 소지가 있어 제외한다
+reg13 = reg.drop(index="age2").copy()
+reg13["label"] = [label_map13[i] for i in reg13.index]
+reg13 = reg13.sort_values("coef_std")
+
+fig, ax = plt.subplots(figsize=(9.5, 6.5))
+ax.errorbar(reg13["coef_std"] * 100, reg13["label"],
+            xerr=[(reg13["coef_std"] - reg13["ci_low_std"]) * 100, (reg13["ci_high_std"] - reg13["coef_std"]) * 100],
+            fmt="o", color=NAVY, ecolor=GREY, capsize=3, markersize=7, zorder=3)
+ax.axvline(0, color="#C3C2B7", linewidth=1, linestyle=":")
+style_ax(ax, "표준화 회귀 계수 — 각 변수가 1표준편차 변할 때 단가 변화(%), 95% 신뢰구간",
+         "㎡당 단가 변화(%, 다른 변수 고정)", "")
+fig.tight_layout()
+save(fig, "13_hedonic_regression_coefs")
+
 print("\n전체 그림 생성 완료:", OUT_DIR)
