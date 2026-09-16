@@ -89,9 +89,10 @@ export function MapPanel({
     return boundsOf(boundaryPaths(feature.geometry).flat(2));
   }, [gu, guBoundary, items]);
 
-  // 넓게 보고 있으면 자치구를, 확대하면 동을 보여 준다
+  // 자치구를 고르면 바로 동을 보여 주고, 고르지 않았을 때는 확대 수준으로 정한다.
+  // 확대 수준만 보면 setBounds가 지도에 반영되기 전까지 자치구 화면에 머무른다
   const [level, setLevel] = useState(SEOUL_LEVEL);
-  const view: "gu" | "dong" = level >= GU_VIEW_LEVEL ? "gu" : "dong";
+  const view: "gu" | "dong" = gu === null && level >= GU_VIEW_LEVEL ? "gu" : "dong";
   const boundarySource = guBoundary?.source ?? dongBoundary?.source ?? null;
 
   useEffect(() => {
@@ -149,7 +150,7 @@ export function MapPanel({
     };
   }, [mode]);
 
-  // 자치구 경계와 이름. 넓게 볼 때만 보여 주고, 누르면 그 자치구로 좁힌다
+  // 자치구 경계와 이름. 자치구를 고르지 않고 넓게 볼 때만 보여 주고, 누르면 그 자치구로 좁힌다
   useEffect(() => {
     const kakao = getKakao();
     const map = mapRef.current;
@@ -180,10 +181,10 @@ export function MapPanel({
         guLabelsRef.current.set(guName, overlay);
       }
 
-      // 자치구를 고르면 그 자치구만 남긴다. 옆 자치구까지 덮여 있으면 어디를 보는지 흐려진다
-      const shown = view === "gu" && (gu === null || gu === guName);
+      // 자치구를 고르면 동 화면으로 넘어가므로 자치구 면은 모두 내린다
+      const shown = view === "gu";
       polygons.forEach((polygon) => {
-        polygon.setOptions(guName === gu ? style.guSelected : style.gu);
+        polygon.setOptions(style.gu);
         polygon.setMap(shown ? map : null);
       });
       overlay.setMap(shown ? map : null);
@@ -417,7 +418,6 @@ function polygonStyle() {
   const token = (name: string) =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const primary = token("--primary") || "#5520a8";
-  const primaryHover = token("--primary-hover") || "#421983";
   const primarySoft = token("--primary-soft") || "#f1edf8";
   const muted = token("--neutral-strong") || "#858b98";
   const base = { strokeWeight: 1, strokeOpacity: 0.7, fillOpacity: 0.07 };
@@ -433,20 +433,14 @@ function polygonStyle() {
       strokeOpacity: 1,
       fillOpacity: 0.18,
     },
-    // 자치구는 진한 면으로 꽉 채우고 테두리를 연한 색으로 둘러 구획이 먼저 읽히게 한다
+    // 자치구는 면으로 채우고 테두리를 연한 색으로 둘러 구획이 먼저 읽히게 한다.
+    // ponytail: 채우기 진하기는 조절값이다. 한강과 큰 길이 비쳐 보일 만큼만 남긴다.
     gu: {
       strokeWeight: 2,
       strokeColor: primarySoft,
       strokeOpacity: 1,
       fillColor: primary,
-      fillOpacity: 1,
-    },
-    guSelected: {
-      strokeWeight: 3,
-      strokeColor: primarySoft,
-      strokeOpacity: 1,
-      fillColor: primaryHover,
-      fillOpacity: 1,
+      fillOpacity: 0.78,
     },
   };
 }
