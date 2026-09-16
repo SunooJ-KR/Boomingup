@@ -1,0 +1,456 @@
+{
+  "11680_개포동": {
+    "dong_id": "11680_개포동",
+    "prediction": {
+      "status": "PREDICTED",
+      "change_pct_est": 3.2,
+      "lower_pct": -4.1,
+      "upper_pct": 10.9
+    },
+    "facts": {
+      "n_sales_4q": 212,
+      "jeonse_ratio_4q": 0.48,
+      "redevelop_zones": {
+        "designated": 3,
+        "association": 2,
+        "management": 1,
+        "construction": 0
+      },
+      "completed_households_8q": 1200,
+      "reg_overheated": true
+    },
+    "comparison": {
+      "seoul_change_pct": 1.1,
+      "gu_change_pct": 2.4,
+      "dong_change_pct": 3.2
+    },
+    "complexes": [
+      {
+        "apt_seq": "11680-1234",
+        "name": "개포한빛아파트",
+        "built_year": 1983,
+        "households": 1500,
+        "far_pct": 180.5,
+        "redevelop": {
+          "zone_name": "개포1재건축",
+          "stage": "관리처분",
+          "stage_date": "2024-05-10"
+        },
+        "last_sale": {
+          "date": "2026-08",
+          "floor": 7,
+          "area_m2": 84.9,
+          "price_manwon": 245000
+        }
+      },
+      {
+        "apt_seq": "11680-1235",
+        "name": "개포푸른마을",
+        "built_year": 1994,
+        "households": 820,
+        "far_pct": 210.0,
+        "redevelop": null,
+        "last_sale": {
+          "date": "2026-07",
+          "floor": 12,
+          "area_m2": 59.8,
+          "price_manwon": 158000
+        }
+      },
+      {
+        "apt_seq": "11680-1236",
+        "name": "개포도담아파트",
+        "built_year": 2007,
+        "households": 430,
+        "far_pct": 240.2,
+        "redevelop": null,
+        "last_sale": {
+          "date": "2026-06",
+          "floor": 3,
+          "area_m2": 114.5,
+          "price_manwon": 312000
+        }
+      }
+    ]
+  },
+  "11680_대치동": {
+    "dong_id": "11680_대치동",
+    "prediction": {
+      "status": "PREDICTED",
+      "change_pct_est": 1.8,
+      "lower_pct": -5.4,
+      "upper_pct": 9.3
+    },
+    "facts": {
+      "n_sales_4q": 188,
+      "jeonse_ratio_4q": 0.55,
+      "redevelop_zones": {
+        "designated": 1,
+        "association": 1,
+        "management": 0,
+        "construction": 0
+      },
+      "completed_households_8q": 0,
+      "reg_overheated": true
+    },
+    "comparison": {
+      "seoul_change_pct": 1.1,
+      "gu_change_pct": 2.4,
+      "dong_change_pct": 1.8
+    },
+    "complexes": [
+      {
+        "apt_seq": "11680-2201",
+        "name": "대치샘터아파트",
+        "built_year": 1979,
+        "households": 1100,
+        "far_pct": 172.3,
+        "redevelop": {
+          "zone_name": "대치2재건축",
+          "stage": "조합설립",
+          "stage_date": "2025-02-18"
+        },
+        "last_sale": {
+          "date": "2026-08",
+          "floor": 5,
+          "area_m2": 76.4,
+          "price_manwon": 228000
+        }
+      },
+      {
+        "apt_seq": "11680-2202",
+        "name": "대치숲마을",
+        "built_year": 2001,
+        "households": 640,
+        "far_pct": 230.8,
+        "redevelop": null,
+        "last_sale": {
+          "date": "2026-05",
+          "floor": 9,
+          "area_m2": 84.9,
+          "price_manwon": 261000
+        }
+      }
+    ]
+  },
+  "11710_잠실동": {
+    "dong_id": "11710_잠실동",
+    "prediction": {
+      "status": "PREDICTED",
+      "change_pct_est": -0.9,
+      "lower_pct": -8.2,
+      "upper_pct": 6.8
+    },
+    "facts": {
+      "n_sales_4q": 304,
+      "jeonse_ratio_4q": 0.44,
+      "redevelop_zones": {
+        "designated": 0,
+        "association": 1,
+        "management": 0,
+        "construction": 1
+      },
+      "completed_households_8q": 2400,
+      "reg_overheated": true
+    },
+    "comparison": {
+      "seoul_change_pct": 1.1,
+      "gu_change_pct": 0.2,
+      "dong_change_pct": -0.9
+    },
+    "complexes": [
+      {
+        "apt_seq": "11710-3301",
+        "name": "잠실호수마을",
+        "built_year": 1986,
+        "households": 2300,
+        "far_pct": 190.1,
+        "redevelop": {
+          "zone_name": "잠실4재건축",
+          "stage": "착공",
+          "stage_date": "2026-01-09"
+        },
+        "last_sale": {
+          "date": "2026-08",
+          "floor": 15,
+          "area_m2": 84.9,
+          "price_manwon": 288000
+        }
+      },
+      {
+        "apt_seq": "11710-3302",
+        "name": "잠실강변아파트",
+        "built_year": 1999,
+        "households": 1750,
+        "far_pct": 215.6,
+        "redevelop": null,
+        "last_sale": {
+          "date": "2026-08",
+          "floor": 21,
+          "area_m2": 59.9,
+          "price_manwon": 174000
+        }
+      },
+      {
+        "apt_seq": "11710-3303",
+        "name": "잠실새뜰아파트",
+        "built_year": 2014,
+        "households": 980,
+        "far_pct": 260.4,
+        "redevelop": null,
+        "last_sale": {
+          "date": "2026-07",
+          "floor": 8,
+          "area_m2": 101.2,
+          "price_manwon": 335000
+        }
+      }
+    ]
+  },
+  "11440_연남동": {
+    "dong_id": "11440_연남동",
+    "prediction": {
+      "status": "INSUFFICIENT_SALES",
+      "change_pct_est": null,
+      "lower_pct": null,
+      "upper_pct": null
+    },
+    "facts": {
+      "n_sales_4q": 11,
+      "jeonse_ratio_4q": 0.62,
+      "redevelop_zones": {
+        "designated": 0,
+        "association": 0,
+        "management": 0,
+        "construction": 0
+      },
+      "completed_households_8q": 0,
+      "reg_overheated": false
+    },
+    "comparison": {
+      "seoul_change_pct": 1.1,
+      "gu_change_pct": 1.6,
+      "dong_change_pct": null
+    },
+    "complexes": [
+      {
+        "apt_seq": "11440-4401",
+        "name": "연남빌리지",
+        "built_year": 2012,
+        "households": 120,
+        "far_pct": 198.7,
+        "redevelop": null,
+        "last_sale": {
+          "date": "2026-04",
+          "floor": 4,
+          "area_m2": 59.4,
+          "price_manwon": 92000
+        }
+      }
+    ]
+  },
+  "11305_수유동": {
+    "dong_id": "11305_수유동",
+    "prediction": {
+      "status": "PREDICTED",
+      "change_pct_est": 0.4,
+      "lower_pct": -7.6,
+      "upper_pct": 8.9
+    },
+    "facts": {
+      "n_sales_4q": 96,
+      "jeonse_ratio_4q": 0.58,
+      "redevelop_zones": {
+        "designated": 2,
+        "association": 0,
+        "management": 0,
+        "construction": 0
+      },
+      "completed_households_8q": 300,
+      "reg_overheated": false
+    },
+    "comparison": {
+      "seoul_change_pct": 1.1,
+      "gu_change_pct": 0.7,
+      "dong_change_pct": 0.4
+    },
+    "complexes": [
+      {
+        "apt_seq": "11305-5501",
+        "name": "수유한마음아파트",
+        "built_year": 1988,
+        "households": 760,
+        "far_pct": 168.9,
+        "redevelop": {
+          "zone_name": "수유1재개발",
+          "stage": "구역지정",
+          "stage_date": "2023-11-22"
+        },
+        "last_sale": {
+          "date": "2026-07",
+          "floor": 6,
+          "area_m2": 84.7,
+          "price_manwon": 78000
+        }
+      },
+      {
+        "apt_seq": "11305-5502",
+        "name": "수유해맑은아파트",
+        "built_year": 2003,
+        "households": 340,
+        "far_pct": 205.3,
+        "redevelop": null,
+        "last_sale": {
+          "date": "2026-06",
+          "floor": 11,
+          "area_m2": 59.5,
+          "price_manwon": 61000
+        }
+      }
+    ]
+  },
+  "11230_답십리동": {
+    "dong_id": "11230_답십리동",
+    "prediction": {
+      "status": "NOT_SERVED",
+      "change_pct_est": null,
+      "lower_pct": null,
+      "upper_pct": null
+    },
+    "facts": {
+      "n_sales_4q": 64,
+      "jeonse_ratio_4q": 0.51,
+      "redevelop_zones": {
+        "designated": 1,
+        "association": 1,
+        "management": 1,
+        "construction": 0
+      },
+      "completed_households_8q": 900,
+      "reg_overheated": false
+    },
+    "comparison": {
+      "seoul_change_pct": 1.1,
+      "gu_change_pct": 1.3,
+      "dong_change_pct": null
+    },
+    "complexes": [
+      {
+        "apt_seq": "11230-6601",
+        "name": "답십리들꽃아파트",
+        "built_year": 1991,
+        "households": 520,
+        "far_pct": 183.4,
+        "redevelop": {
+          "zone_name": "답십리3재개발",
+          "stage": "관리처분",
+          "stage_date": "2025-09-30"
+        },
+        "last_sale": {
+          "date": "2026-08",
+          "floor": 9,
+          "area_m2": 84.8,
+          "price_manwon": 96000
+        }
+      }
+    ]
+  },
+  "11620_신림동": {
+    "dong_id": "11620_신림동",
+    "prediction": {
+      "status": "PREDICTED",
+      "change_pct_est": 2.1,
+      "lower_pct": -6.0,
+      "upper_pct": 10.1
+    },
+    "facts": {
+      "n_sales_4q": 143,
+      "jeonse_ratio_4q": 0.64,
+      "redevelop_zones": {
+        "designated": 0,
+        "association": 0,
+        "management": 0,
+        "construction": 0
+      },
+      "completed_households_8q": 600,
+      "reg_overheated": false
+    },
+    "comparison": {
+      "seoul_change_pct": 1.1,
+      "gu_change_pct": 1.9,
+      "dong_change_pct": 2.1
+    },
+    "complexes": [
+      {
+        "apt_seq": "11620-7701",
+        "name": "신림푸른숲아파트",
+        "built_year": 1997,
+        "households": 410,
+        "far_pct": 212.0,
+        "redevelop": null,
+        "last_sale": {
+          "date": "2026-08",
+          "floor": 7,
+          "area_m2": 59.7,
+          "price_manwon": 68000
+        }
+      },
+      {
+        "apt_seq": "11620-7702",
+        "name": "신림하늘채",
+        "built_year": 2016,
+        "households": 280,
+        "far_pct": 249.5,
+        "redevelop": null,
+        "last_sale": {
+          "date": "2026-05",
+          "floor": 14,
+          "area_m2": 84.6,
+          "price_manwon": 109000
+        }
+      }
+    ]
+  },
+  "11500_화곡동": {
+    "dong_id": "11500_화곡동",
+    "prediction": {
+      "status": "INSUFFICIENT_SALES",
+      "change_pct_est": null,
+      "lower_pct": null,
+      "upper_pct": null
+    },
+    "facts": {
+      "n_sales_4q": 17,
+      "jeonse_ratio_4q": 0.69,
+      "redevelop_zones": {
+        "designated": 0,
+        "association": 0,
+        "management": 0,
+        "construction": 0
+      },
+      "completed_households_8q": 150,
+      "reg_overheated": false
+    },
+    "comparison": {
+      "seoul_change_pct": 1.1,
+      "gu_change_pct": 0.9,
+      "dong_change_pct": null
+    },
+    "complexes": [
+      {
+        "apt_seq": "11500-8801",
+        "name": "화곡햇살아파트",
+        "built_year": 1995,
+        "households": 190,
+        "far_pct": 201.8,
+        "redevelop": null,
+        "last_sale": {
+          "date": "2026-03",
+          "floor": 3,
+          "area_m2": 49.8,
+          "price_manwon": 43000
+        }
+      }
+    ]
+  }
+}

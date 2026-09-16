@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #1d2433;
+  --card: #ffffff;
+  --muted: #f6f7f9;
+  --muted-foreground: #697386;
+  --primary: #4136e8;
+  --primary-foreground: #ffffff;
+  --primary-hover: #2f25c9;
+  --primary-soft: #eeedff;
+  --border: #e6e8ee;
+  --input: #f6f7f9;
+  --ring: #4136e8;
+  --neutral-soft: #f0f1f4;
+  --neutral-strong: #858b98;
+  --radius: 12px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-neutral-soft: var(--neutral-soft);
+  --color-neutral-strong: var(--neutral-strong);
+
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+
+  --shadow-panel: 0 1px 2px rgb(29 36 51 / 0.04), 0 6px 20px rgb(29 36 51 / 0.05);
+  --shadow-float: 0 2px 6px rgb(29 36 51 / 0.06), 0 16px 40px rgb(29 36 51 / 0.09);
+  --ease-out-soft: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+body {
+  background: var(--muted);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans KR", sans-serif;
+}
+
+/* 애니메이션은 opacity와 transform만 쓰고, 사용자가 줄이기를 원하면 사실상 끈다 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
