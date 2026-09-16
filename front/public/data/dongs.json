@@ -1,0 +1,111 @@
+[
+  {
+    "dong_id": "11680_개포동",
+    "sgg_cd": "11680",
+    "gu_name": "강남구",
+    "umd_name": "개포동",
+    "status": "PREDICTED",
+    "change_pct_est": 3.2,
+    "lower_pct": -4.1,
+    "upper_pct": 10.9,
+    "n_sales_4q": 212,
+    "tags": [
+      "정비사업 정보 있음",
+      "거래 많은 동"
+    ]
+  },
+  {
+    "dong_id": "11680_대치동",
+    "sgg_cd": "11680",
+    "gu_name": "강남구",
+    "umd_name": "대치동",
+    "status": "PREDICTED",
+    "change_pct_est": 1.8,
+    "lower_pct": -5.4,
+    "upper_pct": 9.3,
+    "n_sales_4q": 188,
+    "tags": [
+      "전세가율 높은 동"
+    ]
+  },
+  {
+    "dong_id": "11710_잠실동",
+    "sgg_cd": "11710",
+    "gu_name": "송파구",
+    "umd_name": "잠실동",
+    "status": "PREDICTED",
+    "change_pct_est": -0.9,
+    "lower_pct": -8.2,
+    "upper_pct": 6.8,
+    "n_sales_4q": 304,
+    "tags": [
+      "거래 많은 동"
+    ]
+  },
+  {
+    "dong_id": "11440_연남동",
+    "sgg_cd": "11440",
+    "gu_name": "마포구",
+    "umd_name": "연남동",
+    "status": "INSUFFICIENT_SALES",
+    "change_pct_est": null,
+    "lower_pct": null,
+    "upper_pct": null,
+    "n_sales_4q": 11,
+    "tags": []
+  },
+  {
+    "dong_id": "11305_수유동",
+    "sgg_cd": "11305",
+    "gu_name": "강북구",
+    "umd_name": "수유동",
+    "status": "PREDICTED",
+    "change_pct_est": 0.4,
+    "lower_pct": -7.6,
+    "upper_pct": 8.9,
+    "n_sales_4q": 96,
+    "tags": [
+      "30년 이상 단지 많은 동"
+    ]
+  },
+  {
+    "dong_id": "11230_답십리동",
+    "sgg_cd": "11230",
+    "gu_name": "동대문구",
+    "umd_name": "답십리동",
+    "status": "NOT_SERVED",
+    "change_pct_est": null,
+    "lower_pct": null,
+    "upper_pct": null,
+    "n_sales_4q": 64,
+    "tags": [
+      "정비사업 정보 있음"
+    ]
+  },
+  {
+    "dong_id": "11620_신림동",
+    "sgg_cd": "11620",
+    "gu_name": "관악구",
+    "umd_name": "신림동",
+    "status": "PREDICTED",
+    "change_pct_est": 2.1,
+    "lower_pct": -6.0,
+    "upper_pct": 10.1,
+    "n_sales_4q": 143,
+    "tags": [
+      "전세가율 높은 동"
+    ]
+  },
+  {
+    "dong_id": "11500_화곡동",
+    "sgg_cd": "11500",
+    "gu_name": "강서구",
+    "umd_name": "화곡동",
+    "status": "INSUFFICIENT_SALES",
+    "change_pct_est": null,
+    "lower_pct": null,
+    "upper_pct": null,
+    "n_sales_4q": 17,
+    "tags": []
+  }
+]
