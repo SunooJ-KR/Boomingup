@@ -105,8 +105,9 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
   }, [selectedId, items, mode]);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-panel">
-      <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
+    // 좌측 동 목록 열과 아래 끝을 맞춘다. 높이 계산은 dong-explorer의 좌측 열과 같은 값이다
+    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-panel lg:flex lg:h-[calc(100dvh-81px)] lg:flex-col">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">지도</p>
         <p className="text-xs text-muted-foreground">
           {mode === "kakao"
@@ -118,19 +119,19 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
       </div>
 
       {mode === "kakao" || mode === "loading" ? (
-        <div ref={containerRef} className="h-[320px] lg:h-[38dvh] lg:max-h-[520px] lg:min-h-[260px] w-full bg-muted" />
+        <div ref={containerRef} className="h-[320px] w-full bg-muted lg:h-auto lg:min-h-0 lg:flex-1" />
       ) : (
         <FallbackPreview items={items} selectedId={selectedId} onSelect={onSelect} />
       )}
 
       {mode === "fallback" ? (
-        <p className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
+        <p className="shrink-0 border-t border-border px-3 py-2 text-xs text-muted-foreground">
           Kakao 지도 키가 없거나 불러오지 못해 좌표 위치만 보여줍니다. 동 선택은 그대로 됩니다.
         </p>
       ) : null}
 
       {items.length === 0 ? (
-        <p className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
+        <p className="shrink-0 border-t border-border px-3 py-2 text-xs text-muted-foreground">
           표시할 좌표가 없습니다. 목록에서 동을 선택해 주세요.
         </p>
       ) : null}
@@ -140,7 +141,7 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
 
 function FallbackPreview({ items, selectedId, onSelect }: Omit<MapPanelProps, "kakaoJsKey">) {
   return (
-    <div className="relative h-[320px] lg:h-[38dvh] lg:max-h-[520px] lg:min-h-[260px] w-full bg-muted">
+    <div className="relative h-[320px] w-full bg-muted lg:h-auto lg:min-h-0 lg:flex-1">
       {items.map((item) => {
         const { x, y } = projectToMap(item.lat, item.lng);
         return (

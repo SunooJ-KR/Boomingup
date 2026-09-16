@@ -153,12 +153,14 @@ export function DongExplorer({
     };
   }, [selectedId, meta.as_of_quarter, reloadToken]);
 
-  // 목록과 상세가 세로로 쌓이는 폭에서는 선택 시 상세로 스크롤한다
+  // 넓은 폭에서도 지도가 화면을 가득 채워 상세는 화면 아래에 붙는다.
+  // 어느 폭이든 동을 고르면 상세까지 부드럽게 내려간다. 좌측 목록은 sticky라 그대로 보인다.
+  // 고른 직후 한 번, 내용이 도착해 높이가 늘어난 뒤 한 번 더 맞춘다.
   useEffect(() => {
     if (!selectedId) return;
-    if (window.matchMedia("(min-width: 1024px)").matches) return;
-    detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [selectedId]);
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    detailRef.current?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+  }, [selectedId, detailState]);
 
   const retry = useCallback(() => {
     if (selectedId) cache.current.delete(selectedId);
@@ -223,18 +225,31 @@ export function DongExplorer({
           </div>
         </details>
 
+        {/* 상세가 도착하면 아래에서 떠오르게 해서 새로 생겼다는 것을 알린다.
+            key가 바뀌면 다음 동을 골랐을 때 효과가 다시 재생된다.
+            효과를 줄이기로 한 사용자에게는 globals.css에서 사실상 꺼진다. */}
+        {/* scroll-mt는 sticky 헤더 높이(49px)와 main 위 여백(16px)만큼 스크롤을 덜 내려,
+            상세 제목이 헤더 뒤에 가리지 않게 한다 */}
         <section
           ref={detailRef}
           aria-label="선택한 동 상세"
           aria-busy={detailState === "loading"}
+          className="scroll-mt-[65px]"
         >
-          <DongDetailPanel
-            dong={selectedDong}
-            detail={detail}
-            meta={meta}
-            state={detailState}
-            onRetry={retry}
-          />
+          {/* 효과는 안쪽 div에 건다. section에 걸면 transform이 걸린 채로 스크롤 위치를 잡아
+              애니메이션이 끝난 뒤 상세가 화면 위로 20px 올라가 버린다 */}
+          <div
+            key={selectedId ?? "idle"}
+            className={detailState === "ready" ? "animate-rise-in" : undefined}
+          >
+            <DongDetailPanel
+              dong={selectedDong}
+              detail={detail}
+              meta={meta}
+              state={detailState}
+              onRetry={retry}
+            />
+          </div>
         </section>
       </div>
     </div>
