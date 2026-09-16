@@ -65,3 +65,23 @@ $PY models/index/45.build_conformal_intervals.py      # 예측 구간
 - 판단 표현 금지: 저평가/고평가/적정가/싸다/비싸다/유망/추천/투자 적격
 - 추정값에는 "추정"과 구간을 붙인다. "80% 보장"이라고 쓰지 않는다
 - payload 스키마(`docs/payload-schema.md`)는 정선우 님과 합의한 뒤 바꾼다
+
+## preview 배포 (자동 연동 전까지 수동)
+
+고정 주소 `https://boomingup-preview.vercel.app`이 `dev` 내용을 보여준다. Vercel GitHub App이 저장소에
+설치돼 있지 않아 push 자동 배포가 없다(저장소 admin 승인 필요). **`dev`가 바뀌면 직접 배포하고 alias를 다시 건다.**
+
+```bash
+git fetch origin && git worktree add -f <작업경로>/dev-tree origin/dev
+cp -r front/.vercel <작업경로>/dev-tree/front/.vercel
+cd <작업경로>/dev-tree/front
+npx vercel deploy --yes --archive=tgz            # 출력의 배포 URL 확인
+npx vercel alias set <배포 URL> boomingup-preview.vercel.app
+curl -s https://boomingup-preview.vercel.app/api/meta | head -c 200   # source가 db인지 확인
+```
+
+- Vercel 프로젝트는 `yjkim-94s-projects/boomingup`, Root Directory는 `front`다
+- 환경변수는 Vercel에 등록돼 있다: `DATABASE_READONLY_URL`(Secret), `NEXT_PUBLIC_KAKAO_JS_KEY`(Config, 도메인 제한 공개키)
+- `source`가 `sample`로 나오면 환경변수가 빠진 것이다. 값은 저장소 루트 `.env`에서 읽고 출력하지 않는다
+- 지도는 카카오 콘솔 JavaScript SDK 도메인에 `boomingup-preview.vercel.app`이 등록돼야 뜬다
+- 배포는 `front/`를 바꾸는 일이므로 정선우 님에게 알린다
