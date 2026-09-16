@@ -12,7 +12,7 @@ sale = query_df("""
     select apt_seq, deal_year, exclu_use_ar, deal_amount_manwon
     from app.trade_sale
     where is_cancelled = false
-      and deal_amount_manwon is not null
+      and deal_amount_manwon > 0
       and exclu_use_ar > 0
       and deal_year >= 2024
       and apt_seq is not null;

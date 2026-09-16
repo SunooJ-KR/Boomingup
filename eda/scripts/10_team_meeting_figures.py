@@ -86,11 +86,24 @@ save(fig, "01a_quarterly_volume_events")
 y = pd.read_csv("../output/01_yearly_yoy.csv")
 y["volume_idx"] = 100 * (y["n_trades"] / y["n_trades"].iloc[0])
 y["price_idx"] = 100 * (y["median_price_per_m2"] / y["median_price_per_m2"].iloc[0])
+# 마지막 연도(2026)는 8월까지만 있는 불완전 연도라 실선으로 이어그리면 "급락"처럼 보일 위험이
+# 있다(2026-09-16 codex 검증 지적) — 마지막 구간만 점선+빈 마커로 구분한다.
+is_complete = y["is_complete_year"].astype(bool)
+last_complete_idx = is_complete.sum() - 1  # 마지막 완결 연도 행 위치
 
 fig, ax = plt.subplots(figsize=(10, 5))
-ax.plot(y["deal_year"], y["volume_idx"], color=TEAL, linewidth=2.4, marker="o", markersize=4, label="거래량 지수", zorder=3)
-ax.plot(y["deal_year"], y["price_idx"], color=NAVY, linewidth=2.4, marker="o", markersize=4, label="단가(㎡당) 지수", zorder=3)
+for col, color, label in [("volume_idx", TEAL, "거래량 지수"), ("price_idx", NAVY, "단가(㎡당) 지수")]:
+    ax.plot(y["deal_year"][:last_complete_idx + 1], y[col][:last_complete_idx + 1],
+            color=color, linewidth=2.4, marker="o", markersize=4, label=label, zorder=3)
+    ax.plot(y["deal_year"][last_complete_idx:], y[col][last_complete_idx:],
+            color=color, linewidth=2.4, linestyle="--", marker="o", markersize=4,
+            markerfacecolor="white", zorder=3)
 ax.axhline(100, color="#C3C2B7", linewidth=1, linestyle=":", zorder=1)
+last_year = y["deal_year"].iloc[-1]
+ax.annotate(f"{last_year}년은 8월까지만 집계\n(점선 = 불완전 연도)",
+            xy=(y["deal_year"].iloc[-1], y["price_idx"].iloc[-1]), xytext=(-95, 15),
+            textcoords="offset points", fontsize=8.5, color=GREY,
+            arrowprops=dict(arrowstyle="->", color=GREY, lw=1))
 style_ax(ax, "연간 거래량 지수 vs 단가 지수 (2006년=100)", "연도", "지수(2006=100)")
 ax.legend(frameon=False, fontsize=10, loc="upper left")
 fig.tight_layout()
@@ -223,16 +236,37 @@ fig.tight_layout()
 save(fig, "06_jeonse_ratio_future_change")
 
 # ============================================================
-# 7. 정비사업 강도 vs 가격 변동성 산점도
+# 6b. 기점 연도별 전세가율-미래상승률 상관계수 (부호가 해마다 뒤집히는 걸 보여줌)
+# ============================================================
+yc = pd.read_csv("../output/06_jeonse_correlation_by_year.csv")
+colors6b = [GREEN if v > 0 else RED for v in yc["corr"]]
+
+fig, ax = plt.subplots(figsize=(9, 5.5))
+ax.bar(yc["origin_year"].astype(int).astype(str), yc["corr"], color=colors6b, zorder=3)
+ax.axhline(0, color=NAVY, linewidth=1)
+style_ax(ax, "기점 연도별 전세가율-미래상승률 상관계수 (해마다 부호가 뒤집힘)", "기점 연도", "상관계수")
+plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
+fig.tight_layout()
+save(fig, "06b_jeonse_corr_by_year")
+
+# ============================================================
+# 7. 정비사업 강도 vs 가격 변동성 산점도 (v2: 이상치 표시 + 유의성 없음을 그대로 보여줌)
 # ============================================================
 ji = pd.read_csv("../output/07_redevelop_intensity_vs_volatility.csv")
+normal7 = ji[~ji["intensity_over_1"]]
 
-fig, ax = plt.subplots(figsize=(8, 6))
-ax.scatter(ji["redevelop_intensity"], ji["volatility"], color=TEAL, alpha=0.6, s=28, zorder=3, edgecolor="white", linewidth=0.4)
-z = np.polyfit(ji["redevelop_intensity"], ji["volatility"], 1)
-xs = np.linspace(ji["redevelop_intensity"].min(), ji["redevelop_intensity"].max(), 50)
-ax.plot(xs, np.polyval(z, xs), color=NAVY, linewidth=2, zorder=4)
-style_ax(ax, "동별 정비사업 진행 강도 vs 매매지수 변동성 (상관계수 0.21)", "정비사업 진행 세대 비중(재고 대비)", "분기 변화율 표준편차")
+fig, ax = plt.subplots(figsize=(8.5, 6.5))
+ax.scatter(normal7["redevelop_intensity"], normal7["volatility"], color=TEAL, alpha=0.6, s=28, zorder=3,
+           edgecolor="white", linewidth=0.4, label="강도 ≤ 1 (정상 범위)")
+outliers7 = ji[ji["intensity_over_1"]]
+ax.scatter(outliers7["redevelop_intensity"], outliers7["volatility"], color=RED, alpha=0.7, s=32, zorder=4,
+           edgecolor="white", linewidth=0.4, label="강도 > 1 (분모 이상 의심)")
+z = np.polyfit(normal7["redevelop_intensity"], normal7["volatility"], 1)
+xs = np.linspace(normal7["redevelop_intensity"].min(), normal7["redevelop_intensity"].max(), 50)
+ax.plot(xs, np.polyval(z, xs), color=NAVY, linewidth=2, zorder=5, linestyle="--")
+ax.legend(frameon=False, fontsize=9, loc="upper right")
+style_ax(ax, "동별 정비사업 진행 강도 vs 매매지수 변동성 — 유의한 관계 없음(강도≤1: r=0.009, p=0.889)",
+         "정비사업 진행 세대 비중(재고 대비)", "분기 변화율 표준편차")
 fig.tight_layout()
 save(fig, "07_redevelop_intensity_volatility")
 
