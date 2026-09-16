@@ -6,10 +6,19 @@ import { DongDetailPanel, type DetailState } from "@/components/dong/dong-detail
 import { DongList } from "@/components/dong/dong-list";
 import { MapPanel, type MapItem } from "@/components/dong/map-panel";
 import { EmptyState } from "@/components/dong/empty-state";
+import { Pagination } from "@/components/dong/pagination";
 import { SearchPanel } from "@/components/dong/search-panel";
 import { Button } from "@/components/ui/button";
 import { EMPTY_FILTER, filterDongs, isFilterActive, type DongFilter } from "@/lib/filter";
+import { clampPage, pageCount } from "@/lib/paginate";
 import type { DongDetail, DongSummary, Meta } from "@/lib/types";
+
+/**
+ * 한 페이지에 담는 동 개수. 화면 높이에 딱 맞추면 페이지당 3~4개라 번호가 100개를 넘어
+ * 넘기기가 더 불편해진다. 목록 칸 안에서 두 화면쯤 스크롤되는 값으로 잡았다.
+ * ponytail: 조절값이다. 목록을 더 짧게 하려면 이 숫자만 줄인다.
+ */
+const PAGE_SIZE = 12;
 
 type DongExplorerProps = {
   dongs: DongSummary[];
@@ -34,12 +43,30 @@ export function DongExplorer({
   const [detail, setDetail] = useState<DongDetail | null>(null);
   const [detailState, setDetailState] = useState<DetailState>("idle");
   const [reloadToken, setReloadToken] = useState(0);
+  const [page, setPage] = useState(1);
   const detailRef = useRef<HTMLElement>(null);
+  const listBoxRef = useRef<HTMLDivElement>(null);
   const cache = useRef(new Map<string, DongDetail>());
 
   const visibleDongs = useMemo(() => filterDongs(dongs, filter), [dongs, filter]);
   const selectedDong = dongs.find((dong) => dong.dong_id === selectedId) ?? null;
 
+  // 필터가 바뀌면 목록이 줄어드니 들고 있던 번호를 그대로 쓰지 않는다
+  const totalPages = pageCount(visibleDongs.length, PAGE_SIZE);
+  const currentPage = clampPage(page, visibleDongs.length, PAGE_SIZE);
+  const pagedDongs = visibleDongs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const changeFilter = useCallback((next: DongFilter) => {
+    setFilter(next);
+    setPage(1);
+  }, []);
+
+  const changePage = useCallback((next: number) => {
+    setPage(next);
+    listBoxRef.current?.scrollTo({ top: 0 });
+  }, []);
+
+  // 지도는 페이지와 상관없이 필터에 걸린 동을 전부 찍는다
   const mapItems = useMemo<MapItem[]>(
     () =>
       visibleDongs.flatMap((dong) => {
@@ -115,29 +142,44 @@ export function DongExplorer({
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
-      <section aria-label="검색과 동 목록" className="space-y-4">
-        <SearchPanel
-          filter={filter}
-          onChange={setFilter}
-          guNames={guNames}
-          tags={tags}
-          resultCount={visibleDongs.length}
-        />
-        {visibleDongs.length === 0 ? (
-          <EmptyState
-            title="검색 조건에 맞는 동이 없습니다."
-            description="검색어를 줄이거나 필터를 해제해 보세요."
-            action={
-              isFilterActive(filter) ? (
-                <Button variant="outline" size="sm" onClick={() => setFilter(EMPTY_FILTER)}>
-                  필터 초기화
-                </Button>
-              ) : undefined
-            }
+      {/* 동이 300개가 넘어 목록을 그대로 펼치면 문서가 4만px를 넘고 오른쪽 열이 통째로 빈다.
+          넓은 폭에서는 검색과 페이지 번호를 고정하고 목록 칸만 남는 높이를 채운다.
+          오프셋 65px = 헤더 49px + main 위 여백 16px, 81px는 아래 여백 16px까지 뺀 값이다. */}
+      <section
+        aria-label="검색과 동 목록"
+        className="space-y-4 lg:sticky lg:top-[65px] lg:flex lg:h-[calc(100dvh-81px)] lg:flex-col lg:self-start lg:space-y-0 lg:pr-1"
+      >
+        <div className="lg:shrink-0 lg:pb-4">
+          <SearchPanel
+            filter={filter}
+            onChange={changeFilter}
+            guNames={guNames}
+            tags={tags}
+            resultCount={visibleDongs.length}
           />
-        ) : (
-          <DongList dongs={visibleDongs} selectedId={selectedId} onSelect={setSelectedId} />
-        )}
+        </div>
+
+        <div ref={listBoxRef} className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+          {visibleDongs.length === 0 ? (
+            <EmptyState
+              title="검색 조건에 맞는 동이 없습니다."
+              description="검색어를 줄이거나 필터를 해제해 보세요."
+              action={
+                isFilterActive(filter) ? (
+                  <Button variant="outline" size="sm" onClick={() => changeFilter(EMPTY_FILTER)}>
+                    필터 초기화
+                  </Button>
+                ) : undefined
+              }
+            />
+          ) : (
+            <DongList dongs={pagedDongs} selectedId={selectedId} onSelect={setSelectedId} />
+          )}
+        </div>
+
+        <div className="mt-4 lg:mt-0 lg:shrink-0 lg:pt-4">
+          <Pagination page={currentPage} totalPages={totalPages} onChange={changePage} />
+        </div>
       </section>
 
       <div className="space-y-4">
