@@ -25,7 +25,7 @@ export function ComparisonCard({ comparison, dongName, guName }: ComparisonCardP
         <SectionHeading
           eyebrow="비교"
           title="서울·자치구·동 흐름"
-          description="순위가 아니라 선택한 동이 어느 위치에 있는지 보기 위한 비교입니다."
+          description="순위가 아니라, 선택한 동이 어디쯤인지 보려고 나란히 놓은 값이에요."
         />
         <ul className="space-y-2">
           {rows.map((row) => (
@@ -44,7 +44,7 @@ export function ComparisonCard({ comparison, dongName, guName }: ComparisonCardP
           ))}
         </ul>
         <p className="text-xs text-muted-foreground">
-          값이 없는 항목은 해당 기간의 추정값을 제공하지 않는 경우입니다.
+          값이 없는 항목은 그 기간의 추정값이 없다는 뜻이에요.
         </p>
       </CardBody>
     </Card>

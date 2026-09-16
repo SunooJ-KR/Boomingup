@@ -17,10 +17,10 @@ export function AreaStatsCard({ stats, period }: AreaStatsCardProps) {
         <SectionHeading
           eyebrow="과거 실적"
           title="면적대별 거래"
-          description={`${period}에 실제로 있었던 매매를 모은 값입니다. 앞으로의 가격을 뜻하지 않습니다.`}
+          description={`${period}에 실제로 있었던 매매를 모은 값이에요. 앞으로의 가격을 뜻하지 않아요.`}
         />
         {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">해당 기간에 집계된 매매가 없습니다.</p>
+          <p className="text-sm text-muted-foreground">이 기간에는 매매가 없어요.</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
@@ -60,7 +60,7 @@ export function AreaStatsCard({ stats, period }: AreaStatsCardProps) {
           </table>
         )}
         <p className="text-xs text-muted-foreground">
-          거래 수가 적은 면적대는 중위 가격이 크게 흔들릴 수 있습니다.
+          거래가 적은 면적대는 중위 가격이 크게 흔들릴 수 있어요.
         </p>
       </CardBody>
     </Card>
