@@ -1,15 +1,20 @@
 import { Card, CardBody } from "@/components/ui/card";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { formatPct } from "@/lib/format";
-import type { DongComparison } from "@/lib/types";
+import { formatPct, formatQuarter } from "@/lib/format";
+import { shiftQuarter } from "@/lib/quarter";
+import type { DongComparison, Meta } from "@/lib/types";
 
 type ComparisonCardProps = {
   comparison: DongComparison;
   dongName: string;
   guName: string;
+  meta: Meta;
 };
 
-export function ComparisonCard({ comparison, dongName, guName }: ComparisonCardProps) {
+export function ComparisonCard({ comparison, dongName, guName, meta }: ComparisonCardProps) {
+  // 예측과 같은 길이의 과거 구간을 본다. 기준이 2026Q2면 2025Q2부터 2026Q2까지다.
+  const quarters = Math.round(meta.horizon_months / 3);
+  const fromQuarter = shiftQuarter(meta.as_of_quarter, -quarters);
   const rows = [
     { label: "서울 전체", value: comparison.seoul_change_pct },
     { label: guName, value: comparison.gu_change_pct },
@@ -22,10 +27,12 @@ export function ComparisonCard({ comparison, dongName, guName }: ComparisonCardP
   return (
     <Card>
       <CardBody className="space-y-3">
+        {/* 바로 위 예측 카드와 기간 길이가 같아 추정값으로 읽히기 쉽다.
+            제목과 설명에서 지난 기간의 실제 값이라는 것을 먼저 밝힌다. */}
         <SectionHeading
-          eyebrow="비교"
-          title="서울·자치구·동 흐름"
-          description="순위가 아니라 선택한 동이 어느 위치에 있는지 보기 위한 비교입니다."
+          eyebrow="과거 실적"
+          title={`지난 ${meta.horizon_months}개월 실제 변화율`}
+          description={`${formatQuarter(fromQuarter)}부터 ${formatQuarter(meta.as_of_quarter)}까지 실제로 일어난 변화예요. 위 카드의 추정값과는 다른 값이에요.`}
         />
         <ul className="space-y-2">
           {rows.map((row) => (
@@ -44,7 +51,8 @@ export function ComparisonCard({ comparison, dongName, guName }: ComparisonCardP
           ))}
         </ul>
         <p className="text-xs text-muted-foreground">
-          값이 없는 항목은 해당 기간의 추정값을 제공하지 않는 경우입니다.
+          서울과 자치구는 예측 대상 동을 동 단위로 단순 평균한 값이에요. 거래가 많은 동이 더 크게
+          반영되지는 않아요. 값이 없으면 그 기간 지수를 계산하지 못했다는 뜻이에요.
         </p>
       </CardBody>
     </Card>

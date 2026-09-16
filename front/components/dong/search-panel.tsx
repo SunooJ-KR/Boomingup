@@ -45,7 +45,7 @@ export function SearchPanel({ filter, onChange, guNames, tags, resultCount }: Se
         <Input
           id="dong-search"
           type="search"
-          placeholder="동 이름 또는 자치구 이름"
+          placeholder="예: 개포동, 강남구"
           value={filter.query}
           onChange={(event) => onChange({ ...filter, query: event.target.value })}
         />
@@ -111,7 +111,7 @@ export function SearchPanel({ filter, onChange, guNames, tags, resultCount }: Se
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                태그는 지역의 관측된 특징이며 좋고 나쁨을 뜻하지 않습니다.
+                태그는 동네에서 관측된 특징이에요. 좋고 나쁨을 뜻하지 않아요.
               </p>
             </fieldset>
           ) : null}
@@ -126,7 +126,7 @@ export function SearchPanel({ filter, onChange, guNames, tags, resultCount }: Se
             size="sm"
             onClick={() => onChange({ query: "", gu: null, statuses: [], tags: [] })}
           >
-            필터 초기화
+            필터 지우기
           </Button>
         ) : null}
       </div>

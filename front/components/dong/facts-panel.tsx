@@ -29,7 +29,7 @@ export function FactsPanel({ facts, permitZone, regulationAsOf }: FactsPanelProp
         <SectionHeading
           eyebrow="관측 정보"
           title="사실정보"
-          description="예측의 근거가 아니라, 같이 보면 좋은 관측값입니다."
+          description="예측의 근거는 아니지만, 같이 보면 좋은 값이에요."
         />
         <dl className="grid grid-cols-2 gap-3 text-sm">
           <Fact label="최근 1년 매매" value={`${facts.n_sales_4q}건`} />
@@ -66,7 +66,7 @@ export function FactsPanel({ facts, permitZone, regulationAsOf }: FactsPanelProp
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">매칭된 정비사업 구역이 없습니다.</p>
+            <p className="text-sm text-muted-foreground">연결된 정비사업 구역이 없어요.</p>
           )}
         </div>
       </CardBody>

@@ -10,7 +10,7 @@ export function ComplexList({ complexes }: { complexes: Complex[] }) {
       <CardBody className="space-y-3">
         <SectionHeading eyebrow="단지" title="단지와 최근 거래" />
         {complexes.length === 0 ? (
-          <p className="text-sm text-muted-foreground">표시할 단지 정보가 없습니다.</p>
+          <p className="text-sm text-muted-foreground">보여줄 단지 정보가 없어요.</p>
         ) : (
           <ul className="divide-y divide-border">
             {complexes.map((complex) => (
@@ -42,7 +42,7 @@ export function ComplexList({ complexes }: { complexes: Complex[] }) {
                     {formatManwon(complex.last_sale.price_manwon)}
                   </p>
                 ) : (
-                  <p className="mt-1.5 text-xs text-muted-foreground">최근 매매 기록이 없습니다.</p>
+                  <p className="mt-1.5 text-xs text-muted-foreground">최근 매매 기록이 없어요.</p>
                 )}
               </li>
             ))}

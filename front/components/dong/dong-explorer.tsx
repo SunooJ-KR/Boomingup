@@ -189,12 +189,12 @@ export function DongExplorer({
         <div ref={listBoxRef} className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
           {visibleDongs.length === 0 ? (
             <EmptyState
-              title="검색 조건에 맞는 동이 없습니다."
-              description="검색어를 줄이거나 필터를 해제해 보세요."
+              title="검색 조건에 맞는 동이 없어요."
+              description="검색어를 줄이거나 필터를 풀어보세요."
               action={
                 isFilterActive(filter) ? (
                   <Button variant="outline" size="sm" onClick={() => changeFilter(EMPTY_FILTER)}>
-                    필터 초기화
+                    필터 지우기
                   </Button>
                 ) : undefined
               }

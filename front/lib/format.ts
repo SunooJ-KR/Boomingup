@@ -1,15 +1,16 @@
 import type { Meta, PredictionStatus } from "./types";
 
 const STATUS_LABEL: Record<PredictionStatus, string> = {
-  PREDICTED: "예측 제공",
-  INSUFFICIENT_SALES: "표본 부족",
-  NOT_SERVED: "예측 미제공",
+  PREDICTED: "예측 있음",
+  INSUFFICIENT_SALES: "매매 적음",
+  NOT_SERVED: "예측 없음",
 };
 
 const STATUS_REASON: Record<PredictionStatus, string> = {
   PREDICTED: "",
-  INSUFFICIENT_SALES: "최근 1년 매매가 적어 예측하지 않음",
-  NOT_SERVED: "모델 검증 기준을 통과하지 못해 예측하지 않음",
+  // 목록 카드에서는 옆에 매매 건수가 함께 보이므로 기간을 다시 적지 않는다
+  INSUFFICIENT_SALES: "매매가 적어서 예측하지 않았어요",
+  NOT_SERVED: "검증 기준을 넘지 못해서 예측하지 않았어요",
 };
 
 export function statusLabel(status: PredictionStatus) {
@@ -45,13 +46,13 @@ export function formatQuarter(quarter: string) {
 }
 
 export function formatHorizon(meta: Meta) {
-  return `향후 ${meta.horizon_months}개월 추정 변화율`;
+  return `앞으로 ${meta.horizon_months}개월 추정 변화율`;
 }
 
 /** coverage는 반올림한 정수 퍼센트로 안내한다 */
 export function formatCoverage(meta: Meta) {
   const pct = Math.round(meta.interval_coverage_backtest * 100);
-  return `과거 검증에서 실제 변화율이 추정 구간 안에 든 비율은 약 ${pct}%이며, 시장 흐름이 바뀌는 시기에는 더 낮았습니다.`;
+  return `지난 검증에서 실제 변화율이 추정 구간 안에 든 비율은 약 ${pct}%예요. 시장 흐름이 바뀌는 시기에는 더 낮았어요.`;
 }
 
 export function formatManwon(price: number | null | undefined) {

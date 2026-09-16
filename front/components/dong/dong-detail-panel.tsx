@@ -21,8 +21,8 @@ export function DongDetailPanel({ dong, detail, meta, state, onRetry }: DongDeta
   if (!dong) {
     return (
       <EmptyState
-        title="동을 검색하거나 목록에서 선택하세요."
-        description="선택한 동의 추정 변화율과 관측 정보를 함께 보여줍니다."
+        title="동을 검색하거나 목록에서 선택해주세요."
+        description="선택한 동의 추정 변화율과 관측 정보를 함께 보여드려요."
       />
     );
   }
@@ -38,7 +38,7 @@ export function DongDetailPanel({ dong, detail, meta, state, onRetry }: DongDeta
     return (
       <div className="space-y-3">
         {header}
-        <EmptyState title="상세 정보를 불러오는 중입니다." />
+        <EmptyState title="상세 정보를 불러오고 있어요." />
       </div>
     );
   }
@@ -48,12 +48,12 @@ export function DongDetailPanel({ dong, detail, meta, state, onRetry }: DongDeta
       <div className="space-y-3">
         {header}
         <EmptyState
-          title="상세 정보를 불러오지 못했습니다."
-          description="잠시 후 다시 시도해 주세요."
+          title="상세 정보를 불러오지 못했어요."
+          description="잠시 후 다시 시도해주세요."
           action={
             onRetry ? (
               <Button variant="outline" size="sm" onClick={onRetry}>
-                다시 시도
+                다시 시도하기
               </Button>
             ) : undefined
           }
@@ -80,6 +80,7 @@ export function DongDetailPanel({ dong, detail, meta, state, onRetry }: DongDeta
           comparison={detail.comparison}
           dongName={dong.umd_name}
           guName={dong.gu_name}
+          meta={meta}
         />
       ) : null}
 

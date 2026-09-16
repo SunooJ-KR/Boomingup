@@ -125,7 +125,7 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
           {mode === "kakao"
             ? `${items.length}개 동`
             : mode === "loading"
-              ? "지도를 불러오는 중"
+              ? "지도를 불러오고 있어요"
               : "좌표 미리보기"}
         </p>
       </div>
@@ -143,13 +143,13 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
 
       {mode === "fallback" ? (
         <p className="shrink-0 border-t border-border px-3 py-2 text-xs text-muted-foreground">
-          Kakao 지도 키가 없거나 불러오지 못해 좌표 위치만 보여줍니다. 동 선택은 그대로 됩니다.
+          지도를 불러오지 못해서 좌표 위치만 보여주고 있어요. 동 선택은 그대로 할 수 있어요.
         </p>
       ) : null}
 
       {items.length === 0 ? (
         <p className="shrink-0 border-t border-border px-3 py-2 text-xs text-muted-foreground">
-          표시할 좌표가 없습니다. 목록에서 동을 선택해 주세요.
+          보여줄 좌표가 없어요. 목록에서 동을 선택해주세요.
         </p>
       ) : null}
     </div>
