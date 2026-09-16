@@ -11,7 +11,7 @@ pd.set_option("display.width", 120)
 sale = query_df("""
     select deal_year, deal_month, exclu_use_ar, floor, deal_amount_manwon, is_cancelled
     from app.trade_sale
-    where deal_amount_manwon is not null and exclu_use_ar > 0;
+    where deal_amount_manwon > 0 and exclu_use_ar > 0;
 """)
 
 # --- 취소 거래 비율 추이 (전체 포함, 취소 제외 안함) ---
