@@ -61,17 +61,6 @@
 
 입지 지표·단지 지표(`23.*`)와 정비사업 단지 매칭(`31.1`)은 쓰지 않는다. 입지·용적률 feature는 결정 14 선별에서 제외됐고, 정비사업은 42가 원천 파일에서 동 단위로 직접 집계한다.
 
-## 6-1. 행정동 경계 (자치구 경계용)
-
-| 항목 | 내용 |
-|---|---|
-| 파일 | `output/raw/boundary/hangjeongdong_서울특별시.geojson` (서울 425개 행정동, 0.89MB) |
-| 좌표계 | EPSG:4326(CRS84). 변환 없이 바로 쓴다 |
-| 속성 | `adm_nm`, `adm_cd`, `adm_cd2`, `sgg`, `sido`, `sidonm`, `sggnm` |
-| 쓰임 | 자치구 경계만 만든다. `53`이 `sgg`로 묶어 자치구 안쪽 선을 지운 뒤 25개 도형으로 합친다 |
-| 동 경계로 쓰지 않는 이유 | 행정동이라 지수의 법정동 키와 맞지 않는다. 지수 법정동 346개 중 이름이 맞는 것이 169개뿐이고, 법정동 여러 개를 묶은 행정동(청운효자동 등)은 다시 쪼갤 수 없다(결정 45) |
-| 출처 표기 | **확인 필요.** 받은 파일에 출처·기준일 정보가 없다. 확정 전까지 화면에는 "출처 확인 중"으로 나간다 |
-
 ## 6. 법정동 경계 (지도용)
 
 | 항목 | 내용 |
@@ -82,6 +71,8 @@
 | 출처 표기 | "행정구역 경계: GIS Developer(gisdeveloper.co.kr), 원본 도로명주소 DB" |
 | 산출물 | `output/52.1.seoul_bjd_boundary.geojson`(서울 467개 법정동, 3.8MB), `output/52.2.dong_boundary_match.txt`(지수 346개 동 중 340개 매칭, 6개는 §1 품질 이슈), `front/public/data/dong-boundary.geojson`(53이 지수 동 340개만 줄여서 내보낸 프론트 지도용 파일, 결정 42), `front/public/data/gu-boundary.geojson`(53이 동 경계를 합쳐 만든 자치구 25개 경계, 결정 44) |
 | 검토했지만 쓰지 않은 출처 (2026-09-15) | 공공데이터포털 국토지리정보원 읍면동경계(15062310)·공간정보공동활용 읍면동(15123128): 404 / 국가공간정보포털 행정구역_읍면동(법정동): 서버 DNS 해석 실패, 우회 수집 33회 실패 / 서울 열린데이터광장 OA-13221: 2021-07-16 제공 종료, 공공누리 3유형(변경금지) / 서울 데이터허브 법정동 경계: 다운로드가 동적 스크립트라 경로 미확보 / 주소기반산업지원서비스 구역 도형: 목록 페이지 404, 제공은 기관 승인 필요 / VWorld WFS `LT_C_ADEMD_INFO`: 인증키 필요(미보유) / 지오서비스웹 아카이브(2023-12 이후판): 로그인·결제 경로 |
+| 52.1 복원 | 원천 SHP가 없어도 `app.dong_boundary`에서 같은 파일을 만들 수 있다(결정 45). active snapshot을 읽어 `output/52.1.seoul_bjd_boundary.geojson`으로 저장한다. `properties`는 `dong`, `sgg_cd`, `emd_cd`, `umd_nm`, `eng_nm`, `in_index` 순서와 무관하게 이름만 맞으면 된다<br>`select json_build_object('type','FeatureCollection','features', json_agg(json_build_object('type','Feature','properties', json_build_object('dong',dong,'sgg_cd',sgg_cd,'emd_cd',emd_cd,'umd_nm',umd_nm,'eng_nm',eng_nm,'in_index',in_index),'geometry',geometry) order by dong)) from app.dong_boundary where snapshot_id = (select snapshot_id from app.dataset_snapshot where is_active limit 1)` |
+| 검토했지만 쓰지 않은 것 (2026-09-16) | 행정동 경계 GeoJSON(서울 425개). 자치구 경계로는 쓸 수 있지만 행정동이라 법정동 키와 맞지 않아 동 경계로 쓸 수 없고, `app.dong_boundary`로 법정동 경계를 복원할 수 있게 되어 쓰지 않는다(결정 45) |
 | 한계 | 2023-07 기준이다. 서울 법정동 경계는 변경이 드물고 지수 동 340개가 모두 매칭됐지만, 이후 경계 조정은 반영되지 않았다. 최신판이 필요하면 VWorld 인증키나 도로명주소 구역 도형 신청이 필요하다 |
 
 ## 7. 미수집
