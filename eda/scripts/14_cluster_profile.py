@@ -13,7 +13,11 @@ from _db import query_df
 pd.set_option("display.width", 140)
 
 clusters = pd.read_csv("../output/09_dong_clusters.csv")
-redevelop = pd.read_csv("../output/07_redevelop_intensity_vs_volatility.csv")[["dong", "redevelop_intensity"]]
+# v2(전체 세대수 기준) 강도를 쓴다 — v1(아파트 재고 기준)은 빌라 비중이 큰 동에서 분모가
+# 실제보다 작게 잡혀(19개 동에서 946%까지) 정비사업 비중을 과대평가하는 구조적 문제가 있다
+# (2026-09-16 확인, 07b_redevelop_intensity_v2.py).
+redevelop = pd.read_csv("../output/07b_redevelop_intensity_v2.csv")[["dong", "intensity_v2"]] \
+    .rename(columns={"intensity_v2": "redevelop_intensity"})
 
 # 2024년 이후 거래가 있는 단지만, 단지별 입지지표·준공연차·최근 ㎡당 단가를 동 단위로 모은다
 trades = query_df("""
