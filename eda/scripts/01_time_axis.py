@@ -72,9 +72,11 @@ yearly.to_csv("../output/01_yearly_yoy.csv")
 
 # market_event 목록 (규제 지정/해제 등)
 events = query_df("""
-    select event_id, effective_date, category, direction, label, verified
-    from app.market_event
-    order by effective_date;
+    select me.event_id, me.effective_date, me.category, me.direction, me.label, me.verified
+    from app.market_event me
+    join app.dataset_snapshot ds on ds.snapshot_id = me.snapshot_id
+    where ds.is_active
+    order by me.effective_date;
 """)
 print(f"\n=== market_event 목록 ({len(events)}건) ===")
 print(events.to_string(index=False))

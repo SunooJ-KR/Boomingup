@@ -55,8 +55,9 @@ grp.to_csv("../output/02_gangnam_vs_rest.csv")
 di = query_df("""
     select di.dong, d.gu_name, di.quarter, di.log_index, di.n_sales_4q, di.eligible
     from app.dong_index di
-    join app.dong d on d.dong = di.dong
-    where di.quarter in ('2025Q2', '2026Q2');
+    join app.dong d on d.dong = di.dong and d.snapshot_id = di.snapshot_id
+    join app.dataset_snapshot ds on ds.snapshot_id = di.snapshot_id
+    where ds.is_active and di.quarter in ('2025Q2', '2026Q2');
 """)
 wide = di.pivot(index=["dong", "gu_name"], columns="quarter", values=["log_index", "eligible"])
 wide.columns = ["_".join(c) for c in wide.columns]

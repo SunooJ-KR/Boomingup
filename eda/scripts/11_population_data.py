@@ -66,7 +66,13 @@ def build_bcode_cache():
         print("b_code 캐시 재사용:", BCODE_CACHE_PATH)
         return pd.read_csv(BCODE_CACHE_PATH, dtype=str)
 
-    dong = query_df("select dong, sgg_cd, umd_nm, gu_name from app.dong order by dong;")
+    dong = query_df("""
+        select d.dong, d.sgg_cd, d.umd_nm, d.gu_name
+        from app.dong d
+        join app.dataset_snapshot ds on ds.snapshot_id = d.snapshot_id
+        where ds.is_active
+        order by d.dong;
+    """)
     rows = []
     for i, r in dong.iterrows():
         bcode, ret_gu, ret_dong, matched = None, None, None, False

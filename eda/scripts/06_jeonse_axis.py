@@ -9,6 +9,7 @@ v2 (2026-09-16 codex 검증 후 수정): idx를 eligible=true로만 가져와 �
 결정 7은 기점 직전 4분기 기준만 요구함). eligible 필터를 빼고 log_index를 전부 가져온 뒤,
 기점 적격성은 이미 있던 sale_n_all_4q>=20 조건 하나로만 건다.
 """
+import numpy as np
 import pandas as pd
 from scipy import stats
 
@@ -17,14 +18,17 @@ from _db import query_df
 pd.set_option("display.width", 120)
 
 feat = query_df("""
-    select dong, as_of_quarter, jeonse_ratio_4q, sale_n_all_4q
-    from app.dong_feature
-    where jeonse_ratio_4q is not null;
+    select f.dong, f.as_of_quarter, f.jeonse_ratio_4q, f.sale_n_all_4q
+    from app.dong_feature f
+    join app.dataset_snapshot ds on ds.snapshot_id = f.snapshot_id
+    where ds.is_active and f.jeonse_ratio_4q is not null;
 """)
 
 idx = query_df("""
-    select dong, quarter, log_index
-    from app.dong_index;
+    select di.dong, di.quarter, di.log_index
+    from app.dong_index di
+    join app.dataset_snapshot ds on ds.snapshot_id = di.snapshot_id
+    where ds.is_active;
 """)
 
 def add_quarters(q, n):
@@ -71,10 +75,14 @@ print(by_year.round(3).to_string())
 by_year.to_csv("../output/06_jeonse_correlation_by_year.csv")
 
 # 전세가율 5분위별 이후 1년 변화율
+# future_change_1y는 log 변화량이라 그대로 ×100 하면 실제 %가 아니다 — 행마다 먼저
+# expm1(실제 상승률)로 바꾼 뒤 평균낸다(2026-09-16, codex 재검증에서 지적됨. 02번 축과 같은
+# log-vs-percent 문제가 이 스크립트에는 반영이 안 돼 있었다).
+m["future_change_1y_pct"] = np.expm1(m["future_change_1y"]) * 100
 m["jeonse_bin"] = pd.qcut(m["jeonse_ratio_4q"], 5, labels=["Q1(낮음)", "Q2", "Q3", "Q4", "Q5(높음)"])
 bin_summary = m.groupby("jeonse_bin", observed=True)["future_change_1y"].agg(n="size", median="median", mean="mean")
-bin_summary["mean_pct"] = bin_summary["mean"] * 100
-print("\n=== 전세가율 5분위별 1년 뒤 매매지수 변화(log, %) ===")
+bin_summary["mean_pct"] = m.groupby("jeonse_bin", observed=True)["future_change_1y_pct"].mean()
+print("\n=== 전세가율 5분위별 1년 뒤 매매지수 변화(mean/median은 log, mean_pct는 실제 %) ===")
 print(bin_summary.round(4).to_string())
 bin_summary.to_csv("../output/06_jeonse_ratio_vs_future_change.csv")
 

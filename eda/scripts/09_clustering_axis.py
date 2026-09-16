@@ -15,8 +15,9 @@ pd.set_option("display.width", 120)
 idx = query_df("""
     select di.dong, d.gu_name, di.quarter, di.log_index
     from app.dong_index di
-    join app.dong d on d.dong = di.dong
-    where di.quarter >= '2016Q1' and di.eligible = true;
+    join app.dong d on d.dong = di.dong and d.snapshot_id = di.snapshot_id
+    join app.dataset_snapshot ds on ds.snapshot_id = di.snapshot_id
+    where ds.is_active and di.quarter >= '2016Q1' and di.eligible = true;
 """)
 
 wide = idx.pivot(index="quarter", columns="dong", values="log_index").sort_index()

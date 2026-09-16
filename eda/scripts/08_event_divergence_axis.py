@@ -17,12 +17,15 @@ from _db import query_df
 pd.set_option("display.width", 120)
 
 events = query_df("""
-    select event_id, label, effective_date, category, share_same_direction, share_up, overlapping_events
-    from app.event_summary
-    where pre_observable and post_observable;
+    select es.event_id, es.label, es.effective_date, es.category, es.share_same_direction,
+           es.share_up, es.overlapping_events
+    from app.event_summary es
+    join app.dataset_snapshot ds on ds.snapshot_id = es.snapshot_id
+    where ds.is_active and es.pre_observable and es.post_observable;
 """)
 events["dist_from_half"] = (events["share_up"].astype(float) - 0.5).abs()
-events = events.sort_values("dist_from_half").head(5)
+# 동률일 때도 항상 같은 순서가 나오도록 event_id를 2차 정렬 기준으로 둔다
+events = events.sort_values(["dist_from_half", "event_id"]).head(5)
 print("=== 상승한 동 비율이 50%에 가장 가까운(=반반으로 갈린) 이벤트 5개 ===")
 print(events[["event_id", "label", "effective_date", "share_up", "overlapping_events"]].to_string(index=False))
 events.to_csv("../output/08_low_consensus_events.csv", index=False)
@@ -34,8 +37,9 @@ print(f"\n선택된 5개 중 다른 이벤트와 ±4분기 내에 겹치는 것:
 paths = query_df("""
     select edp.event_id, edp.dong, d.gu_name, edp.k, edp.rel_log_change
     from app.event_dong_path edp
-    join app.dong d on d.dong = edp.dong
-    where edp.event_id in %s and edp.k = 4;
+    join app.dong d on d.dong = edp.dong and d.snapshot_id = edp.snapshot_id
+    join app.dataset_snapshot ds on ds.snapshot_id = edp.snapshot_id
+    where ds.is_active and edp.event_id in %s and edp.k = 4;
 """, (tuple(events["event_id"]),))
 
 results = []

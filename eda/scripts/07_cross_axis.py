@@ -20,15 +20,18 @@ from _db import query_df
 pd.set_option("display.width", 120)
 
 feat = query_df("""
-    select dong, as_of_quarter, rz_events_4q, rz_active_households, stock_hh
-    from app.dong_feature
-    where rz_events_4q is not null;
+    select f.dong, f.as_of_quarter, f.rz_events_4q, f.rz_active_households, f.stock_hh
+    from app.dong_feature f
+    join app.dataset_snapshot ds on ds.snapshot_id = f.snapshot_id
+    where ds.is_active and f.rz_events_4q is not null;
 """)
 
 idx = query_df("""
-    select dong, quarter, log_index, eligible
-    from app.dong_index
-    order by dong, quarter;
+    select di.dong, di.quarter, di.log_index, di.eligible
+    from app.dong_index di
+    join app.dataset_snapshot ds on ds.snapshot_id = di.snapshot_id
+    where ds.is_active
+    order by di.dong, di.quarter;
 """)
 
 
