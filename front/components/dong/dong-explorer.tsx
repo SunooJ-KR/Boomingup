@@ -10,15 +10,15 @@ import { Pagination } from "@/components/dong/pagination";
 import { SearchPanel } from "@/components/dong/search-panel";
 import { Button } from "@/components/ui/button";
 import { EMPTY_FILTER, filterDongs, isFilterActive, type DongFilter } from "@/lib/filter";
-import { clampPage, pageCount } from "@/lib/paginate";
+import { clampPage, fitPageSize, pageCount } from "@/lib/paginate";
 import type { DongDetail, DongSummary, Meta } from "@/lib/types";
 
-/**
- * 한 페이지에 담는 동 개수. 화면 높이에 딱 맞추면 페이지당 3~4개라 번호가 100개를 넘어
- * 넘기기가 더 불편해진다. 목록 칸 안에서 두 화면쯤 스크롤되는 값으로 잡았다.
- * ponytail: 조절값이다. 목록을 더 짧게 하려면 이 숫자만 줄인다.
- */
-const PAGE_SIZE = 12;
+/** 목록과 상세가 두 열로 갈리는 폭. Tailwind lg와 같은 값이다 */
+const DESKTOP_QUERY = "(min-width: 1024px)";
+/** 목록 칸 높이를 재기 전, 그리고 한 열로 쌓이는 좁은 화면에서 쓰는 한 페이지 개수 */
+const DEFAULT_PAGE_SIZE = 10;
+/** 목록 항목 사이 간격(space-y-2) */
+const ITEM_GAP_PX = 8;
 
 type DongExplorerProps = {
   dongs: DongSummary[];
@@ -44,6 +44,7 @@ export function DongExplorer({
   const [detailState, setDetailState] = useState<DetailState>("idle");
   const [reloadToken, setReloadToken] = useState(0);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const detailRef = useRef<HTMLElement>(null);
   const listBoxRef = useRef<HTMLDivElement>(null);
   const cache = useRef(new Map<string, DongDetail>());
@@ -52,9 +53,9 @@ export function DongExplorer({
   const selectedDong = dongs.find((dong) => dong.dong_id === selectedId) ?? null;
 
   // 필터가 바뀌면 목록이 줄어드니 들고 있던 번호를 그대로 쓰지 않는다
-  const totalPages = pageCount(visibleDongs.length, PAGE_SIZE);
-  const currentPage = clampPage(page, visibleDongs.length, PAGE_SIZE);
-  const pagedDongs = visibleDongs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const totalPages = pageCount(visibleDongs.length, pageSize);
+  const currentPage = clampPage(page, visibleDongs.length, pageSize);
+  const pagedDongs = visibleDongs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const changeFilter = useCallback((next: DongFilter) => {
     setFilter(next);
@@ -64,6 +65,30 @@ export function DongExplorer({
   const changePage = useCallback((next: number) => {
     setPage(next);
     listBoxRef.current?.scrollTo({ top: 0 });
+  }, []);
+
+  // 두 열로 갈리는 폭에서는 목록 칸에 들어가는 만큼만 한 페이지에 담는다.
+  // 창 크기가 바뀌면 다시 잰다. 한 열로 쌓이는 폭에서는 페이지 전체가 흐르므로 기본값을 쓴다.
+  // ponytail: 항목 높이를 평균으로 어림한다. 태그가 긴 항목이 모이면 목록 칸 안에서 조금 스크롤된다.
+  useEffect(() => {
+    const box = listBoxRef.current;
+    if (!box) return;
+
+    const measure = () => {
+      if (!window.matchMedia(DESKTOP_QUERY).matches) {
+        setPageSize(DEFAULT_PAGE_SIZE);
+        return;
+      }
+      const items = [...box.querySelectorAll("li")];
+      if (items.length === 0) return;
+      const sum = items.reduce((total, li) => total + li.getBoundingClientRect().height, 0);
+      setPageSize(fitPageSize(box.clientHeight, sum / items.length + ITEM_GAP_PX));
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(box);
+    return () => observer.disconnect();
   }, []);
 
   // 지도는 페이지와 상관없이 필터에 걸린 동을 전부 찍는다

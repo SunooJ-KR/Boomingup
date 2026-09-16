@@ -118,7 +118,7 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
       </div>
 
       {mode === "kakao" || mode === "loading" ? (
-        <div ref={containerRef} className="h-[320px] w-full bg-muted" />
+        <div ref={containerRef} className="h-[320px] lg:h-[38dvh] lg:max-h-[520px] lg:min-h-[260px] w-full bg-muted" />
       ) : (
         <FallbackPreview items={items} selectedId={selectedId} onSelect={onSelect} />
       )}
@@ -140,7 +140,7 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
 
 function FallbackPreview({ items, selectedId, onSelect }: Omit<MapPanelProps, "kakaoJsKey">) {
   return (
-    <div className="relative h-[320px] w-full bg-muted">
+    <div className="relative h-[320px] lg:h-[38dvh] lg:max-h-[520px] lg:min-h-[260px] w-full bg-muted">
       {items.map((item) => {
         const { x, y } = projectToMap(item.lat, item.lng);
         return (

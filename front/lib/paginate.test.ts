@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { clampPage, pageCount, pageWindow } from "./paginate.ts";
+import { clampPage, fitPageSize, pageCount, pageWindow } from "./paginate.ts";
 
 test("항목이 없어도 페이지는 1개다", () => {
   assert.equal(pageCount(0, 10), 1);
@@ -28,4 +28,18 @@ test("페이지가 적으면 생략 표시 없이 전부 보여준다", () => {
   assert.deepEqual(pageWindow(1, 1), [1]);
   assert.deepEqual(pageWindow(2, 4), [1, 2, 3, 4]);
   assert.deepEqual(pageWindow(1, 0), []);
+});
+
+test("한 페이지 개수는 목록 칸 높이에 들어가는 만큼으로 정해진다", () => {
+  // 높이 900에 항목 120짜리면 7개가 들어가지만 최소 8개는 보여준다
+  assert.equal(fitPageSize(900, 120), 8);
+  assert.equal(fitPageSize(1800, 120), 15);
+  // 화면이 아주 커도 상한을 넘지 않는다
+  assert.equal(fitPageSize(9000, 120), 24);
+});
+
+test("높이를 재지 못하면 최소 개수로 돌아간다", () => {
+  assert.equal(fitPageSize(0, 120), 8);
+  assert.equal(fitPageSize(900, 0), 8);
+  assert.equal(fitPageSize(Number.NaN, 120), 8);
 });
