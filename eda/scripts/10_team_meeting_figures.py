@@ -310,27 +310,31 @@ save(fig, "09_cluster_size_imbalance")
 # ============================================================
 # 10. 인구 변화율 vs 1년 매매가 변화율 산점도
 # (이전 버전은 이 그림을 스크립트 밖에서 즉석으로 그려서 재현 코드가 없었다
-#  — 2026-09-16 codex 검증에서 지적됨. 이번엔 스크립트에 편입한다)
+#  — 2026-09-16 codex 검증에서 지적됨. 이번엔 스크립트에 편입한다.
+#  v2: 보광동 하나가 상관을 만드는 이상치라는 걸(6·7번 축과 같은 패턴) 그대로 보여준다)
 # ============================================================
 pv = pd.read_csv("../output/12_population_vs_price.csv")
+corr_sum10 = pd.read_csv("../output/12_population_correlation_summary.csv").iloc[0]
+is_bg = pv["dong"] == "11170_보광동"
 
 fig, ax = plt.subplots(figsize=(8.5, 6.5))
-ax.scatter(pv["pop_change_pct"], pv["yoy_change_pct"], color=TEAL, alpha=0.55, s=26, zorder=3,
-           edgecolor="white", linewidth=0.4)
-bg10 = pv[pv["dong"] == "11170_보광동"]
-if not bg10.empty:
-    ax.scatter(bg10["pop_change_pct"], bg10["yoy_change_pct"], color=RED, s=90, zorder=5,
-               edgecolor="white", linewidth=0.8)
-    ax.annotate(
-        f"보광동(용산구)\n인구 {bg10['pop_change_pct'].iloc[0]:.1f}%, 가격 {bg10['yoy_change_pct'].iloc[0]:.1f}%",
-        xy=(bg10["pop_change_pct"].iloc[0], bg10["yoy_change_pct"].iloc[0]),
-        xytext=(15, -8), textcoords="offset points", fontsize=10, color=RED, weight="bold")
+ax.scatter(pv.loc[~is_bg, "pop_change_pct"], pv.loc[~is_bg, "yoy_change_pct"], color=TEAL, alpha=0.55,
+           s=26, zorder=3, edgecolor="white", linewidth=0.4, label="보광동 제외 230개 동")
+bg10 = pv[is_bg]
+ax.scatter(bg10["pop_change_pct"], bg10["yoy_change_pct"], color=RED, s=100, zorder=5,
+           edgecolor="white", linewidth=0.8, label="보광동")
+ax.annotate(
+    f"보광동(용산구)\n인구 {bg10['pop_change_pct'].iloc[0]:.1f}%, 가격 {bg10['yoy_change_pct'].iloc[0]:.1f}%",
+    xy=(bg10["pop_change_pct"].iloc[0], bg10["yoy_change_pct"].iloc[0]),
+    xytext=(15, -8), textcoords="offset points", fontsize=10, color=RED, weight="bold")
 z10 = np.polyfit(pv["pop_change_pct"], pv["yoy_change_pct"], 1)
 xs10 = np.linspace(pv["pop_change_pct"].min(), pv["pop_change_pct"].max(), 50)
-ax.plot(xs10, np.polyval(z10, xs10), color=NAVY, linewidth=2, zorder=4)
+ax.plot(xs10, np.polyval(z10, xs10), color=NAVY, linewidth=2, zorder=4, linestyle="--")
 ax.axvline(0, color="#C3C2B7", linewidth=1, linestyle=":")
-corr10 = pv["pop_change_pct"].corr(pv["yoy_change_pct"])
-style_ax(ax, f"동별 인구 변화율 vs 1년 매매가 변화율 (2025Q2→2026Q2, 상관계수 {corr10:.3f})",
+ax.legend(frameon=False, fontsize=9, loc="upper right")
+style_ax(ax, f"동별 인구 변화율 vs 1년 매매가 변화율 — 보광동 제외 시 관계 사라짐"
+             f"(전체 r={corr_sum10['pearson_r']:.3f} p={corr_sum10['p_value']:.2f}, "
+             f"제외 r={corr_sum10['pearson_r_excl_bogwangdong']:.3f})",
          "인구 변화율(%)", "매매가 변화율(%, hedonic 지수 기준)")
 fig.tight_layout()
 save(fig, "10_population_vs_price")

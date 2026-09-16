@@ -4,6 +4,7 @@
 인구 증감과 가격 증감의 관계를 본다.
 """
 import pandas as pd
+from scipy import stats
 
 pd.set_option("display.width", 140)
 
@@ -24,10 +25,22 @@ price = pd.read_csv("../output/02_dong_yoy_ranked.csv")
 merged = wide.merge(price[["dong", "yoy_change_pct"]], on="dong", how="inner")
 print(f"인구·가격 둘 다 있는 동: {len(merged)}개")
 
-corr = merged[["pop_change_pct", "yoy_change_pct"]].corr().iloc[0, 1]
-corr_hh = merged[["hh_change_pct", "yoy_change_pct"]].corr().iloc[0, 1]
-print(f"인구 변화율 vs 가격 변화율 상관계수: {corr:.3f}")
-print(f"세대수 변화율 vs 가격 변화율 상관계수: {corr_hh:.3f}")
+corr, p_value = stats.pearsonr(merged["pop_change_pct"], merged["yoy_change_pct"])
+corr_hh, p_hh = stats.pearsonr(merged["hh_change_pct"], merged["yoy_change_pct"])
+print(f"인구 변화율 vs 가격 변화율 상관계수: {corr:.3f} (p={p_value:.4f}, n={len(merged)})")
+print(f"세대수 변화율 vs 가격 변화율 상관계수: {corr_hh:.3f} (p={p_hh:.4f})")
+
+# 보광동이 이상치인지 확인 — 7번 축(정비사업 강도)과 같은 패턴(이상치 하나가 상관을 만드는지)이
+# 있는지 점검한다 (2026-09-16, codex 검증 이후 다른 축에서 반복 발견된 문제라 여기서도 확인)
+no_outlier = merged[merged["dong"] != "11170_보광동"]
+corr_wo, p_wo = stats.pearsonr(no_outlier["pop_change_pct"], no_outlier["yoy_change_pct"])
+print(f"보광동 제외 상관계수: {corr_wo:.3f} (p={p_wo:.4f}, n={len(no_outlier)})")
+
+corr_summary = pd.DataFrame([{
+    "n": len(merged), "pearson_r": corr, "p_value": p_value,
+    "pearson_r_excl_bogwangdong": corr_wo, "p_value_excl_bogwangdong": p_wo,
+}])
+corr_summary.to_csv("../output/12_population_correlation_summary.csv", index=False)
 merged.to_csv("../output/12_population_vs_price.csv", index=False)
 
 # 2번 축에서 짚었던 동들 직접 확인
