@@ -61,13 +61,13 @@ front/lib/format.ts    # isFailed 같은 상태 판정만 참고
   --card: #ffffff;
   --muted: #f6f7f9;
   --muted-foreground: #697386;
-  --primary: #4136e8;
+  --primary: #5520a8;
   --primary-foreground: #ffffff;
-  --primary-hover: #2f25c9;
-  --primary-soft: #eeedff;
+  --primary-hover: #421983;
+  --primary-soft: #f1edf8;
   --border: #e6e8ee;
   --input: #f6f7f9;
-  --ring: #4136e8;
+  --ring: #5520a8;
   --neutral-soft: #f0f1f4;
   --neutral-strong: #858b98;
   --radius: 12px;

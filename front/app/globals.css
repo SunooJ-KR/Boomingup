@@ -6,13 +6,15 @@
   --card: #ffffff;
   --muted: #f6f7f9;
   --muted-foreground: #697386;
-  --primary: #4136e8;
+  /* 브랜드색 #5520A8 기준. hover는 22% 어둡게, soft는 흰색에 8%만 섞은 값이다.
+     흰 글씨 대비 9.7:1, 흰 배경 대비 9.7:1로 모두 WCAG AAA를 넘는다 */
+  --primary: #5520a8;
   --primary-foreground: #ffffff;
-  --primary-hover: #2f25c9;
-  --primary-soft: #eeedff;
+  --primary-hover: #421983;
+  --primary-soft: #f1edf8;
   --border: #e6e8ee;
   --input: #f6f7f9;
-  --ring: #4136e8;
+  --ring: #5520a8;
   --neutral-soft: #f0f1f4;
   --neutral-strong: #858b98;
   --radius: 12px;

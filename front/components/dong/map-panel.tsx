@@ -72,13 +72,22 @@ export function MapPanel({
   const itemsRef = useRef(items);
   itemsRef.current = items;
 
-  const bounds = useMemo(() => boundsOf(items), [items]);
 
   const [dongBoundary, setDongBoundary] = useState<BoundaryCollection | null>(null);
   const [guBoundary, setGuBoundary] = useState<GuBoundaryCollection | null>(null);
   const dongPolygonsRef = useRef(new Map<string, KakaoPolygon[]>());
   const guPolygonsRef = useRef(new Map<string, KakaoPolygon[]>());
   const guLabelsRef = useRef(new Map<string, KakaoOverlay>());
+
+  /**
+   * 지도에 맞출 범위. 자치구를 고르면 그 자치구 도형 전체를 담아 가운데에 놓는다.
+   * 동 대표 좌표만으로 잡으면 단지가 몰려 있는 쪽으로 치우쳐 자치구가 화면 한쪽에 몰린다.
+   */
+  const bounds = useMemo(() => {
+    const feature = gu ? guBoundary?.features.find((f) => f.properties.gu_name === gu) : null;
+    if (!feature) return boundsOf(items);
+    return boundsOf(boundaryPaths(feature.geometry).flat(2));
+  }, [gu, guBoundary, items]);
 
   // 넓게 보고 있으면 자치구를, 확대하면 동을 보여 준다
   const [level, setLevel] = useState(SEOUL_LEVEL);
@@ -251,7 +260,7 @@ export function MapPanel({
   useEffect(() => {
     const kakao = getKakao();
     const map = mapRef.current;
-    if (mode !== "kakao" || !kakao || !map || items.length === 0) return;
+    if (mode !== "kakao" || !kakao || !map || (items.length === 0 && !gu)) return;
     map.setBounds(
       new kakao.maps.LatLngBounds(
         new kakao.maps.LatLng(bounds.minLat, bounds.minLng),
@@ -260,7 +269,7 @@ export function MapPanel({
     );
     // setBounds가 바꾼 확대 수준을 바로 읽는다. zoom_changed를 기다리면 한 박자 늦게 바뀐다
     setLevel(map.getLevel());
-  }, [bounds, items.length, mode]);
+  }, [bounds, gu, items.length, mode]);
 
   // 동을 고르면 확대 수준은 그대로 두고 그 동이 가운데에 오게만 옮긴다
   useEffect(() => {
@@ -407,9 +416,9 @@ function toKakaoPolygons(kakao: Kakao, geometry: BoundaryGeometry, onClick: () =
 function polygonStyle() {
   const token = (name: string) =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  const primary = token("--primary") || "#4136e8";
-  const primaryHover = token("--primary-hover") || "#2f25c9";
-  const primarySoft = token("--primary-soft") || "#eeedff";
+  const primary = token("--primary") || "#5520a8";
+  const primaryHover = token("--primary-hover") || "#421983";
+  const primarySoft = token("--primary-soft") || "#f1edf8";
   const muted = token("--neutral-strong") || "#858b98";
   const base = { strokeWeight: 1, strokeOpacity: 0.7, fillOpacity: 0.07 };
 
