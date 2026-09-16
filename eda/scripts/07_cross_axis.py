@@ -4,23 +4,22 @@ dong_feature의 정비사업 이벤트 수(rz_events_4q)를 기준으로 동을
 "정비사업 진행" / "일반"으로 나누고, dong_index 분기 변화율의
 표준편차(변동성)를 비교한다.
 
-v2 (2026-09-16 codex 검증 후 수정)
-① eligible=true인 행만 먼저 가져와 diff()를 하면, 중간 분기가 부적격으로 빠졌을 때
-   2개 분기 이상 차이를 1분기 변화로 계산하는 오류가 있었다. 이제 분기가 실제로 연속인
-   행끼리만 diff를 계산한다(quarter를 정수로 바꿔 이전 행과 차이가 1인지 검증).
-② redevelop_intensity(rz_active_households/stock_hh)가 273개 동 중 19개에서 1을
-   초과했다(최댓값 9.46, 보광동). "재고 대비 진행 세대 비중"이 100%를 넘는 건 분모(stock_hh)
-   커버리지가 불완전하거나 두 집계 범위가 다르기 때문으로 보이며 우리 쪽에서 고칠 수 있는
-   값이 아니다. 대신 intensity<=1(정상 범위)만 남긴 결과를 함께 보고한다.
+정비사업 강도(그 동에서 정비사업이 차지하는 비중)는 "정비구역 계획상 세대수
+(아파트·빌라 등 모든 주택 유형 포함) ÷ 그 동의 전체 세대수"로 계산한다. 전체
+세대수는 10번 축에서 받아온 행정안전부 주민등록 인구·세대현황(hh_cnt, 모든
+주택 유형 포함)을 쓴다 — 분자·분모의 대상 범위(모든 주택 유형)를 맞춰야
+비율이 뜻하는 바가 정확해진다. 이 세대수는 2026년 6월 한 시점 값이라, 분석
+기간(2011~2026년) 내내 고정값으로 적용한다는 한계가 있다.
 """
 import pandas as pd
+from scipy import stats
 
 from _db import query_df
 
 pd.set_option("display.width", 120)
 
 feat = query_df("""
-    select f.dong, f.as_of_quarter, f.rz_events_4q, f.rz_active_households, f.stock_hh
+    select f.dong, f.as_of_quarter, f.rz_events_4q, f.rz_active_households
     from app.dong_feature f
     join app.dataset_snapshot ds on ds.snapshot_id = f.snapshot_id
     where ds.is_active and f.rz_events_4q is not null;
@@ -64,24 +63,26 @@ print("\n=== 정비사업 진행 여부별 분기 변화율 평균·변동성(�
 print(vol.round(4).to_string())
 vol.to_csv("../output/07_redevelop_volatility.csv")
 
-# 정비사업 진행 강도(rz_active_households / stock_hh)와 가격 변동성의 연관성
+# 정비사업 강도(정비구역 계획 세대수 / 그 동 전체 세대수)와 가격 변동성의 연관성
 # ("이후" 변동성이 아니라 관측기간 전체 강도 최댓값 vs 전체기간 변동성의 단순 연관성 — 시차 없음)
-feat["redevelop_intensity"] = feat["rz_active_households"] / feat["stock_hh"].replace(0, pd.NA)
-intensity_by_dong = feat.groupby("dong")["redevelop_intensity"].max()
+rz_by_dong = feat.groupby("dong")["rz_active_households"].max()
+pop = pd.read_csv("../output/11_population_dong_monthly.csv")
+hh_total = pop[pop["stats_ym"] == 202606].groupby("dong")["hh_cnt"].sum().rename("hh_total")
+
 vol_by_dong = idx.dropna(subset=["qoq_change"]).groupby("dong")["qoq_change"].std()
-joined = pd.concat([intensity_by_dong, vol_by_dong.rename("volatility")], axis=1).dropna()
-joined["redevelop_intensity"] = joined["redevelop_intensity"].astype(float)
+joined = pd.concat([rz_by_dong, hh_total, vol_by_dong.rename("volatility")], axis=1).dropna()
+joined["redevelop_intensity"] = (joined["rz_active_households"] / joined["hh_total"]).astype(float)
 joined["volatility"] = joined["volatility"].astype(float)
 joined["intensity_over_1"] = joined["redevelop_intensity"] > 1
 
 corr_all = joined["redevelop_intensity"].corr(joined["volatility"])
 normal = joined[~joined["intensity_over_1"]]
 corr_normal = normal["redevelop_intensity"].corr(normal["volatility"])
-from scipy import stats
 _, p_all = stats.pearsonr(joined["redevelop_intensity"], joined["volatility"])
 _, p_normal = stats.pearsonr(normal["redevelop_intensity"], normal["volatility"])
 
-print(f"\n정비사업 강도 > 1인 동(분모 이상 의심): {joined['intensity_over_1'].sum()}개 / {len(joined)}개, "
+print(f"\n정비사업 강도 > 1인 동(정비구역 세대수가 전체 세대수보다 많음, 재건축 후기 단계로 "
+      f"실거주 세대가 줄었을 가능성): {joined['intensity_over_1'].sum()}개 / {len(joined)}개, "
       f"최댓값 {joined['redevelop_intensity'].max():.2f} ({joined['redevelop_intensity'].idxmax()})")
 print(f"전체(n={len(joined)}) 상관계수: {corr_all:.3f} (p={p_all:.3f})")
 print(f"강도<=1만(n={len(normal)}) 상관계수: {corr_normal:.3f} (p={p_normal:.3f})")

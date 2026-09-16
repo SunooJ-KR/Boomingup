@@ -273,43 +273,23 @@ fig.tight_layout()
 save(fig, "06b_jeonse_corr_by_year")
 
 # ============================================================
-# 7. 정비사업 강도 vs 가격 변동성 산점도 — 두 가지 분모 정의로 교차검증
-# (아파트 재고 기준과 전체 세대수 기준, 둘 다 유의한 관계를 찾지 못함을 나란히 보여줌)
+# 7. 정비사업 강도 vs 가격 변동성 산점도
 # ============================================================
-v2 = pd.read_csv("../output/07b_redevelop_intensity_v2.csv")
+ji = pd.read_csv("../output/07_redevelop_intensity_vs_volatility.csv")
+normal7 = ji[~ji["intensity_over_1"]]
+outliers7 = ji[ji["intensity_over_1"]]
 
-fig, axes = plt.subplots(1, 2, figsize=(13, 6.0))
-
-ax = axes[0]
-normal_v1 = v2[~v2["intensity_over_1"]]
-outlier_v1 = v2[v2["intensity_over_1"]]
-ax.scatter(normal_v1["redevelop_intensity"], normal_v1["volatility"], color=TEAL, alpha=0.6, s=26, zorder=3,
-           edgecolor="white", linewidth=0.4, label="강도 ≤ 1")
-ax.scatter(outlier_v1["redevelop_intensity"], outlier_v1["volatility"], color=RED, alpha=0.7, s=30, zorder=4,
-           edgecolor="white", linewidth=0.4, label="강도 > 1(19개 동)")
-z1 = np.polyfit(normal_v1["redevelop_intensity"], normal_v1["volatility"], 1)
-xs1 = np.linspace(normal_v1["redevelop_intensity"].min(), normal_v1["redevelop_intensity"].max(), 50)
-ax.plot(xs1, np.polyval(z1, xs1), color=NAVY, linewidth=2, zorder=5, linestyle="--")
-ax.legend(frameon=False, fontsize=8.5, loc="upper right")
-style_ax(ax, "① 분모=아파트 재고 세대수\n강도≤1: r=0.009, p=0.889",
-         "정비사업 진행 세대 비중", "분기 변화율 표준편차")
-
-ax = axes[1]
-normal_v2 = v2[~v2["intensity_v2_over_1"]].dropna(subset=["intensity_v2"])
-outlier_v2 = v2[v2["intensity_v2_over_1"]]
-ax.scatter(normal_v2["intensity_v2"], normal_v2["volatility"], color=TEAL, alpha=0.6, s=26, zorder=3,
-           edgecolor="white", linewidth=0.4, label="강도 ≤ 1")
-ax.scatter(outlier_v2["intensity_v2"], outlier_v2["volatility"], color=RED, alpha=0.7, s=30, zorder=4,
-           edgecolor="white", linewidth=0.4, label="강도 > 1(2개 동)")
-z2 = np.polyfit(normal_v2["intensity_v2"], normal_v2["volatility"], 1)
-xs2 = np.linspace(normal_v2["intensity_v2"].min(), normal_v2["intensity_v2"].max(), 50)
-ax.plot(xs2, np.polyval(z2, xs2), color=NAVY, linewidth=2, zorder=5, linestyle="--")
-ax.legend(frameon=False, fontsize=8.5, loc="upper right")
-style_ax(ax, "② 분모=전체 세대수(주민등록 인구·세대현황)\n강도≤1: r=0.067, p=0.275",
-         "정비사업 진행 세대 비중", "분기 변화율 표준편차")
-
-fig.suptitle("정비사업 진행 강도 vs 매매지수 변동성 — 분모 정의를 바꿔도 유의한 관계 없음",
-             fontsize=13, fontweight="bold", color=NAVY, y=1.02)
+fig, ax = plt.subplots(figsize=(8.5, 6.5))
+ax.scatter(normal7["redevelop_intensity"], normal7["volatility"], color=TEAL, alpha=0.6, s=28, zorder=3,
+           edgecolor="white", linewidth=0.4, label="강도 ≤ 1 (정상 범위)")
+ax.scatter(outliers7["redevelop_intensity"], outliers7["volatility"], color=RED, alpha=0.7, s=32, zorder=4,
+           edgecolor="white", linewidth=0.4, label="강도 > 1 (재건축 후기 등)")
+z = np.polyfit(normal7["redevelop_intensity"], normal7["volatility"], 1)
+xs = np.linspace(normal7["redevelop_intensity"].min(), normal7["redevelop_intensity"].max(), 50)
+ax.plot(xs, np.polyval(z, xs), color=NAVY, linewidth=2, zorder=5, linestyle="--")
+ax.legend(frameon=False, fontsize=9, loc="upper right")
+style_ax(ax, "동별 정비사업 진행 강도 vs 매매지수 변동성 — 유의한 관계 없음(강도≤1: r=0.048, p=0.434)",
+         "정비사업 진행 세대 비중(전체 세대수 대비)", "분기 변화율 표준편차")
 fig.tight_layout()
 save(fig, "07_redevelop_intensity_volatility")
 
@@ -324,7 +304,7 @@ colors = [RED if s < 0.5 else GREEN for s in ev8["share_up"]]
 ax.barh(ev8["label_short"], ev8["share_up"] * 100, color=colors, zorder=3)
 ax.axvline(50, color=GREY, linestyle="--", linewidth=1.2)
 ax.text(50.5, -0.6, "50% = 정확히 반반", fontsize=8.5, color=GREY)
-style_ax(ax, "동 간 반응이 가장 크게 갈린 이벤트 5개 (4분기 뒤 상승한 동 비율)", "상승한 동 비율(%)", "")
+style_ax(ax, "법정동 간 반응이 가장 크게 갈린 이벤트 5개 (4분기 뒤 상승한 법정동 비율)", "상승한 법정동 비율(%, 자치구 아님)", "")
 fig.tight_layout()
 save(fig, "08_low_consensus_events")
 
