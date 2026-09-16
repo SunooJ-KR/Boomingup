@@ -12,6 +12,15 @@ npm run test     # 필터·파생 로직 단위 테스트
 npm run build
 ```
 
+개발 서버를 켜 둔 채로 build를 돌리면 같은 `.next`를 덮어써서, 새로고침할 때
+`__webpack_modules__[moduleId] is not a function`이 난다. 이럴 때는 build만 따로 둔다.
+
+```bash
+NEXT_DIST_DIR=.next-build npm run build
+```
+
+이미 났다면 개발 서버를 끄고 `rm -rf front/.next` 뒤 다시 켜면 된다.
+
 ## 데이터
 
 Railway Postgres의 active snapshot을 먼저 읽고, 접속이 없거나 조회가 실패하면

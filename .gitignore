@@ -9,6 +9,8 @@ build/
 .vite/
 .next/
 front/.next/
+.next-build/
+front/.next-build/
 next-env.d.ts
 front/next-env.d.ts
 *.tsbuildinfo
