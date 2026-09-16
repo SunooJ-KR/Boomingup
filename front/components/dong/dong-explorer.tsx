@@ -72,6 +72,8 @@ export function DongExplorer({
     [changeFilter],
   );
 
+  const resetFilter = useCallback(() => changeFilter(EMPTY_FILTER), [changeFilter]);
+
   const changePage = useCallback((next: number) => {
     setPage(next);
     listBoxRef.current?.scrollTo({ top: 0 });
@@ -232,6 +234,7 @@ export function DongExplorer({
               onSelect={setSelectedId}
               gu={filter.gu}
               onSelectGu={selectGu}
+              onResetFilter={resetFilter}
               kakaoJsKey={kakaoJsKey}
             />
           </div>

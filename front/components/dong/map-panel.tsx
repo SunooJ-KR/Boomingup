@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import {
   boundaryPaths,
   boundsOf,
@@ -29,6 +30,8 @@ type MapPanelProps = {
   /** 고른 자치구. 고르면 지도가 그 자치구로 확대되고 동 이름이 나온다 */
   gu?: string | null;
   onSelectGu?: (gu: string | null) => void;
+  /** 지도 아래 검색 초기화 버튼이 누르는 것. 자치구를 고른 동안에만 보인다 */
+  onResetFilter?: () => void;
   kakaoJsKey?: string;
 };
 
@@ -53,6 +56,7 @@ export function MapPanel({
   onSelect,
   gu = null,
   onSelectGu,
+  onResetFilter,
   kakaoJsKey,
 }: MapPanelProps) {
   const [mode, setMode] = useState<Mode>(kakaoJsKey ? "loading" : "fallback");
@@ -308,6 +312,17 @@ export function MapPanel({
         </p>
       ) : null}
 
+      {/* 자치구를 고르면 서울 전체로 돌아올 길을 지도 안에 둔다.
+          왼쪽 검색 패널에도 같은 버튼이 있지만 지도를 보는 중에는 눈에 잘 띄지 않는다 */}
+      {gu && onResetFilter ? (
+        <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border px-3 py-2">
+          <p className="text-xs text-muted-foreground">{gu}만 보고 있어요.</p>
+          <Button variant="outline" size="sm" onClick={onResetFilter}>
+            검색 초기화
+          </Button>
+        </div>
+      ) : null}
+
       {/* 결정 40: 경계를 화면에 그리면 출처를 함께 밝힌다 */}
       {boundarySource ? (
         <p className="shrink-0 border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
@@ -357,12 +372,12 @@ function markerClassName(status: MapItem["status"], selected: boolean) {
   );
 }
 
-/** 자치구 이름표. 경계 위에 올라가므로 마커보다 크고 배경을 깔아 읽히게 한다 */
+/** 자치구 이름표. 진한 면 위에 바로 올라가므로 배경 없이 흰 글씨만 둔다 */
 function guLabelClassName() {
   return cn(
-    "-translate-x-1/2 -translate-y-1/2 rounded-md bg-card/85 px-2 py-1",
-    "text-xs font-semibold text-foreground shadow-float ring-1 ring-border",
-    "transition-transform duration-150 hover:scale-105",
+    "-translate-x-1/2 -translate-y-1/2 bg-transparent px-1 py-0.5",
+    "text-xs font-semibold text-primary-foreground",
+    "transition-transform duration-150 hover:scale-110",
   );
 }
 
@@ -393,6 +408,8 @@ function polygonStyle() {
   const token = (name: string) =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const primary = token("--primary") || "#4136e8";
+  const primaryHover = token("--primary-hover") || "#2f25c9";
+  const primarySoft = token("--primary-soft") || "#eeedff";
   const muted = token("--neutral-strong") || "#858b98";
   const base = { strokeWeight: 1, strokeOpacity: 0.7, fillOpacity: 0.07 };
 
@@ -407,19 +424,20 @@ function polygonStyle() {
       strokeOpacity: 1,
       fillOpacity: 0.18,
     },
+    // 자치구는 진한 면으로 꽉 채우고 테두리를 연한 색으로 둘러 구획이 먼저 읽히게 한다
     gu: {
       strokeWeight: 2,
-      strokeColor: primary,
-      strokeOpacity: 0.8,
+      strokeColor: primarySoft,
+      strokeOpacity: 1,
       fillColor: primary,
-      fillOpacity: 0.1,
+      fillOpacity: 1,
     },
     guSelected: {
       strokeWeight: 3,
-      strokeColor: primary,
+      strokeColor: primarySoft,
       strokeOpacity: 1,
-      fillColor: primary,
-      fillOpacity: 0.16,
+      fillColor: primaryHover,
+      fillOpacity: 1,
     },
   };
 }
