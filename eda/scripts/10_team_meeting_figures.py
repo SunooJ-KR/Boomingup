@@ -293,17 +293,31 @@ fig.tight_layout()
 save(fig, "08_low_consensus_events")
 
 # ============================================================
-# 9. 클러스터링 한계: 클러스터 크기 쏠림
+# 9. 클러스터링 v2: 시장 공통요인을 뺀 뒤 클러스터별 상대적 움직임
 # ============================================================
 cl = pd.read_csv("../output/09_dong_clusters.csv")
+path = pd.read_csv("../output/09_cluster_avg_path.csv", index_col=0).tail(8)
 sizes = cl["cluster"].value_counts().sort_index()
 
-fig, ax = plt.subplots(figsize=(7, 5))
-colors = [RED if s == sizes.max() else GREY for s in sizes]
-ax.bar(sizes.index.astype(str), sizes.values, color=colors, zorder=3)
+fig, axes = plt.subplots(1, 2, figsize=(12, 5.2), gridspec_kw={"width_ratios": [1, 1.6]})
+
+ax = axes[0]
+ax.bar(sizes.index.astype(str), sizes.values, color=TEAL, zorder=3)
 for i, v in enumerate(sizes.values):
-    ax.text(i, v + 2, str(v), ha="center", fontsize=10, color=NAVY)
-style_ax(ax, "클러스터별 동 개수 — 한 클러스터에 쏠려 해석 불가", "클러스터 번호", "동 개수")
+    ax.text(i, v + 1.5, str(v), ha="center", fontsize=9.5, color=NAVY)
+style_ax(ax, "클러스터별 동 개수(균형 잡힘)", "클러스터 번호", "동 개수")
+
+ax = axes[1]
+palette9 = [NAVY, TEAL, AMBER, RED, GREEN, GREY]
+for i, col in enumerate(path.columns):
+    ax.plot(range(len(path)), path[col], color=palette9[i % len(palette9)], linewidth=2,
+            marker="o", markersize=3.5, label=f"클러스터 {col}", zorder=3)
+ax.axhline(0, color="#C3C2B7", linewidth=1, linestyle=":")
+ax.set_xticks(range(len(path)))
+ax.set_xticklabels(path.index, rotation=45, ha="right", fontsize=8.5)
+ax.legend(frameon=False, fontsize=8, ncol=3, loc="upper center", bbox_to_anchor=(0.5, -0.28))
+style_ax(ax, "클러스터별 시장 대비 초과 변화율(최근 8분기)", "분기", "시장 대비 초과 변화율(log)")
+
 fig.tight_layout()
 save(fig, "09_cluster_size_imbalance")
 
@@ -340,37 +354,52 @@ fig.tight_layout()
 save(fig, "10_population_vs_price")
 
 # ============================================================
-# 13. 다변량 회귀 표준화 계수 (여러 요인을 동시에 통제한 뒤 각 요인의 효과)
+# 13a. 다변량 회귀 표준화 계수 (여러 요인을 동시에 통제한 뒤 각 요인의 조건부 연관성)
 # ============================================================
-reg = pd.read_csv("../output/13_hedonic_regression_coefs.csv").set_index("variable")
-stds13 = pd.read_csv("../output/13_hedonic_regression_stds.csv", index_col=0).iloc[:, 0]
-
-reg["coef_std"] = reg["coef"] * stds13
-reg["ci_low_std"] = reg["ci_low"] * stds13
-reg["ci_high_std"] = reg["ci_high"] * stds13
-lo13 = reg[["ci_low_std", "ci_high_std"]].min(axis=1)
-hi13 = reg[["ci_low_std", "ci_high_std"]].max(axis=1)
-reg["ci_low_std"], reg["ci_high_std"] = lo13, hi13
+pct13 = pd.read_csv("../output/13_hedonic_regression_pct.csv").set_index("variable")
 
 label_map13 = {
-    "age": "준공연차\n(+1표준편차≈11.4년)", "floor": "층수\n(+1표준편차≈6.4층)",
+    "floor": "층수\n(+1표준편차≈6.4층)",
     "log_area": "면적(log)\n(+1표준편차≈1.5배)", "station_dist_m": "역까지 거리\n(+1표준편차≈321m)",
     "river_view_ratio": "한강조망 비율\n(+1표준편차≈0.32)", "elem_school_m": "초등학교 거리\n(+1표준편차≈161m)",
     "mid_school_m": "중학교 거리\n(+1표준편차≈248m)", "high_school_m": "고등학교 거리\n(+1표준편차≈356m)",
 }
-# age2(제곱항)는 age와 같이 해석해야 하는 항이라 단독 막대로 그리면 오해의 소지가 있어 제외한다
-reg13 = reg.drop(index="age2").copy()
+# 준공연차(age)는 제곱항 때문에 시작 연차에 따라 효과 방향이 달라져 막대 하나로 못 담는다
+# -> 아래 13b 곡선 그림으로 따로 표현한다.
+reg13 = pct13.copy()
 reg13["label"] = [label_map13[i] for i in reg13.index]
-reg13 = reg13.sort_values("coef_std")
+reg13 = reg13.sort_values("pct_change_per_1sd")
+reg13["sig"] = reg13["p_value"] < 0.05
 
-fig, ax = plt.subplots(figsize=(9.5, 6.5))
-ax.errorbar(reg13["coef_std"] * 100, reg13["label"],
-            xerr=[(reg13["coef_std"] - reg13["ci_low_std"]) * 100, (reg13["ci_high_std"] - reg13["coef_std"]) * 100],
-            fmt="o", color=NAVY, ecolor=GREY, capsize=3, markersize=7, zorder=3)
+fig, ax = plt.subplots(figsize=(9.5, 6.0))
+colors13 = [NAVY if sig else GREY for sig in reg13["sig"]]
+ax.errorbar(reg13["pct_change_per_1sd"], reg13["label"],
+            xerr=[reg13["pct_change_per_1sd"] - reg13["ci_low_pct"], reg13["ci_high_pct"] - reg13["pct_change_per_1sd"]],
+            fmt="none", ecolor=GREY, capsize=3, zorder=2)
+ax.scatter(reg13["pct_change_per_1sd"], reg13["label"], color=colors13, s=70, zorder=3)
 ax.axvline(0, color="#C3C2B7", linewidth=1, linestyle=":")
-style_ax(ax, "표준화 회귀 계수 — 각 변수가 1표준편차 변할 때 단가 변화(%), 95% 신뢰구간",
-         "㎡당 단가 변화(%, 다른 변수 고정)", "")
+style_ax(ax, "다른 요인을 통제한 뒤 각 변수의 조건부 연관성 — 1표준편차 변할 때 단가 변화(%), 95% 신뢰구간\n"
+             "(회색=통계적으로 유의하지 않음, p≥0.05)",
+         "㎡당 단가 변화(%, exp(계수×표준편차)-1 기준)", "")
 fig.tight_layout()
-save(fig, "13_hedonic_regression_coefs")
+save(fig, "13a_hedonic_regression_coefs")
+
+# ============================================================
+# 13b. 준공연차 효과 곡선 (선형항만 보면 왜곡되는 U자형 관계)
+# ============================================================
+curve13 = pd.read_csv("../output/13_hedonic_regression_age_curve.csv")
+
+fig, ax = plt.subplots(figsize=(8.5, 5.5))
+ax.plot(curve13["age"], curve13["pct_vs_age20"], color=NAVY, linewidth=2.2, zorder=3)
+ax.axhline(0, color="#C3C2B7", linewidth=1, linestyle=":")
+ax.axvline(20, color=GREY, linewidth=1, linestyle=":")
+turning_x = curve13.loc[(curve13["pred_log_price_relative"]).idxmin(), "age"]
+ax.axvline(turning_x, color=RED, linewidth=1.3, linestyle="--", zorder=2)
+ax.annotate(f"변곡점 ≈ {turning_x:.0f}년", xy=(turning_x, curve13["pct_vs_age20"].min()),
+            xytext=(8, -18), textcoords="offset points", fontsize=9.5, color=RED, weight="bold")
+style_ax(ax, "준공연차 효과(다른 요인 통제 후) — 20년차 대비 상대적 단가 변화(%)",
+         "준공연차(년)", "20년차 대비 단가 변화(%)")
+fig.tight_layout()
+save(fig, "13b_hedonic_age_curve")
 
 print("\n전체 그림 생성 완료:", OUT_DIR)
