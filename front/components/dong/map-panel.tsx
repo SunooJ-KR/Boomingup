@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { boundsOf, projectToBounds, type Bounds } from "@/lib/map";
+import {
+  boundaryPaths,
+  boundsOf,
+  projectToBounds,
+  type Bounds,
+  type BoundaryCollection,
+} from "@/lib/map";
 import { cn } from "@/lib/utils";
 
 export type MapItem = {
@@ -25,6 +31,8 @@ type Mode = "loading" | "kakao" | "fallback";
 
 const SDK_TIMEOUT_MS = 8000;
 const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 };
+/** 53이 만드는 법정동 경계. 없으면 지금까지처럼 마커만 그린다 */
+const BOUNDARY_URL = "/data/dong-boundary.geojson";
 
 export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelProps) {
   const [mode, setMode] = useState<Mode>(kakaoJsKey ? "loading" : "fallback");
@@ -39,6 +47,8 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
   itemsRef.current = items;
 
   const bounds = useMemo(() => boundsOf(items), [items]);
+  const [boundary, setBoundary] = useState<BoundaryCollection | null>(null);
+  const polygonsRef = useRef(new Map<string, KakaoPolygon[]>());
 
   useEffect(() => {
     if (!kakaoJsKey) return;
@@ -61,6 +71,62 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
       cancelled = true;
     };
   }, [kakaoJsKey]);
+
+  // 경계 파일은 한 번만 받는다. 아직 만들지 않았거나 받지 못하면 마커만 그린다
+  useEffect(() => {
+    if (mode !== "kakao") return;
+    let cancelled = false;
+
+    fetch(BOUNDARY_URL)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: BoundaryCollection | null) => {
+        if (!cancelled && data?.features?.length) setBoundary(data);
+      })
+      .catch(() => {
+        /* 경계는 있으면 좋은 것이라 실패해도 그냥 넘어간다 */
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mode]);
+
+  // 경계는 한 번 만들어 두고 보이고 숨기는 것만 바꾼다.
+  // 동을 고를 때마다 도형을 다시 만들면 340개를 매번 새로 그리게 된다
+  useEffect(() => {
+    const kakao = getKakao();
+    const map = mapRef.current;
+    if (mode !== "kakao" || !kakao || !map || !boundary) return;
+
+    const statusById = new Map(items.map((item) => [item.id, item.status]));
+    const cache = polygonsRef.current;
+
+    const style = polygonStyle();
+    boundary.features.forEach((feature) => {
+      const dong = feature.properties.dong;
+      const status = statusById.get(dong);
+      let polygons = cache.get(dong);
+
+      if (!status) {
+        polygons?.forEach((polygon) => polygon.setMap(null));
+        return;
+      }
+
+      if (!polygons) {
+        polygons = toKakaoPaths(kakao, feature.geometry).map((path) => {
+          const polygon = new kakao.maps.Polygon({ path });
+          kakao.maps.event.addListener(polygon, "click", () => onSelectRef.current(dong));
+          return polygon;
+        });
+        cache.set(dong, polygons);
+      }
+
+      polygons.forEach((polygon) => {
+        polygon.setOptions(style[dong === selectedId ? "selected" : status]);
+        polygon.setMap(map);
+      });
+    });
+  }, [boundary, items, mode, selectedId]);
 
   // ponytail: 마커를 그릴 때마다 다시 만든다. 동은 최대 346개라 이 정도면 충분하고,
   // 더 늘어나면 MarkerClusterer와 bounds 기준 렌더링으로 올린다.
@@ -152,6 +218,13 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
           보여줄 좌표가 없어요. 목록에서 동을 선택해주세요.
         </p>
       ) : null}
+
+      {/* 결정 40: 경계를 화면에 그리면 출처를 함께 밝힌다 */}
+      {boundary?.source ? (
+        <p className="shrink-0 border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
+          {boundary.source}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -196,6 +269,43 @@ function markerClassName(status: MapItem["status"], selected: boolean) {
 }
 
 /* ---------------------------------------------------------------- */
+/* 법정동 경계 (53.export_front_boundary.py 산출물)                  */
+/* ---------------------------------------------------------------- */
+
+/** 좌표 경로를 Kakao Polygon이 쓰는 LatLng으로 바꾼다 */
+function toKakaoPaths(kakao: Kakao, geometry: BoundaryCollection["features"][number]["geometry"]) {
+  return boundaryPaths(geometry).map((rings) =>
+    rings.map((ring) => ring.map((point) => new kakao.maps.LatLng(point.lat, point.lng))),
+  );
+}
+
+/**
+ * 경계 색은 마커와 같은 값을 쓴다. globals.css의 토큰에서 읽어 와서
+ * 색을 바꿀 때 두 군데를 고치지 않게 한다.
+ * 경계는 배경이라 채우기를 옅게 두고, 고른 동만 진하게 만든다.
+ */
+function polygonStyle() {
+  const token = (name: string) =>
+    getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const primary = token("--primary") || "#4136e8";
+  const muted = token("--neutral-strong") || "#858b98";
+  const base = { strokeWeight: 1, strokeOpacity: 0.7, fillOpacity: 0.07 };
+
+  return {
+    default: { ...base, strokeColor: primary, fillColor: primary },
+    muted: { ...base, strokeColor: muted, fillColor: muted },
+    selected: {
+      ...base,
+      strokeColor: primary,
+      fillColor: primary,
+      strokeWeight: 3,
+      strokeOpacity: 1,
+      fillOpacity: 0.18,
+    },
+  };
+}
+
+/* ---------------------------------------------------------------- */
 /* Kakao SDK 로딩 (클라이언트 전용)                                  */
 /* ---------------------------------------------------------------- */
 
@@ -206,6 +316,17 @@ type KakaoMap = {
   setBounds: (bounds: KakaoLatLngBounds) => void;
 };
 type KakaoOverlay = { setMap: (map: KakaoMap | null) => void };
+type KakaoPolygonStyle = {
+  strokeWeight: number;
+  strokeColor: string;
+  strokeOpacity: number;
+  fillColor: string;
+  fillOpacity: number;
+};
+type KakaoPolygon = {
+  setMap: (map: KakaoMap | null) => void;
+  setOptions: (options: KakaoPolygonStyle) => void;
+};
 type Kakao = {
   maps: {
     load: (callback: () => void) => void;
@@ -217,6 +338,10 @@ type Kakao = {
       content: HTMLElement;
       zIndex: number;
     }) => KakaoOverlay;
+    Polygon: new (options: { path: KakaoLatLng[][] }) => KakaoPolygon;
+    event: {
+      addListener: (target: KakaoPolygon, type: string, handler: () => void) => void;
+    };
   };
 };
 

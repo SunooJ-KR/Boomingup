@@ -57,3 +57,16 @@ KAKAO_JS_KEY=...                         # 없으면 지도는 좌표 미리보�
 법정동 경계 GeoJSON 대신 최근 매매가 있는 단지 좌표의 평균을 동 대표 좌표로 쓴다(결정 21).
 Kakao SDK는 클라이언트에서만 불러오고, 키가 없거나 로딩이 실패하면 좌표 미리보기로 폴백한다.
 실제 지도를 확인하려면 Kakao 개발자 콘솔에 실행 도메인(`http://localhost:3000` 등)을 등록해야 한다.
+
+동 대표 좌표 위에 법정동 경계를 덧그린다. 경계는 동을 고르는 넓은 클릭 영역이자 위치를
+알아보는 밑그림이고, 예측값으로 색을 칠하지는 않는다(결정 41). 경계 파일은 아래 두 스크립트로
+만들어 commit한다. 배포는 저장소 파일을 그대로 쓰므로 commit하지 않으면 배포 화면에 경계가 없다.
+
+```bash
+python models/index/52.build_dong_boundary.py      # output/52.1.seoul_bjd_boundary.geojson
+python models/index/53.export_front_boundary.py    # front/public/data/dong-boundary.geojson
+```
+
+경계 원천 SHP는 `output/raw/boundary/emd_20230729/`에 있어야 한다(`docs/data-sources.md` §6).
+파일이 없으면 지도는 경계 없이 마커만 그리므로, 아직 만들지 않은 환경에서도 화면은 그대로 돈다.
+경계가 그려질 때는 출처 표기가 지도 아래에 함께 뜬다(결정 40).

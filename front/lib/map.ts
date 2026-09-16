@@ -54,3 +54,30 @@ export function projectToBounds(point: LatLng, bounds: Bounds) {
   const y = height > 0 ? (1 - (point.lat - bounds.minLat) / height) * 100 : 50;
   return { x: Math.max(4, Math.min(96, x)), y: Math.max(6, Math.min(94, y)) };
 }
+
+/** 53.export_front_boundary.py가 내보내는 경계 파일 형식 */
+export type BoundaryGeometry = {
+  type: "Polygon" | "MultiPolygon";
+  /** Polygon은 링 목록, MultiPolygon은 링 목록의 목록이다. 좌표는 [경도, 위도] 순이다 */
+  coordinates: number[][][] | number[][][][];
+};
+export type BoundaryFeature = {
+  properties: { dong: string; umd_nm: string };
+  geometry: BoundaryGeometry;
+};
+export type BoundaryCollection = { source: string; features: BoundaryFeature[] };
+
+/**
+ * GeoJSON 도형을 지도에 그릴 경로로 바꾼다.
+ * 결과는 [조각][링][좌표] 세 겹이다. 한 조각의 첫 링이 바깥이고 나머지는 구멍이라
+ * 지도 쪽에서는 조각 하나가 도형 하나가 된다.
+ */
+export function boundaryPaths(geometry: BoundaryGeometry): LatLng[][][] {
+  const polygons =
+    geometry.type === "Polygon"
+      ? [geometry.coordinates as number[][][]]
+      : (geometry.coordinates as number[][][][]);
+  return polygons.map((rings) =>
+    rings.map((ring) => ring.map(([lng, lat]) => ({ lat, lng }))),
+  );
+}
