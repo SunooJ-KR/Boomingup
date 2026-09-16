@@ -81,11 +81,18 @@ fig.tight_layout()
 save(fig, "01a_quarterly_volume_events")
 
 # ============================================================
-# 1b. 연간 거래량 vs 가격 지수(2006=100)
+# 1b. 연간 거래량 vs 가격 지수(2006~2008 평균=100)
 # ============================================================
 y = pd.read_csv("../output/01_yearly_yoy.csv")
-y["volume_idx"] = 100 * (y["n_trades"] / y["n_trades"].iloc[0])
-y["price_idx"] = 100 * (y["median_price_per_m2"] / y["median_price_per_m2"].iloc[0])
+# 단일 연도(2006년)를 기준점으로 쓰면 왜곡된다 — 2006년은 21개 연도 중 거래량 2위(111,946건,
+# 2007~2013년 평균의 2배 이상)이면서 동시에 단가는 전체 최저치(342만원/㎡)인 이상치에 가까운
+# 해였다(2026-09-16 확인). 그 해 하나를 100으로 놓으면 이후 가격 상승·거래량 감소가 모두
+# 과장돼 보인다. 초반 3개년(2006~2008) 평균을 기준으로 삼아 단일 연도의 튐을 줄인다.
+base_years = y[y["deal_year"].between(2006, 2008)]
+volume_base = base_years["n_trades"].mean()
+price_base = base_years["median_price_per_m2"].mean()
+y["volume_idx"] = 100 * (y["n_trades"] / volume_base)
+y["price_idx"] = 100 * (y["median_price_per_m2"] / price_base)
 # 마지막 연도(2026)는 8월까지만 있는 불완전 연도라 실선으로 이어그리면 "급락"처럼 보일 위험이
 # 있다(2026-09-16 codex 검증 지적) — 마지막 구간만 점선+빈 마커로 구분한다.
 is_complete = y["is_complete_year"].astype(bool)
@@ -104,7 +111,7 @@ ax.annotate(f"{last_year}년은 8월까지만 집계\n(점선 = 불완전 연도
             xy=(y["deal_year"].iloc[-1], y["price_idx"].iloc[-1]), xytext=(-95, 15),
             textcoords="offset points", fontsize=8.5, color=GREY,
             arrowprops=dict(arrowstyle="->", color=GREY, lw=1))
-style_ax(ax, "연간 거래량 지수 vs 단가 지수 (2006년=100)", "연도", "지수(2006=100)")
+style_ax(ax, "연간 거래량 지수 vs 단가 지수 (2006~2008년 평균=100)", "연도", "지수(2006~2008년 평균=100)")
 ax.legend(frameon=False, fontsize=10, loc="upper left")
 fig.tight_layout()
 save(fig, "01b_volume_vs_price_index")
