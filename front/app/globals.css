@@ -1,3 +1,6 @@
+/* Pretendard. 한글 자소가 많아 쓰는 글자만 내려받는 dynamic subset을 쓴다.
+   내려받기 전이나 실패하면 아래 font-family의 다음 후보로 넘어간다 */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css");
 @import "tailwindcss";
 
 :root {
@@ -6,13 +9,15 @@
   --card: #ffffff;
   --muted: #f6f7f9;
   --muted-foreground: #697386;
-  --primary: #4136e8;
+  /* 브랜드색 #5520A8 기준. hover는 22% 어둡게, soft는 흰색에 8%만 섞은 값이다.
+     흰 글씨 대비 9.7:1, 흰 배경 대비 9.7:1로 모두 WCAG AAA를 넘는다 */
+  --primary: #5520a8;
   --primary-foreground: #ffffff;
-  --primary-hover: #2f25c9;
-  --primary-soft: #eeedff;
+  --primary-hover: #421983;
+  --primary-soft: #f1edf8;
   --border: #e6e8ee;
   --input: #f6f7f9;
-  --ring: #4136e8;
+  --ring: #5520a8;
   --neutral-soft: #f0f1f4;
   --neutral-strong: #858b98;
   --radius: 12px;
@@ -76,7 +81,8 @@ html {
 body {
   background: var(--muted);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans KR", sans-serif;
+  font-family: "Pretendard Variable", Pretendard, system-ui, -apple-system, "Segoe UI",
+    "Noto Sans KR", sans-serif;
 }
 
 /* 애니메이션은 opacity와 transform만 쓰고, 사용자가 줄이기를 원하면 사실상 끈다 */
