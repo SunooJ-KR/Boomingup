@@ -193,19 +193,33 @@ fig.tight_layout()
 save(fig, "04a_station_distance_price")
 
 # ============================================================
-# 4b. 한강 조망 유무 단가 비교
+# 4b. 한강 조망 유무 vs 초등학교 거리 — 입지 요인 두 개를 나란히 비교
+# (학군거리는 상관이 거의 없다는 본문 주장의 직접 근거 그림이 빠져있었다 — 2026-09-16 지적)
 # ============================================================
 rv = pd.read_csv("../output/04_river_view_price.csv")
 rv.columns = ["has_river_view", "n", "median", "mean"]
 rv["label"] = rv["has_river_view"].map({True: "한강 조망 O", False: "한강 조망 X"})
+es = pd.read_csv("../output/04_elem_school_dist_price.csv")
+es.columns = ["dist_bin", "n", "median"]
 
-fig, ax = plt.subplots(figsize=(6, 5.5))
+fig, axes = plt.subplots(1, 2, figsize=(12, 5.3), gridspec_kw={"width_ratios": [1, 1.4]})
+
+ax = axes[0]
 ax.bar(rv["label"], rv["median"], color=[GREY, TEAL], zorder=3, width=0.55)
 for i, v in enumerate(rv["median"]):
     ax.text(i, v + 20, f"{v:,.0f}만원", ha="center", fontsize=11, color=NAVY, weight="bold")
-style_ax(ax, "한강 조망 세대 비율 유무별 ㎡당 단가", "", "㎡당 단가(만원)")
+style_ax(ax, "한강 조망 유무별 ㎡당 단가", "", "㎡당 단가(만원)")
+
+ax = axes[1]
+bar_colors = [TEAL if n >= 1000 else "#C3C2B7" for n in es["n"]]
+ax.bar(es["dist_bin"], es["median"], color=bar_colors, zorder=3)
+for i, (n, v) in enumerate(zip(es["n"], es["median"])):
+    ax.text(i, v + 20, f"n={n:,}", ha="center", fontsize=8, color=GREY)
+style_ax(ax, "초등학교까지 거리별 ㎡당 단가\n(회색=표본 1,000건 미만, 참고용)",
+         "가장 가까운 초등학교까지 거리", "㎡당 단가(만원)")
+
 fig.tight_layout()
-save(fig, "04b_river_view_price")
+save(fig, "04b_river_view_vs_school_distance")
 
 # ============================================================
 # 5a. 층대별 단가
