@@ -16,6 +16,22 @@
   --neutral-soft: #f0f1f4;
   --neutral-strong: #858b98;
   --radius: 12px;
+
+  /* 화면 골격 치수. 좌측 열 높이, sticky 위치, 스크롤 여백이 모두 여기서 나온다.
+     --app-header-h는 components/app-header.tsx가 실제로 잰 높이로 덮어쓴다.
+     좁은 폭에서 머리말이 두 줄로 접히면 49px에서 69px로 바뀐다. */
+  --app-header-h: 49px;
+  --app-gutter: 1rem;
+  --app-column-h: calc(100dvh - var(--app-header-h) - var(--app-gutter) * 2);
+  /* 지도 아래로 상세가 이만큼 비쳐 보인다. 화면이 지도로 꽉 차 보이지 않게 하고,
+     아래에 이어지는 내용이 있다는 것도 함께 알려 준다 */
+  --map-peek: 7rem;
+}
+
+html {
+  /* sticky 머리말에 가리지 않도록 스크롤을 그만큼 덜 내린다.
+     scrollIntoView와 # 앵커 이동에 모두 걸리므로 요소마다 scroll-margin을 적지 않아도 된다 */
+  scroll-padding-top: calc(var(--app-header-h) + var(--app-gutter));
 }
 
 @theme inline {

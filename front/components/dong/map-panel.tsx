@@ -105,8 +105,9 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
   }, [selectedId, items, mode]);
 
   return (
-    // 좌측 동 목록 열과 아래 끝을 맞춘다. 높이 계산은 dong-explorer의 좌측 열과 같은 값이다
-    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-panel lg:flex lg:h-[calc(100dvh-81px)] lg:flex-col">
+    // 좌측 동 목록 열과 같은 높이에서 --map-peek만큼 줄인다.
+    // 지도로 화면이 꽉 차 보이지 않게 하고, 아래에 상세가 이어진다는 것도 함께 보여 준다
+    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-panel lg:flex lg:h-[calc(var(--app-column-h)-var(--map-peek))] lg:flex-col">
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">지도</p>
         <p className="text-xs text-muted-foreground">

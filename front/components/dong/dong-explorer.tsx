@@ -171,10 +171,10 @@ export function DongExplorer({
     <div className="grid gap-4 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
       {/* 동이 300개가 넘어 목록을 그대로 펼치면 문서가 4만px를 넘고 오른쪽 열이 통째로 빈다.
           넓은 폭에서는 검색과 페이지 번호를 고정하고 목록 칸만 남는 높이를 채운다.
-          오프셋 65px = 헤더 49px + main 위 여백 16px, 81px는 아래 여백 16px까지 뺀 값이다. */}
+          높이와 위치는 globals.css의 --app-column-h, --app-header-h에서 나온다. */}
       <section
         aria-label="검색과 동 목록"
-        className="space-y-4 lg:sticky lg:top-[65px] lg:flex lg:h-[calc(100dvh-81px)] lg:flex-col lg:self-start lg:space-y-0 lg:pr-1"
+        className="space-y-4 lg:sticky lg:top-[calc(var(--app-header-h)+var(--app-gutter))] lg:flex lg:h-[var(--app-column-h)] lg:flex-col lg:self-start lg:space-y-0 lg:pr-1"
       >
         <div className="lg:shrink-0 lg:pb-4">
           <SearchPanel
@@ -228,28 +228,19 @@ export function DongExplorer({
         {/* 상세가 도착하면 아래에서 떠오르게 해서 새로 생겼다는 것을 알린다.
             key가 바뀌면 다음 동을 골랐을 때 효과가 다시 재생된다.
             효과를 줄이기로 한 사용자에게는 globals.css에서 사실상 꺼진다. */}
-        {/* scroll-mt는 sticky 헤더 높이(49px)와 main 위 여백(16px)만큼 스크롤을 덜 내려,
-            상세 제목이 헤더 뒤에 가리지 않게 한다 */}
-        <section
-          ref={detailRef}
-          aria-label="선택한 동 상세"
-          aria-busy={detailState === "loading"}
-          className="scroll-mt-[65px]"
-        >
-          {/* 효과는 안쪽 div에 건다. section에 걸면 transform이 걸린 채로 스크롤 위치를 잡아
-              애니메이션이 끝난 뒤 상세가 화면 위로 20px 올라가 버린다 */}
-          <div
+        {/* 스크롤은 이 section을 기준으로 잡는다. 여기에는 효과를 걸지 않는다.
+            등장 효과는 DongDetailPanel이 자기 안에서 건다. 스크롤 기준이 되는 요소에
+            transform이 걸려 있으면 그만큼 어긋난 위치에 멈추기 때문이다.
+            머리말에 가리지 않게 하는 여백은 globals.css의 scroll-padding-top이 맡는다. */}
+        <section ref={detailRef} aria-label="선택한 동 상세" aria-busy={detailState === "loading"}>
+          <DongDetailPanel
             key={selectedId ?? "idle"}
-            className={detailState === "ready" ? "animate-rise-in" : undefined}
-          >
-            <DongDetailPanel
-              dong={selectedDong}
-              detail={detail}
-              meta={meta}
-              state={detailState}
-              onRetry={retry}
-            />
-          </div>
+            dong={selectedDong}
+            detail={detail}
+            meta={meta}
+            state={detailState}
+            onRetry={retry}
+          />
         </section>
       </div>
     </div>

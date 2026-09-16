@@ -62,8 +62,10 @@ export function DongDetailPanel({ dong, detail, meta, state, onRetry }: DongDeta
     );
   }
 
+  // 화면 아래에 새로 붙었다는 것을 알리는 등장 효과. 내용이 준비된 이 경로에만 건다.
+  // 부모가 선택한 동을 key로 넘기므로 다른 동을 고르면 다시 재생된다.
   return (
-    <div className="space-y-3">
+    <div className="animate-rise-in space-y-3">
       {header}
 
       <PredictionCard

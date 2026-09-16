@@ -1,7 +1,7 @@
+import { AppHeader } from "@/components/app-header";
 import { DongExplorer } from "@/components/dong/dong-explorer";
 import { guNamesOf, loadIndex, tagsOf } from "@/lib/data";
 import { readRootEnv } from "@/lib/root-env";
-import { formatQuarter } from "@/lib/format";
 
 // 동 목록은 자주 바뀌지 않으므로 10분마다 다시 만든다. snapshot이 교체되면 그때 반영된다.
 export const revalidate = 600;
@@ -13,14 +13,7 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3">
-          <span className="text-base font-bold text-foreground">Boomingup</span>
-          <span className="text-xs text-muted-foreground">
-            기준 {formatQuarter(meta.as_of_quarter)} · 매매 {meta.data_period.sale}
-          </span>
-        </div>
-      </header>
+      <AppHeader asOfQuarter={meta.as_of_quarter} salePeriod={meta.data_period.sale} />
 
       <main className="mx-auto max-w-[1400px] px-4 py-4">
         {source === "sample" ? (
