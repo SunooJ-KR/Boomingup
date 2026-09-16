@@ -72,6 +72,10 @@ python models/index/52.build_dong_boundary.py      # output/52.1.seoul_bjd_bound
 python models/index/53.export_front_boundary.py    # front/public/data/{dong,gu}-boundary.geojson
 ```
 
+자치구 경계는 행정동 파일에서 만들고 동 경계는 법정동 원천에서 만든다(결정 45). 53은 없는
+입력을 건너뛰므로 한쪽만 있어도 돌아간다. 지금은 자치구 경계만 들어 있고, 동 경계는 52를
+돌릴 원천 SHP가 들어오면 만들어진다.
+
 경계 원천 SHP는 `output/raw/boundary/emd_20230729/`에 있어야 한다(`docs/data-sources.md` §6).
 파일이 없으면 지도는 경계 없이 마커만 그리므로, 아직 만들지 않은 환경에서도 화면은 그대로 돈다.
 경계가 그려질 때는 출처 표기가 지도 아래에 함께 뜬다(결정 40).

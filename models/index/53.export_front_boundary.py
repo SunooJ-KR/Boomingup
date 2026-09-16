@@ -2,11 +2,12 @@
 # 53.export_front_boundary.py
 # ============================================================================
 # Author:      yjkim
-# Purpose:     52.1 경계 GeoJSON을 프론트 지도용 동·자치구 경계 두 벌로 내보낸다
-# Description: 동 경계는 지수 동(in_index)만 남기고, 자치구 경계는 서울 467개 동의
-#              경계에서 자치구 안쪽 선을 지워 만든다. 둘 다 Douglas-Peucker로 점을
-#              줄이고 좌표를 소수 5자리로 반올림한다. 결정 40의 출처 표기 문구를
-#              파일 안에 함께 넣어 화면이 출처를 따로 들고 있지 않아도 되게 한다.
+# Purpose:     프론트 지도용 동·자치구 경계 파일을 만든다
+# Description: 동 경계는 52.1(법정동)에서 지수 동만 남긴다. 자치구 경계는 행정동
+#              경계에서 자치구 안쪽 선을 지워 만든다. 자치구 테두리는 법정동으로
+#              나누든 행정동으로 나누든 같아서 어느 쪽을 써도 된다(결정 45).
+#              둘 다 Douglas-Peucker로 점을 줄이고 좌표를 소수 5자리로 반올림한다.
+#              입력이 없는 쪽은 건너뛰므로 한쪽만 있어도 돌아간다.
 #              실행: python models/index/53.export_front_boundary.py
 # ============================================================================
 
@@ -23,11 +24,14 @@ from typing import Any
 
 
 WORK_DIR = Path(__file__).resolve().parents[2]
-SOURCE_PATH = WORK_DIR / "output" / "52.1.seoul_bjd_boundary.geojson"
+DONG_SOURCE_PATH = WORK_DIR / "output" / "52.1.seoul_bjd_boundary.geojson"
+GU_SOURCE_PATH = WORK_DIR / "output" / "raw" / "boundary" / "hangjeongdong_서울특별시.geojson"
 DONG_TARGET_PATH = WORK_DIR / "front" / "public" / "data" / "dong-boundary.geojson"
 GU_TARGET_PATH = WORK_DIR / "front" / "public" / "data" / "gu-boundary.geojson"
 
-SOURCE_LABEL = "행정구역 경계: GIS Developer(gisdeveloper.co.kr), 원본 도로명주소 DB"
+DONG_SOURCE_LABEL = "행정구역 경계: GIS Developer(gisdeveloper.co.kr), 원본 도로명주소 DB"
+# TODO: 행정동 파일의 정확한 출처와 기준일을 확인해 문구를 확정한다(결정 45).
+GU_SOURCE_LABEL = "행정구역 경계: 행정동 경계 GeoJSON (출처 확인 중)"
 
 # 경계를 얼마나 거칠게 줄일지 정하는 값이다. 위도 1도가 약 111km이므로
 # 0.00005도는 약 5.5m이고, 서울 전체가 보이는 확대 수준에서는 화면 1픽셀보다 작다.
@@ -37,6 +41,9 @@ TOLERANCE_DEG = 0.00005
 COORD_DIGITS = 5
 # 링은 닫혀 있어야 하므로 좌표가 4개는 있어야 면이 된다.
 MIN_RING_POINTS = 4
+# 자치구 안쪽 선을 지우려면 맞닿은 두 동의 좌표가 정확히 같아야 한다. 원천마다 자릿수가
+# 달라서 합치기 전에 이 자릿수로 맞춘다. 소수 6자리는 약 0.11m다.
+MERGE_DIGITS = 6
 
 EXPECTED_DONGS = 340
 EXPECTED_GUS = 25
@@ -276,19 +283,11 @@ def rings_to_polygons(
     return [[[list(point) for point in ring] for ring in polygon] for polygon in polygons]
 
 
-def dissolve(features: list[dict[str, Any]]) -> dict[str, Any]:
+def dissolve(rings: list[list[list[float]]]) -> dict[str, Any]:
     """동 경계 여러 개를 자치구 경계 하나로 합친다."""
     edges: list[tuple[tuple[float, float], tuple[float, float]]] = []
-    for feature in features:
-        geometry = feature["geometry"]
-        polygons = (
-            [geometry["coordinates"]]
-            if geometry["type"] == "Polygon"
-            else geometry["coordinates"]
-        )
-        for polygon in polygons:
-            for ring in polygon:
-                edges.extend(ring_edges(ring))
+    for ring in rings:
+        edges.extend(ring_edges(ring))
 
     polygons = rings_to_polygons(stitch_rings(outer_edges(edges)))
     if len(polygons) == 1:
@@ -340,23 +339,58 @@ def build_dong_features(source: dict[str, Any]) -> tuple[list[dict[str, Any]], i
     return features, before, after
 
 
+def normalized_rings(feature: dict[str, Any]) -> list[list[list[float]]]:
+    """Feature의 링을 합치기 좋은 모양으로 맞춘다.
+
+    좌표를 같은 자릿수로 반올림하고, 반올림 때문에 겹친 이웃 점을 합친다. 또 GeoJSON
+    관례대로 첫 링을 바깥(반시계), 나머지를 구멍(시계)으로 돌려 방향을 통일한다.
+    방향이 섞여 있으면 남은 선분을 이어 붙일 때 면의 안팎이 뒤집힌다.
+    """
+    geometry = feature["geometry"]
+    polygons = (
+        [geometry["coordinates"]]
+        if geometry["type"] == "Polygon"
+        else geometry["coordinates"]
+    )
+
+    rings: list[list[list[float]]] = []
+    for polygon in polygons:
+        for position, ring in enumerate(polygon):
+            snapped = [[round(x, MERGE_DIGITS), round(y, MERGE_DIGITS)] for x, y in ring]
+            unique = [snapped[0]]
+            for point in snapped[1:]:
+                if point != unique[-1]:
+                    unique.append(point)
+            if unique[0] != unique[-1]:
+                unique.append(unique[0])
+            if len(unique) < MIN_RING_POINTS:
+                continue
+            counterclockwise = signed_area([(x, y) for x, y in unique]) > 0
+            if counterclockwise != (position == 0):
+                unique.reverse()
+            rings.append(unique)
+    return rings
+
+
 def build_gu_features(source: dict[str, Any]) -> list[dict[str, Any]]:
     """자치구마다 동 경계를 합쳐 하나의 도형으로 만든다.
 
-    지수에 없는 동까지 모두 넣어야 자치구 안에 구멍이 생기지 않는다.
+    자치구 안의 동을 하나도 빠뜨리지 않아야 자치구 안에 구멍이 생기지 않는다.
     """
-    by_sgg_cd: dict[str, list[dict[str, Any]]] = {}
+    by_sgg_cd: dict[str, list[list[list[float]]]] = {}
     for feature in source["features"]:
-        by_sgg_cd.setdefault(feature["properties"]["sgg_cd"], []).append(feature)
+        properties = feature["properties"]
+        # 법정동 원천(52.1)은 sgg_cd, 행정동 원천은 sgg로 자치구를 적는다
+        sgg_cd = properties.get("sgg_cd") or properties["sgg"]
+        by_sgg_cd.setdefault(sgg_cd, []).extend(normalized_rings(feature))
 
     features = []
-    for sgg_cd, dong_features in sorted(by_sgg_cd.items()):
+    for sgg_cd, rings in sorted(by_sgg_cd.items()):
         gu_name = GU_BY_SGG_CD.get(sgg_cd)
         if gu_name is None:
             raise ValueError(f"이름을 모르는 자치구 코드입니다: {sgg_cd}")
-        merged = dissolve(dong_features)
-        # 이름 자리는 줄이기 전 도형에서 잡는다. 줄인 도형과 눈에 띄게 다르지 않으면서
-        # 점을 줄이다 생긴 어긋남이 자리에 섞이지 않는다.
+        merged = dissolve(rings)
+        # 이름 자리는 줄이기 전 도형에서 잡는다. 점을 줄이다 생긴 어긋남이 자리에 섞이지 않는다
         features.append({
             "type": "Feature",
             "properties": {"sgg_cd": sgg_cd, "gu_name": gu_name, "label": label_point(merged)},
@@ -365,9 +399,9 @@ def build_gu_features(source: dict[str, Any]) -> list[dict[str, Any]]:
     return features
 
 
-def write_collection(path: Path, features: list[dict[str, Any]]) -> float:
+def write_collection(path: Path, features: list[dict[str, Any]], source_label: str) -> float:
     """FeatureCollection을 저장하고 파일 크기(MiB)를 돌려준다."""
-    collection = {"type": "FeatureCollection", "source": SOURCE_LABEL, "features": features}
+    collection = {"type": "FeatureCollection", "source": source_label, "features": features}
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="\n") as handle:
         json.dump(collection, handle, ensure_ascii=False, separators=(",", ":"))
@@ -375,32 +409,43 @@ def write_collection(path: Path, features: list[dict[str, Any]]) -> float:
     return path.stat().st_size / (1024 * 1024)
 
 
-def main() -> None:
-    """52.1을 읽어 프론트용 동·자치구 경계 파일을 만들고 결과를 요약한다."""
-    if not SOURCE_PATH.exists():
-        raise SystemExit(
-            f"{SOURCE_PATH}가 없습니다. models/index/52.build_dong_boundary.py를 먼저 실행하세요."
-        )
+def export_dong() -> None:
+    """법정동 경계에서 지수 동만 남겨 내보낸다."""
+    if not DONG_SOURCE_PATH.exists():
+        print(f"건너뜀: {DONG_SOURCE_PATH}가 없습니다. 52를 먼저 실행하면 동 경계도 만든다.")
+        return
 
-    source = json.loads(SOURCE_PATH.read_text(encoding="utf-8"))
+    source = json.loads(DONG_SOURCE_PATH.read_text(encoding="utf-8"))
+    features, before, after = build_dong_features(source)
+    if len(features) != EXPECTED_DONGS:
+        raise ValueError(f"지수 동 경계는 {EXPECTED_DONGS}개여야 합니다 (현재 {len(features)}개).")
 
-    dong_features, before, after = build_dong_features(source)
-    if len(dong_features) != EXPECTED_DONGS:
-        raise ValueError(f"지수 동 경계는 {EXPECTED_DONGS}개여야 합니다 (현재 {len(dong_features)}개).")
-
-    gu_features = build_gu_features(source)
-    if len(gu_features) != EXPECTED_GUS:
-        raise ValueError(f"자치구 경계는 {EXPECTED_GUS}개여야 합니다 (현재 {len(gu_features)}개).")
-
-    dong_mib = write_collection(DONG_TARGET_PATH, dong_features)
-    gu_mib = write_collection(GU_TARGET_PATH, gu_features)
-    source_mib = SOURCE_PATH.stat().st_size / (1024 * 1024)
-
-    print(f"동 수: {len(dong_features)}개 / 자치구 수: {len(gu_features)}개")
-    print(f"동 좌표 수: {before:,}개 → {after:,}개 ({after / before:.1%})")
-    print(f"원본 {source_mib:.2f} MiB → 동 {dong_mib:.2f} MiB, 자치구 {gu_mib:.2f} MiB")
+    size = write_collection(DONG_TARGET_PATH, features, DONG_SOURCE_LABEL)
+    print(f"동 {len(features)}개, 좌표 {before:,}개 → {after:,}개 ({after / before:.1%}), {size:.2f} MiB")
     print(f"저장: {DONG_TARGET_PATH}")
+
+
+def export_gu() -> None:
+    """행정동 경계를 자치구 단위로 합쳐 내보낸다."""
+    if not GU_SOURCE_PATH.exists():
+        print(f"건너뜀: {GU_SOURCE_PATH}가 없습니다.")
+        return
+
+    source = json.loads(GU_SOURCE_PATH.read_text(encoding="utf-8"))
+    features = build_gu_features(source)
+    if len(features) != EXPECTED_GUS:
+        raise ValueError(f"자치구 경계는 {EXPECTED_GUS}개여야 합니다 (현재 {len(features)}개).")
+
+    size = write_collection(GU_TARGET_PATH, features, GU_SOURCE_LABEL)
+    points = sum(count_points(feature["geometry"]) for feature in features)
+    print(f"자치구 {len(features)}개, 좌표 {points:,}개, {size:.2f} MiB")
     print(f"저장: {GU_TARGET_PATH}")
+
+
+def main() -> None:
+    """프론트용 동·자치구 경계 파일을 만든다. 입력이 없는 쪽은 건너뛴다."""
+    export_dong()
+    export_gu()
 
 
 if __name__ == "__main__":

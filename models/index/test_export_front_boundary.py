@@ -27,6 +27,9 @@ def square(step: float = 0.001) -> list[list[float]]:
     return [*bottom, *right, *top, *left]
 
 
+ex = exporter()
+
+
 def cell(x: float, y: float) -> list[list[float]]:
     """단위 정사각형 링. 반시계 방향으로 닫는다."""
     return [[x, y], [x + 1.0, y], [x + 1.0, y + 1.0], [x, y + 1.0], [x, y]]
@@ -37,8 +40,12 @@ def feature(ring: list[list[float]]) -> dict:
     return {"geometry": {"type": "Polygon", "coordinates": [ring]}}
 
 
+def rings(*cells: list[list[float]]) -> list[list[list[float]]]:
+    """칸 여러 개를 합치기 입력 링 목록으로 만든다."""
+    return [ring for cell_ring in cells for ring in ex.normalized_rings(feature(cell_ring))]
+
+
 def main():
-    ex = exporter()
 
     # 직선 위의 점은 사라지고 모서리는 남는다. 링은 닫힌 채로 끝난다.
     ring = ex.shrink_ring(square())
@@ -80,7 +87,7 @@ def main():
     # 자치구 합치기: 맞붙은 두 동 사이의 선은 사라지고 바깥 테두리만 남는다.
     left = cell(0, 0)
     right = cell(1, 0)
-    merged = ex.dissolve([feature(left), feature(right)])
+    merged = ex.dissolve(rings(left, right))
     assert merged["type"] == "Polygon", merged["type"]
     ring = merged["coordinates"][0]
     assert ring[0] == ring[-1], "합친 경계가 닫혀 있지 않습니다"
@@ -93,7 +100,7 @@ def main():
     assert ex.signed_area([(x, y) for x, y in ring]) > 0, "바깥 링은 반시계 방향이어야 합니다"
 
     # 가운데가 빈 3x3은 바깥 링 하나와 구멍 하나가 된다.
-    donut = [feature(cell(x, y)) for x in range(3) for y in range(3) if (x, y) != (1, 1)]
+    donut = rings(*[cell(x, y) for x in range(3) for y in range(3) if (x, y) != (1, 1)])
     holed = ex.dissolve(donut)
     assert holed["type"] == "Polygon" and len(holed["coordinates"]) == 2
     outer, hole = holed["coordinates"]
@@ -102,12 +109,16 @@ def main():
     assert {x for x, _ in hole} == {1.0, 2.0}, "구멍 자리가 가운데 칸이 아닙니다"
 
     # 떨어진 두 조각은 MultiPolygon이 된다.
-    apart = ex.dissolve([feature(cell(0, 0)), feature(cell(5, 5))])
+    apart = ex.dissolve(rings(cell(0, 0), cell(5, 5)))
     assert apart["type"] == "MultiPolygon" and len(apart["coordinates"]) == 2
 
+    # 뒤집힌 링도 바깥은 반시계로 돌려놓는다. 방향이 섞이면 이어 붙일 때 안팎이 뒤집힌다.
+    flipped = ex.normalized_rings(feature(list(reversed(cell(0, 0)))))[0]
+    assert ex.signed_area([(x, y) for x, y in flipped]) > 0
+
     # 이름 자리는 가장 넓은 조각의 무게중심이다.
-    assert ex.label_point(ex.dissolve([feature(cell(0, 0))])) == [0.5, 0.5]
-    big = ex.dissolve([feature(cell(0, 0)), feature(cell(10, 0)), feature(cell(11, 0))])
+    assert ex.label_point(ex.dissolve(rings(cell(0, 0)))) == [0.5, 0.5]
+    big = ex.dissolve(rings(cell(0, 0), cell(10, 0), cell(11, 0)))
     assert ex.label_point(big) == [11.0, 0.5], "넓은 쪽 조각에 이름을 놓아야 합니다"
 
     print("합성 도형 점검 통과: 직선 축약, 튀어나온 점 유지, 링 닫힘, 작은 구멍 제거, 속성 축소, 자치구 합치기, 이름 자리")
