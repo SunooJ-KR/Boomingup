@@ -402,4 +402,24 @@ style_ax(ax, "준공연차 효과(다른 요인 통제 후) — 20년차 대비 
 fig.tight_layout()
 save(fig, "13b_hedonic_age_curve")
 
+# ============================================================
+# 14. 동 클러스터 성향 분석 — 가격 수준 vs 최근 모멘텀(시장 대비 초과 상승률)
+# ============================================================
+prof14 = pd.read_csv("../output/14_cluster_profile_with_rise.csv")
+
+fig, ax = plt.subplots(figsize=(8.5, 6.5))
+for i, row in prof14.iterrows():
+    c = int(row["cluster"])
+    ax.scatter(row["price_per_m2_median"], row["recent_1y_excess_change_pct"],
+               s=row["n_dong"] * 9, color=palette9[(c - 1) % len(palette9)],
+               alpha=0.85, zorder=3, edgecolor="white", linewidth=1.2)
+    ax.annotate(f"클러스터 {c}\n(동 {int(row['n_dong'])}개)",
+                xy=(row["price_per_m2_median"], row["recent_1y_excess_change_pct"]),
+                xytext=(9, 6), textcoords="offset points", fontsize=9, color=NAVY, weight="bold")
+ax.axhline(0, color="#C3C2B7", linewidth=1, linestyle=":")
+style_ax(ax, "클러스터별 성향 — 가격 수준 vs 최근 1년 시장 대비 초과 상승률\n(점 크기 = 클러스터에 속한 동 개수)",
+         "㎡당 단가 중앙값(만원, 2024년 이후 거래)", "최근 1년 시장 대비 초과 상승률(%)")
+fig.tight_layout()
+save(fig, "14_cluster_profile_price_vs_momentum")
+
 print("\n전체 그림 생성 완료:", OUT_DIR)
