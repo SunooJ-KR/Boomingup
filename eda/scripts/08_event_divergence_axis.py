@@ -1,8 +1,14 @@
 """8번 축: 시장 반응이 갈린 이벤트에서 반대로 움직인 동 찾기.
 
-event_summary의 share_same_direction이 낮은(동들의 방향이 크게 갈린)
-이벤트를 골라, event_dong_path(k=+4, 4분기 뒤)에서 다수와 반대로
-움직인 동을 찾는다.
+event_summary에서 상승한 동 비율(share_up)이 50%에 가장 가까운(=반반으로 갈린)
+이벤트를 골라, event_dong_path(k=+4, 4분기 뒤)에서 다수와 반대로 움직인 동을 찾는다.
+
+v2 (2026-09-16 codex 검증 후 수정): 원래는 share_same_direction(=평균 변화와 같은
+부호로 움직인 동 비율)이 작은 순으로 골랐다. 그런데 이 값은 평균이 한쪽으로 치우쳐 있으면
+"반반으로 갈렸다"가 아니라 "평균과 다르게 움직인 동이 많다"는 뜻이 될 수 있다(예: P19는
+share_same_direction=share_up=0.454로 우연히 같았는데, 이는 평균 부호가 다수 방향과
+반대라서 생긴 값이다). 우리가 차트·설명에서 실제로 쓰는 정의("상승한 동 비율이 50%에
+가까울수록 반반")에 맞게 |share_up-0.5| 오름차순으로 고르도록 고쳤다.
 """
 import pandas as pd
 
@@ -11,15 +17,19 @@ from _db import query_df
 pd.set_option("display.width", 120)
 
 events = query_df("""
-    select event_id, label, effective_date, category, share_same_direction, share_up
+    select event_id, label, effective_date, category, share_same_direction, share_up, overlapping_events
     from app.event_summary
-    where pre_observable and post_observable
-    order by share_same_direction asc
-    limit 5;
+    where pre_observable and post_observable;
 """)
-print("=== 동 간 방향이 가장 크게 갈린 이벤트 5개 ===")
-print(events.to_string(index=False))
+events["dist_from_half"] = (events["share_up"].astype(float) - 0.5).abs()
+events = events.sort_values("dist_from_half").head(5)
+print("=== 상승한 동 비율이 50%에 가장 가까운(=반반으로 갈린) 이벤트 5개 ===")
+print(events[["event_id", "label", "effective_date", "share_up", "overlapping_events"]].to_string(index=False))
 events.to_csv("../output/08_low_consensus_events.csv", index=False)
+
+has_overlap = events["overlapping_events"].fillna("").str.len() > 0
+print(f"\n선택된 5개 중 다른 이벤트와 ±4분기 내에 겹치는 것: {has_overlap.sum()}개 "
+      f"({', '.join(events.loc[has_overlap, 'event_id'])})")
 
 paths = query_df("""
     select edp.event_id, edp.dong, d.gu_name, edp.k, edp.rel_log_change
