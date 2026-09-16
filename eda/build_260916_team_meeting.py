@@ -118,7 +118,7 @@ s = d.section("1. 시간 — 거래량이 가격보다 훨씬 크게 흔들린�
 s.gap(0.06)
 purpose_box(s, "정책·금리 발표 시점과 거래량이 실제로 겹쳐 움직이는지 확인합니다.")
 s.gap(0.05)
-s.image_centered(f"{FIG}/01a_quarterly_volume_events.png", max_width_in=8.6, top_in=s.y, bottom_in=5.7)
+s.image_centered(f"{FIG}/01a_quarterly_volume_events.png", max_width_in=8.6, top_in=s.y, bottom_in=5.7, caption="핵심: 2022년 거래 급감, 2023년 규제 해제 이후 반등 — 정책 시점과 겹침")
 s.gap(0.05)
 caution_box(s, "그래프에 이벤트 시점을 표시해본 것일 뿐, 금리·계절성·다른 정책까지 통제해서 인과를 "
                "검정한 건 아닙니다. '정책 때문에 거래량이 움직였다'가 아니라 '시점이 겹친다' 정도로 "
@@ -139,7 +139,7 @@ s = d.section("1. 시간 — 거래량 지수 vs 단가 지수", "PART 2")
 s.gap(0.06)
 purpose_box(s, "거래량과 단가 중 어느 쪽이 더 크게 출렁이는지 같은 척도(지수)로 비교합니다.")
 s.gap(0.05)
-s.image_centered(f"{FIG}/01b_volume_vs_price_index.png", max_width_in=8.4, top_in=s.y, bottom_in=5.55)
+s.image_centered(f"{FIG}/01b_volume_vs_price_index.png", max_width_in=8.4, top_in=s.y, bottom_in=5.55, caption="핵심: 거래량(-71%~+183%)이 가격(-3~+5%)보다 훨씬 크게 출렁임")
 yy = pd.read_csv("output/01_yearly_yoy.csv")
 r2022 = yy[yy["deal_year"] == 2022].iloc[0]
 r2023 = yy[yy["deal_year"] == 2023].iloc[0]
@@ -169,7 +169,7 @@ s = d.section("2. 지역 — 자치구 간 가격 격차", "PART 2")
 s.gap(0.06)
 purpose_box(s, "같은 서울 안에서도 자치구별로 가격 수준이 얼마나 다른지 확인합니다.")
 s.gap(0.05)
-s.image_centered(f"{FIG}/02a_gu_price_2026.png", max_width_in=7.2, top_in=s.y, bottom_in=5.55)
+s.image_centered(f"{FIG}/02a_gu_price_2026.png", max_width_in=7.2, top_in=s.y, bottom_in=5.55, caption="핵심: 강남구(3,531만원)가 도봉구(802만원)의 4.4배")
 s.gap(0.05)
 caution_box(s, "원시거래 중앙값이라 특정 시기에 고가·저가 단지 거래가 몰리면 값이 흔들릴 수 있습니다. "
                "구 하나를 대표하는 '평균적인 집값'으로 확대 해석하지 않는 게 좋습니다.")
@@ -186,7 +186,7 @@ s = d.section("2. 지역 — 구 평균과 동별 흐름이 다를 수 있다", 
 s.gap(0.06)
 purpose_box(s, "구 평균 하나로는 안 보이는 동별 편차가 실제로 있는지 확인합니다.")
 s.gap(0.05)
-s.image_centered(f"{FIG}/02b_dong_yoy_top_bottom.png", max_width_in=7.8, top_in=s.y, bottom_in=5.6)
+s.image_centered(f"{FIG}/02b_dong_yoy_top_bottom.png", max_width_in=7.8, top_in=s.y, bottom_in=5.6, caption="핵심: 강남구 평균 +6.8%, 그 안에서도 역삼 -7.1%~수서 +33.3%로 편차 큼")
 dr = pd.read_csv("output/02_dong_yoy_ranked.csv")
 gh = pd.read_csv("output/02_gu_hedonic_change.csv")
 gangnam_row = gh[gh["gu_name"] == "강남구"].iloc[0]
@@ -215,7 +215,7 @@ s = d.section("3. 단지 속성 — 준공연차와 가격의 U자 관계", "PAR
 s.gap(0.06)
 purpose_box(s, "단지가 지어진 지 얼마나 됐는지가 가격과 어떤 모양으로 관계되는지 확인합니다.")
 s.gap(0.05)
-s.image_centered(f"{FIG}/03a_age_price.png", max_width_in=7.6, top_in=s.y, bottom_in=5.6)
+s.image_centered(f"{FIG}/03a_age_price.png", max_width_in=7.6, top_in=s.y, bottom_in=5.6, caption="핵심: 신축과 40년 이상 노후 단지가 모두 비싼 U자형")
 s.gap(0.05)
 caution_box(s, "지역·입지·단지규모를 따로 통제하지 않은 단순 중앙값 비교라, '연차 자체의 효과'라고 "
                "단정하기보다는 참고 지표로 봐주세요.")
@@ -235,7 +235,7 @@ s = d.section("3. 단지 속성 — 정비사업 진행 단계별 프리미엄",
 s.gap(0.06)
 purpose_box(s, "정비사업이 실제로 진행 중인 단지가 가격에 프리미엄을 받는지 확인합니다.")
 s.gap(0.05)
-s.image_centered(f"{FIG}/03b_redevelop_premium.png", max_width_in=7.6, top_in=s.y, bottom_in=5.55)
+s.image_centered(f"{FIG}/03b_redevelop_premium.png", max_width_in=7.6, top_in=s.y, bottom_in=5.55, caption="핵심: 정비사업 초기~중기 단계일수록 프리미엄이 큼(최대 154%)")
 stage = pd.read_csv("output/03_redevelop_stage_price.csv")
 top_stage = stage.loc[stage["premium_vs_none_pct"].idxmax()]
 s.gap(0.05)
@@ -260,7 +260,7 @@ s = d.section("4. 입지 — 역까지 거리와 가격", "PART 2")
 s.gap(0.06)
 purpose_box(s, "지하철역까지 거리가 가까울수록 실제로 비싼지 확인합니다.")
 s.gap(0.05)
-s.image_centered(f"{FIG}/04a_station_distance_price.png", max_width_in=7.6, top_in=s.y, bottom_in=5.6)
+s.image_centered(f"{FIG}/04a_station_distance_price.png", max_width_in=7.6, top_in=s.y, bottom_in=5.6, caption="핵심: 역까지 300m 이내(1,466만원)가 2km 이상(687만원)의 2배 이상")
 s.gap(0.05)
 caution_box(s, "다른 요인(지역·연식 등)을 통제하지 않은 단순 비교라, 역세권 자체의 효과인지 다른 "
                "요인이 섞인 건지 이 그래프만으로는 확정할 수 없습니다.")
@@ -277,7 +277,7 @@ s = d.section("4. 입지 — 한강조망이 가장 강한 입지 요인", "PART
 s.gap(0.06)
 purpose_box(s, "입지 요인들(한강조망·학군 등) 중 가격과 가장 밀접한 게 무엇인지 비교합니다.")
 s.gap(0.05)
-s.image_centered(f"{FIG}/04b_river_view_price.png", max_width_in=5.6, top_in=s.y, bottom_in=5.55)
+s.image_centered(f"{FIG}/04b_river_view_price.png", max_width_in=5.6, top_in=s.y, bottom_in=5.55, caption="핵심: 한강조망 있는 단지가 없는 단지보다 약 55% 비쌈")
 s.gap(0.05).callout(
     "참고: 학군 거리는 영향이 약함",
     "초등학교(-0.007)·중학교(-0.067)·고등학교(-0.039)까지 거리는 단가와의 상관계수가 "
@@ -303,7 +303,7 @@ s = d.section("5. 매물 속성 — 층수가 오를수록 단가도 오른다",
 s.gap(0.06)
 purpose_box(s, "같은 단지 안에서도 층수가 가격에 영향을 주는지 확인합니다.")
 s.gap(0.05)
-s.image_centered(f"{FIG}/05a_floor_price.png", max_width_in=7.6, top_in=s.y, bottom_in=5.6)
+s.image_centered(f"{FIG}/05a_floor_price.png", max_width_in=7.6, top_in=s.y, bottom_in=5.6, caption="핵심: 21층 이상 고층에서 단가가 크게 뜀")
 s.gap(0.05)
 caution_box(s, "지역·연식·단지를 통제하지 않은 단순 비교라, 고층 자체의 프리미엄인지 최근 지어진 "
                "고층 대단지가 원래 비싼 지역에 많은 건지는 이 데이터만으로 확정할 수 없습니다.")
@@ -320,7 +320,7 @@ s = d.section("5. 매물 속성 — 면적은 작거나 커야 비싸다", "PART
 s.gap(0.06)
 purpose_box(s, "면적대별로 ㎡당 가격이 어떤 모양으로 다른지 확인합니다.")
 s.gap(0.05)
-s.image_centered(f"{FIG}/05b_area_price.png", max_width_in=7.8, top_in=s.y, bottom_in=5.6)
+s.image_centered(f"{FIG}/05b_area_price.png", max_width_in=7.8, top_in=s.y, bottom_in=5.6, caption="핵심: 소형(40㎡ 이하)·대형(165㎡ 이상)이 국민평형보다 비쌈")
 s.gap(0.05)
 caution_box(s, "소형은 수요층, 대형은 희소성이 이유일 거라는 가설은 세워볼 수 있지만 이 데이터만으로 "
                "확인된 원인은 아닙니다.")
@@ -338,7 +338,7 @@ s = d.section("6. 전세-매매 — 전세가율 상관은 해마다 방향이 �
 s.gap(0.06)
 purpose_box(s, "전세가율이 높은 동네가 1년 뒤 매매가도 더 오르는지 확인합니다.")
 s.gap(0.05)
-s.image_centered(f"{FIG}/06_jeonse_ratio_future_change.png", max_width_in=6.8, top_in=s.y, bottom_in=5.6)
+s.image_centered(f"{FIG}/06_jeonse_ratio_future_change.png", max_width_in=6.8, top_in=s.y, bottom_in=5.6, caption="핵심: 전세가율 낮은 동(6.6%)보다 높은 동(11.0%)이 더 올랐지만 상관은 약함")
 je = pd.read_csv("output/06_jeonse_ratio_vs_future_change.csv")
 je.columns = ["jeonse_bin", "n", "median", "mean", "mean_pct"]
 lo, hi = je.iloc[0], je.iloc[-1]
@@ -367,7 +367,7 @@ s = d.section("6. 전세-매매 — 연도별로 쪼개면 상관관계가 사�
 s.gap(0.06)
 purpose_box(s, "앞 슬라이드의 전세가율-가격 관계가 해마다 안정적으로 유지되는지 확인합니다.")
 s.gap(0.05)
-s.image_centered(f"{FIG}/06b_jeonse_corr_by_year.png", max_width_in=7.6, top_in=s.y, bottom_in=5.6)
+s.image_centered(f"{FIG}/06b_jeonse_corr_by_year.png", max_width_in=7.6, top_in=s.y, bottom_in=5.6, caption="핵심: 상관계수가 +0.27~-0.51로 해마다 부호가 뒤집힘")
 s.gap(0.05)
 caution_box(s, "전체 상관 0.15는 여러 해의 신호가 섞여 나온 평균일 뿐, 어느 해에나 적용되는 안정적인 "
                "관계가 아닙니다. 시장 국면이 전세가율과 미래 가격 양쪽에 동시에 영향을 줘서 생기는 "
@@ -390,7 +390,7 @@ s = d.section("7. 복합 — 정비사업 강도와 가격 변동성, 유의한 
 s.gap(0.06)
 purpose_box(s, "정비사업이 '얼마나 큰 규모로' 진행되는지가 가격 변동성과 관련 있는지 확인합니다.")
 s.gap(0.05)
-s.image_centered(f"{FIG}/07_redevelop_intensity_volatility.png", max_width_in=7.6, top_in=s.y, bottom_in=5.55)
+s.image_centered(f"{FIG}/07_redevelop_intensity_volatility.png", max_width_in=7.6, top_in=s.y, bottom_in=5.55, caption="핵심: 정상 범위 동만 보면 강도-변동성 상관이 사실상 없음(r=0.009)")
 s.gap(0.05)
 caution_box(s, "명목상 정상 범위(강도≤1)만 남기면 r=0.009(p=0.889)로 통계적으로 유의한 선형관계를 "
                "확인하지 못했습니다. p값이 크다고 '관계가 없음이 증명됐다'는 뜻은 아니라, '유의한 "
@@ -417,7 +417,7 @@ s = d.section("8. (추가) 반응이 갈린 이벤트, 반대로 움직인 동",
 s.gap(0.06)
 purpose_box(s, "동네마다 반응이 크게 갈린 이벤트를 찾아, 원인을 그 이벤트로 특정할 수 있는지 확인합니다.")
 s.gap(0.05)
-s.image_centered(f"{FIG}/08_low_consensus_events.png", max_width_in=7.8, top_in=s.y, bottom_in=5.55)
+s.image_centered(f"{FIG}/08_low_consensus_events.png", max_width_in=7.8, top_in=s.y, bottom_in=5.55, caption="핵심: 반응이 가장 갈린 이벤트 5개, 전부 다른 이벤트와 겹쳐 원인 특정 불가")
 s.gap(0.05)
 caution_box(s, "김용진 님 EDA 제안 문서(eda_filelist.md)의 관점을 반영했습니다. 선택된 5개 이벤트 "
                "전부가 ±4분기 내에 다른 이벤트와 겹쳐서, 5개 중 어느 것도 개별 효과로 분리 해석할 "
@@ -439,7 +439,7 @@ s = d.section("9. (추가, 시도) 함께 움직이는 동 클러스터링", "PA
 s.gap(0.06)
 purpose_box(s, "가격이 비슷하게 오르내리는 동끼리 묶이는 그룹이 있는지 확인합니다.")
 s.gap(0.05)
-s.image_centered(f"{FIG}/09_cluster_size_imbalance.png", max_width_in=6.0, top_in=s.y, bottom_in=5.55)
+s.image_centered(f"{FIG}/09_cluster_size_imbalance.png", max_width_in=6.0, top_in=s.y, bottom_in=5.55, caption="핵심: 195개 동 중 167개가 한 클러스터에 쏠려 해석 불가")
 s.gap(0.05)
 caution_box(s, "결측 분기(표본 부족으로 제외된 동)가 있는 분기를 통째로 제외하는 방식이라 41개 분기 "
                "중 24개만 남고 시계열이 끊겼습니다. 해석 가능한 결과를 얻지 못했습니다.")
@@ -481,7 +481,7 @@ s = d.section("10. (추가) 인구-가격 관계는 보광동 하나가 만든 �
 s.gap(0.06)
 purpose_box(s, "인구가 줄어든 동네와 가격이 오른 동네가 실제로 겹치는지 확인합니다.")
 s.gap(0.05)
-s.image_centered(f"{FIG}/10_population_vs_price.png", max_width_in=7.6, top_in=s.y, bottom_in=5.55)
+s.image_centered(f"{FIG}/10_population_vs_price.png", max_width_in=7.6, top_in=s.y, bottom_in=5.55, caption="핵심: 보광동을 빼면 인구-가격 상관이 거의 사라짐")
 corr10 = pd.read_csv("output/12_population_correlation_summary.csv").iloc[0]
 s.gap(0.05)
 caution_box(s, f"전체 231개 동 상관계수는 {corr10['pearson_r']:.3f}(p={corr10['p_value']:.2f}, "
