@@ -166,7 +166,9 @@ save(fig, "03a_age_price")
 # 3b. 정비사업 단계별 프리미엄
 # ============================================================
 stage = pd.read_csv("../output/03_redevelop_stage_price.csv")
-order = ["해당없음", "구역지정", "추진위", "조합설립", "사업시행", "관리처분", "착공", "건축심의"]
+# 정비사업 실제 진행 순서: 구역지정 -> 추진위원회 구성 -> 조합설립인가 -> 건축심의 ->
+# 사업시행인가 -> 관리처분인가 -> 착공 (뒤로 갈수록 실제 공사에 가까워짐)
+order = ["해당없음", "구역지정", "추진위", "조합설립", "건축심의", "사업시행", "관리처분", "착공"]
 stage["stage"] = pd.Categorical(stage["stage"], categories=order, ordered=True)
 stage = stage.sort_values("stage")
 
