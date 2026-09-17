@@ -16,6 +16,16 @@
 - 최신 `dev`에서 `dev-{작업내용}` 이름으로 브랜치를 만든다 (예: `dev-dong-model`)
 - 작업이 끝나면 `dev`로 PR을 올린다. `main`에 직접 올리지 않는다
 
+## 매일 돌릴 것
+
+```bash
+.venv/bin/python data/collect/61.snapshot_trades.py
+```
+
+최근 6개월 실거래를 조회일별로 남긴다(`output/raw/snapshot/{조회일}/`). 하루치 약 4MB다.
+이 기록이 없으면 신고 지연을 보정하는 nowcast(N-1)를 영원히 학습할 수 없다. **하루 거르면
+그날의 vintage는 되살릴 수 없다.** 같은 날 다시 돌리면 빠진 것만 이어받고 덮어쓰지 않는다.
+
 ## 실행 환경과 순서
 
 - Python: 저장소 루트의 전용 가상환경 `.venv` (Python 3.13). 처음 한 번 만든다:
