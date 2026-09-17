@@ -22,14 +22,14 @@
 |---|---|---|---|---|
 | 원천 API snapshot 이력 | Track N-1 도착률 곡선 | 계약일+30일 규칙으로 근사 vintage를 만들어 N-3에 사용 | **오늘부터** 원천 응답을 날짜별로 적재. 4분기 이상 쌓이면 N-1 학습 | P0-2, N-1 |
 | 지수 표준오차 `log_index_se` | Track 0 shrinkage, gate, 구간 조정, 4.4 진단 | 없음. 만들기 전엔 아무것도 못 한다 | hedonic 재추정 시 시점효과의 SE를 같이 산출해 `dong_index`에 저장 | P0-1 |
-| 세대수의 동 매핑 커버리지 | μ 재고가중 | 커버리지를 먼저 잰다 | 커버리지가 낮으면 거래가중으로 후퇴하고 결정 기록 | P0-4 |
+| ~~세대수의 동 매핑 커버리지~~ 해결됨 | μ 재고가중 | — | 매매 기록 + `(구, bjd_code)` 사전으로 99.3%. 재고가중 확정(결정 43·47) | P0-4 Done |
 | 거래 단지 수·상위 단지 집중도 | gate, 신뢰도 블록 | `trade_sale`에서 바로 집계 가능 | `dong_feature`에 `n_complexes_4q`, `dominant_complex_share_4q` 추가 | P0-5 |
 | 전세 feature의 2021-06 break 표시 | Track C feature | break 더미 컬럼 추가 | 2021H2 이후 origin에서만 전세 feature 사용하는 정책을 C-3 설계에 명시 | C-3 |
 | 정책 가격 문턱 이력 | Track C 추가 feature | 국토부 고시 원문에서 발표일·시행일·문턱을 수동 입력 | `policy_events` 테이블 신설 | C-3b |
 | 주담대 금리 | Track C feature | v1 feature에서 제외. 기준금리(이미 있음)로 대체하지 않는다 (서울 전역 동일값은 feature 금지) | ECOS API 키 확보 후 `observed_at` 붙여 적재 | D-2 |
 | 정비사업 시계열 (인가일) | Track C feature, 생존 편향 해소 | feature로 쓰지 않는다. 화면용 `rz_*`만 유지, "2026-06 시점, 해제·완료 미반영" 각주 | 인가일 이벤트 수집 | D-3 |
 | 입주 예정 물량, 교통 호재 | Track C feature | v1에서 제외 | P2로 미룬다. 이 문서의 범위 밖 | — |
-| 6개 동 키 불일치 (경계 미매칭) | 지도 | UI에 사유 노출 | 수동 매핑으로 닫는다 | D-4 |
+| 6개 동 키 불일치 (경계 미매칭) | 지도 | UI에 사유 노출 | `(구 코드, bjd_code)`가 맞는 쪽을 옳은 동으로 본다(결정 48) | D-4 |
 | `dong_prediction` nowcast 행·확률·사유 코드 | 화면 ②③⑥ | 없음 | `status` CHECK 확장, `prob_above_seoul`, `delta_lower/upper`, `mu_ref`, `insufficient_reason` 추가 | P3-5 |
 
 ## 3. 현황판
@@ -101,7 +101,7 @@
 | D-1 | = P0-2 snapshot 적재 | Done | (P0-2 참고) | — |
 | D-2 | ECOS API 키 확보, 주담대 금리 `observed_at` 포함 적재 | Todo | `docs/data-sources.md`에 확인 방법 기록 | — |
 | D-3 | 정비사업 인가일 이벤트 수집 (생존 편향 해소) | Todo | 시계열 테이블과 출처 기록 | — |
-| D-4 | 6개 동 키 불일치 수동 매핑 | Todo | 지수 동 346개 전부 경계 매칭 | — |
+| D-4 | 6개 동 키 불일치 매핑 — `bjd_code`로 닫는다(결정 48) | Todo | 지수 동 346개 전부 경계 매칭 | — |
 
 ## 5. Phase 게이트
 
@@ -121,5 +121,5 @@
 | 2026-09-17 | T0-A | `models/index/63.shrink_dong_index.py`, `output/63.1`·`63.2`, `docs/model-performance.md` R2 | 45, 46 | 현행 λ=5가 반쪽 나누기 최적(6.5) 대비 0.27%만 나빠 유지한다. 사후 shrinkage로 얻을 것이 없다. Track 0의 성과는 SE 컬럼이다 |
 | 2026-09-17 | P0-2 | `data/collect/61.snapshot_trades.py`, `_trades_api.py`, `output/raw/snapshot/2026-09-17/` | — | 첫 조회일 적재 완료(매매·전월세 6개월 × 25개 구, 4MB). 재실행 시 건너뛰는 것 확인. **매일 돌려야 한다** — `models/AGENTS.md`에 적었다 |
 | 2026-09-17 | P0-5 | `models/index/62.build_dong_features.py`, `output/62.1` | — | 현행 gate(4분기 20건) 통과 행의 24.1%가 한 단지 거래 비중 50% 초과다. 거래 단지 수 하위 10%는 3개뿐이다. G-1이 단일 기준을 바꿀 근거다. DB 컬럼 추가는 feature 빌더가 완성되는 C-3b에서 한다 |
-| 2026-09-17 | P0-4 | `models/index/64.measure_mu_weight.py` | 43, 44 | 세대수 기준 커버리지 95.6%로 재고가중 채택. 빠진 464개는 대부분 임대 단지다. `complex.bjd_code`는 법정동 코드가 아니어서 못 쓴다 |
+| 2026-09-17 | P0-4 | `models/index/64.measure_mu_weight.py` | 43, 47, 48 | 세대수 기준 커버리지 99.3%로 재고가중 채택. 매매 기록으로 95.6%, `bjd_code` 사전이 3.7%를 더 붙인다. 남은 188개 단지는 `bjd_code`가 비어 있다. (결정 44는 틀려서 47로 대체했다) |
 | 2026-09-17 | P0-1 | `models/index/60.build_dong_index_se.py`, `_dong_index_se.py`, `data/db/003_dong_index_se.sql`, `output/60.1` | 42 | τ=0.0585. SE 중앙값은 거래 0건 0.058에서 50건 초과 0.010까지 단조 감소. 적재는 42.1 등 다른 산출물이 로컬에 없어 아직 못 했다 |
