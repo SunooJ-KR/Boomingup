@@ -90,7 +90,7 @@ DB의 테이블은 두 종류의 버전 축 중 하나에 붙어 있다.
 | 테이블 | PK | 주요 컬럼 | 내용 |
 |---|---|---|---|
 | `dong` | `snapshot_id, dong` | `sgg_cd`, `umd_nm`, `gu_name` | 동 마스터. 다른 동 테이블이 여기로 FK를 건다 |
-| `dong_index` | `snapshot_id, dong, quarter` | `log_index`, `log_index_se`, `n_sales`, `n_sales_4q`, `eligible` | 분기별 hedonic 지수. `eligible`은 직전 4분기 매매 20건 기준(결정 7). `log_index_se`는 지수 추정오차로, 표본 잡음과 구 지수 수축 편향을 합친 값이다(`models/index/60`) |
+| `dong_index` | `snapshot_id, dong, quarter` | `log_index`, `log_index_se`, `n_sales`, `n_sales_4q`, `eligible` | 분기별 hedonic 지수. `eligible`은 직전 4분기 매매 20건 기준(결정 7). `log_index_se`는 지수 추정오차다. 2026-09-17 active DB에는 003 migration이 아직 적용되지 않아 69가 `output/60.1`로 폴백한다 |
 | `dong_feature` | `snapshot_id, dong, as_of_quarter` | 아래 §3.3 | 기점 분기별 feature. 시점 누수를 막으려고 `as_of_quarter`를 키에 둔다(결정 13) |
 | `dong_prediction` | `snapshot_id, dong, horizon_q` | `origin`, `status`, `market_hat`, `relative_hat`, `gamma`, `y_hat`, `change_pct_est`, `lower_pct`, `upper_pct`, `model_version` | 과거 예측 결과 자리. 현재 비어 있고 v2 프론트는 읽지 않는다. 향후 검토를 위해 테이블은 남긴다(결정 66) |
 | `dong_support` (도입 예정) | `snapshot_id, dong` | `as_of`, 표본 flag, 12개월 변화와 오차, 구조 유형, 비교 동 | `output/69.1.dong_support.txt` 적재 대상. DDL과 적재 구현 전이며, 완료 조건은 `docs/process.md` P3-6이다 |

@@ -153,8 +153,8 @@
 | P1-1 | 표본 주의 flag 3개 판정 규칙 확정 | Done | `feature-spec.md` §1 | `output/62.1`, 결정 7·42 |
 | P1-2 | `HIGH_INDEX_ERROR`의 SE 구간 경계를 분포로 확인 | Done | `feature-spec.md` §1.5. 경계 0.032 | `dong_index.log_index_se` |
 | P1-3 | δ 오차 문턱(2σ)에서 `DISTINGUISHABLE` 동 수 집계 | Done | `feature-spec.md` §2.5. 137/346 | μ는 등가중 근사. 세대수 가중은 69에서 |
-| P1-4 | 산출 스크립트 작성 | Doing | `models/index/69`, `output/69.1` | `feature-spec.md` §6 |
-| P1-5 | 경계 사례 표를 `test_69.py`로 옮기고 통과 확인 | Todo | `models/index/test_69.py` | P1-4 |
+| P1-4 | 산출 스크립트 작성 | Done | `models/index/69.build_dong_support.py`, `output/69.1` | `feature-spec.md` §6 |
+| P1-5 | 경계 사례 표를 `test_69.py`로 옮기고 통과 확인 | Done | `models/index/test_69.py` | P1-4 |
 
 ### Phase 2 — 구조 유형과 함께 볼 동
 
@@ -162,8 +162,8 @@
 |---|---|---|---|---|
 | P2-1 | K-S 최신 기점 소속을 화면용 구조 유형으로 정리 | Done | `feature-spec.md` §3 | `output/66.1`, 결정 57 |
 | P2-2 | 프로필 자동 설명 규칙 작성 | Done | `feature-spec.md` §3.3, `wording-guide.md` §4 | `output/66.3` |
-| P2-3 | 같은 클러스터 안 최근접 5개 산출 | Todo | `models/index/69` | P1-4 |
-| P2-4 | 같은 자치구 쏠림 보고와 F-4 경계 사례 추가 | Todo | `feature-spec.md` §4.6 | P2-3. 69 첫 실행 출력 |
+| P2-3 | 같은 클러스터 안 최근접 5개 산출 | Done | `models/index/69.build_dong_support.py` | P1-4 |
+| P2-4 | 같은 자치구 쏠림 보고와 F-4 경계 사례 추가 | Done | `feature-spec.md` §4.6. 86/245개(35.1%) | P2-3. 69 첫 실행 출력 |
 
 ### Phase 3 — payload와 화면
 
@@ -215,11 +215,10 @@ Phase 4를 통과하지 못했는데 Phase 5로 넘어가지 않는다. 기능�
 
 문서는 전부 있다. 남은 것은 구현이다.
 
-1. `models/index/69` + `test_69.py` (P1-4, P1-5, P2-3). 첫 실행 보고로 F-4 경계 사례를 채운다 (P2-4).
-2. `check-wording.mjs` 금지어 추가 (P3-5). 코드 교체 전에 넣어야 교체 중 걸리는 문구가 보인다.
-3. `dong_support` DDL과 적재 (P3-6).
-4. API·타입·컴포넌트 교체 (P3-7~P3-9).
-5. build 검증과 `dev` merge (P3-10).
+1. `check-wording.mjs` 금지어 추가 (P3-5). 코드 교체 전에 넣어야 교체 중 걸리는 문구가 보인다.
+2. `dong_support` DDL과 적재 (P3-6).
+3. API·타입·컴포넌트 교체 (P3-7~P3-9).
+4. build 검증과 `dev` merge (P3-10).
 
 ## 6. 남은 결정
 
