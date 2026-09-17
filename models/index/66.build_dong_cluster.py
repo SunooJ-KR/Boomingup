@@ -3,7 +3,7 @@
 # ============================================================================
 # Author:      yjkim
 # Purpose:     동을 구조 변수로 묶는다 (Track K, K-S). 구를 대신할 pooling 단위다
-# Description: 계획 docs/model-develope-plan.md §2.5, 진행 docs/model-build-process.md K-1.
+# Description: 동 구조 클러스터 산출. 현행 사용 기준은 docs/decisions.md 결정 57·65.
 #
 #              구는 행정 경계지 경제적 경계가 아니다. 가격대·전세가율·재고·신축 비중·
 #              위치가 비슷한 동끼리 묶으면 구보다 나은 그룹이 될 수 있다.

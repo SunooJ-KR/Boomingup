@@ -1,5 +1,5 @@
 // docs/payload-schema.md 초안을 따른다.
-// tags, status_reason, comparison은 docs/front/frontend-development-plan.md의 추가 후보이며 아직 합의 전이라 optional로 둔다.
+// 현재 구현은 v1 타입이다. 교체 대상과 v2 계약은 docs/payload-schema.md §7을 따른다.
 
 export type PredictionStatus = "PREDICTED" | "INSUFFICIENT_SALES" | "NOT_SERVED";
 

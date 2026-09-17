@@ -1,6 +1,6 @@
 # 모델 성능 지표 (최적화 모델, 2026-09-16 실행)
 
-대상: `docs/model-optimization-plan.md` v3.1의 2단계 모델(서울 시장 + 동 상대).
+대상: 결정 36의 2단계 모델(서울 시장 + 동 상대).
 산출물: `output/48.1~48.5`, `output/49.model/model.json`, `output/49.1.latest_predictions.txt`.
 평가 구간은 이미 관찰된 기간이므로 **모든 수치는 탐색적 결과**다(결정 18·36).
 
@@ -93,7 +93,7 @@ M2(+과열 비율) 0.08318, M3(+정책 순증) 0.07714 — 둘 다 M0보다 나�
 
 # 재설계 결과 (2026-09-17~)
 
-계획은 `docs/model-develope-plan.md`, 진행 상태는 `docs/model-build-process.md`에 있다.
+과거 실험의 결과와 채택 여부는 이 문서와 `docs/decisions.md`에 남긴다. 현재 작업 계획은 `docs/process.md`다.
 위의 2026-09-16 결과는 그대로 두고, 재설계 산출물은 여기에 이어 적는다.
 
 ## R1. 지수 추정오차 (P0-1, `models/index/60`)

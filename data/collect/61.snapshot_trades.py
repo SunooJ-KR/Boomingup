@@ -3,7 +3,7 @@
 # ============================================================================
 # Author:      yjkim
 # Purpose:     최근 몇 달 실거래를 "오늘 본 그대로" 날짜별로 남긴다 (vintage 적재)
-# Description: 계획 docs/model-develope-plan.md §2.2, 진행 docs/model-build-process.md P0-2.
+# Description: 잠정 지수 평가용 거래 snapshot 생성. 근거는 docs/decisions.md 결정 49·50.
 #              실거래는 계약 후 신고까지 시차가 있어 최근 분기 지수가 아래로 치우친다.
 #              이걸 고치려면 "분기 종료 후 d일에는 최종 건수의 몇 %가 보였는가"라는
 #              도착 곡선이 필요한데, 그건 과거 시점에 무엇이 보였는지를 기록해 둬야만

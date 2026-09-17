@@ -3,7 +3,7 @@
 # ============================================================================
 # Author:      yjkim
 # Purpose:     동×분기 지수의 추정 불확실성(log_index_se)을 구하는 공용 함수
-# Description: 계획 docs/model-develope-plan.md §2.1, 진행 docs/model-build-process.md P0-1.
+# Description: 동 지수 추정오차 공용 함수. 근거는 docs/decisions.md 결정 42.
 #              지수를 쓰는 쪽(shrinkage·gate·구간·측정오차 진단)이 모두 같은 SE 정의를
 #              쓰도록 한 곳에 둔다.
 #

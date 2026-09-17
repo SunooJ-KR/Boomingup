@@ -3,7 +3,7 @@
 # ============================================================================
 # Author:      yjkim
 # Purpose:     기점 분기별 동 feature를 만든다. 첫 판은 거래 단지 수와 집중도다
-# Description: 계획 docs/model-develope-plan.md §3-③, 진행 docs/model-build-process.md P0-5.
+# Description: 표본 상태와 화면 사실정보용 동 feature 산출. 현행 정의는 docs/feature-spec.md.
 #              동의 지수를 믿을 수 있는지는 거래 "건수"만으로 판단할 수 없다.
 #              20건이 한 단지에서만 나왔다면 그 동의 지수는 단지 하나의 지수다.
 #              그래서 gate와 화면 신뢰도 블록이 쓸 두 값을 만든다.

@@ -1,5 +1,5 @@
 // 화면 문구에 투자 판단처럼 읽히는 표현이 들어갔는지 검사한다.
-// 금지 표현 목록은 AGENTS.md와 docs/front/product-plan.md §1을 따른다.
+// 금지 표현 목록은 docs/wording-guide.md §2를 따른다.
 // 실행: npm run check:wording
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join } from "node:path";

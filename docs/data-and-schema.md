@@ -92,14 +92,14 @@ DB의 테이블은 두 종류의 버전 축 중 하나에 붙어 있다.
 | `dong` | `snapshot_id, dong` | `sgg_cd`, `umd_nm`, `gu_name` | 동 마스터. 다른 동 테이블이 여기로 FK를 건다 |
 | `dong_index` | `snapshot_id, dong, quarter` | `log_index`, `log_index_se`, `n_sales`, `n_sales_4q`, `eligible` | 분기별 hedonic 지수. `eligible`은 직전 4분기 매매 20건 기준(결정 7). `log_index_se`는 지수 추정오차로, 표본 잡음과 구 지수 수축 편향을 합친 값이다(`models/index/60`) |
 | `dong_feature` | `snapshot_id, dong, as_of_quarter` | 아래 §3.3 | 기점 분기별 feature. 시점 누수를 막으려고 `as_of_quarter`를 키에 둔다(결정 13) |
-| `dong_prediction` | `snapshot_id, dong, horizon_q` | `origin`, `status`, `market_hat`, `relative_hat`, `gamma`, `y_hat`, `change_pct_est`, `lower_pct`, `upper_pct`, `model_version` | 예측 결과. `status`는 `PREDICTED`/`INSUFFICIENT_SALES`만 허용. **현재 비어 있다** |
+| `dong_prediction` | `snapshot_id, dong, horizon_q` | `origin`, `status`, `market_hat`, `relative_hat`, `gamma`, `y_hat`, `change_pct_est`, `lower_pct`, `upper_pct`, `model_version` | 과거 예측 결과 자리. 현재 비어 있고 v2 프론트는 읽지 않는다. 향후 검토를 위해 테이블은 남긴다(결정 66) |
+| `dong_support` (도입 예정) | `snapshot_id, dong` | `as_of`, 표본 flag, 12개월 변화와 오차, 구조 유형, 비교 동 | `output/69.1.dong_support.txt` 적재 대상. DDL과 적재 구현 전이며, 완료 조건은 `docs/process.md` P3-6이다 |
 | `market_event` | `snapshot_id, event_id` | `effective_date`, `category`, `direction`, `label`, `verified`, `source` | 이벤트 기준일 목록. 예측 feature가 아니라 사실 표시용 |
 | `event_summary` | `snapshot_id, event_id` | `event_quarter`, `base_quarter`, `n_dongs`, `pre/post_change_4q`, `post_median/p10/p90`, `share_up`, `overlapping_events` | 이벤트 전후 동별 지수 분포 요약 |
 | `event_dong_path` | `snapshot_id, event_id, dong, k` | `quarter`, `rel_log_change` | 이벤트 기준 분기 대비 k분기 상대 변화 경로 |
 | `dong_boundary` | `snapshot_id, dong` | `emd_cd`, `eng_nm`, `in_index`, `geometry`(jsonb), bbox 4개, centroid 2개, `source` | 법정동 경계. `geometry`는 GeoJSON Polygon/MultiPolygon만 CHECK로 허용 |
 
-`dong_prediction`의 값 구조는 2단계 모델을 따른다: `y_hat = market_hat + gamma × relative_hat`.
-현재 채택 모델은 M0(서울 모멘텀) + R0(0 예측), γ=0이라 **모든 동의 예측값이 같다**(결정 39).
+`dong_prediction`의 값 구조는 과거 2단계 모델의 기록이다. 결정 59·66에 따라 현재 제품 경로에서는 사용하지 않는다. `dong_support`의 전체 컬럼은 `docs/feature-spec.md` §5를 따른다.
 
 ### 3.3 `dong_feature` 컬럼 묶음
 
@@ -151,15 +151,15 @@ active snapshot 기준 행 수다. `50.load_db.py --commit`이 새 snapshot으�
 그리고 `app.trade_batch_batch_id_seq`에 `usage, select`를 준다. 적재 role에는 DDL 권한이 없다.
 스키마 적용 후 `data/db/check_schema.sql`로 컬럼·PK·FK·CHECK 기대값을 대조한다.
 
-## 4. 프론트가 실제로 읽는 경로
+## 4. 프론트 v2가 읽을 경로
 
-`front/lib/queries.ts` 기준이다. 상세 payload 형태는 `docs/payload-schema.md`.
+아래는 `docs/payload-schema.md`가 정한 목표 경로다. 현재 코드를 이 경로로 바꾸는 작업은 `docs/process.md` P3-7이며, 완료 전에는 v1 조회가 남아 있을 수 있다.
 
 | API | 읽는 테이블 |
 |---|---|
-| `GET /api/meta` | `dong_index`(마지막 분기), `trade_batch`(데이터 기간), `regulation_summary` |
-| `GET /api/dongs` | `dong` + `dong_index` + `dong_feature` + `dong_prediction`, 대표 좌표는 `trade_sale` × `complex` |
-| `GET /api/dong/{dong_id}` | 위 + `trade_sale`(면적대 통계·최근 매매), `complex`(단지 정보) |
+| `GET /api/meta` | `dong_index`(마지막 분기), `dong_support`(산출 기준), `trade_batch`(데이터 기간), `regulation_summary` |
+| `GET /api/dongs` | `dong` + `dong_index` + `dong_feature` + `dong_support`, 대표 좌표는 `trade_sale` × `complex` |
+| `GET /api/dong/{dong_id}` | 위 + `trade_sale`·`trade_rent`(거래 흐름·면적대 분포·최근 매매), `complex`(단지 정보) |
 
 DB 접속이 없거나 조회가 실패하면 `front/public/data/`의 샘플 JSON으로 폴백하고, 응답의 `source`가
 `db`인지 `sample`인지로 구분한다(결정 19). 경계 GeoJSON은 DB가 아니라 정적 파일로 나간다(결정 42).
@@ -183,6 +183,7 @@ DB 접속이 없거나 조회가 실패하면 `front/public/data/`의 샘플 JSO
 | `49.model/model.json`, `49.1.latest_predictions.txt` | `models/index/49.build_final_model.py` | `app.dong_prediction` 적재 대기 |
 | `52.1.seoul_bjd_boundary.geojson`, `52.2.dong_boundary_match.txt` | `models/index/52.build_dong_boundary.py` | `app.dong_boundary` |
 | `front/public/data/dong-boundary.geojson`, `gu-boundary.geojson` | `models/index/53.export_front_boundary.py` | 지도 |
+| `69.1.dong_support.txt` (구현 예정) | `models/index/69` | `app.dong_support`. 표본 상태, 변화 표시, 구조 유형, 함께 볼 동 |
 
 원천 SHP가 없어도 `52.1`은 `app.dong_boundary`에서 복원할 수 있다(결정 45, 복원 SQL은
 `docs/data-sources.md` §6).
@@ -192,14 +193,14 @@ DB 접속이 없거나 조회가 실패하면 `front/public/data/`의 샘플 JSO
 **할 수 있는 것**
 
 - 동·단지 단위 과거 사실 조회: 매매 건수, 면적대별 가격 분포, 최근 매매, 전세가율, 준공·정비사업 현황
-- 서울·자치구·동의 지난 12개월 실제 변화율 비교
-- 이벤트 기준일 전후의 동별 지수 흐름 표시
+- 측정오차를 동반한 동·서울의 지난 12개월 변화 비교
+- 표본 상태 flag, 구조 유형, 같은 유형 안에서 함께 볼 동 산출
+- 이벤트 기준일 전후의 동별 지수 흐름 표시(2차 후보)
 - 법정동·자치구 경계 기반 지도 선택
 
 **할 수 없는 것**
 
-- **동별로 다른 예측.** 채택 모델이 M0+R0라 246개 PREDICTED 동의 값이 모두 같다(+13.6%). 예측은
-  "서울 시장 전망"으로 표기해야 한다(결정 39, `docs/model-performance.md` §8).
-- 신뢰할 수 있는 구간 제시. 실측 coverage는 h=4에서 65.5%로 목표 80%에 미달하고, 국면 전환기에 더
-  낮다. 실측값을 그대로 공개한다(결정 37).
+- **동별 미래 변화 예측과 순위.** 동·구·클러스터 어느 수준에서도 과거 상대 변화가 미래 상대 변화를 안정적으로 설명하지 못했다(결정 51·55·57·58).
+- 매수·매도 판단, 적정가, 전세가율이나 정비사업을 가격 변화의 원인으로 해석하는 문장.
+- 오차보다 작은 동·서울 차이를 숫자로 표시하는 것. 이때는 "서울 평균과 구분되지 않음"만 낸다(결정 63).
 - 동 단위 규제 상태 표시, 교통 호재·입주 예정 물량 반영 — 데이터가 없다.

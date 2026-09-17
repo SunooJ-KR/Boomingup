@@ -3,7 +3,7 @@
 # ============================================================================
 # Author:      yjkim
 # Purpose:     잠정 분기 지수의 편향을 재고 보정식을 학습한다 (Track N 후보 N-3)
-# Description: 계획 docs/model-develope-plan.md §2.2, 진행 docs/model-build-process.md N-3.
+# Description: 잠정 지수 보정 실험. 채택 여부는 docs/decisions.md 결정 49·50.
 #
 #              문제: 분기가 끝난 직후의 지수는 아직 신고되지 않은 거래가 빠져 있어
 #              확정 지수와 다르다. 화면 헤드라인이 이 잠정 지수라 보정이 필요하다.

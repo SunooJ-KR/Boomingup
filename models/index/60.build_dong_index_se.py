@@ -3,7 +3,7 @@
 # ============================================================================
 # Author:      yjkim
 # Purpose:     동×분기 hedonic 지수를 추정오차(log_index_se)와 함께 만든다
-# Description: 계획 docs/model-develope-plan.md §2.1, 진행 docs/model-build-process.md P0-1.
+# Description: 동 지수 추정오차 산출. 근거는 docs/decisions.md 결정 42.
 #              40과 같은 추정식(_dong_index.py)을 쓰되 SE를 붙인다. SE가 없으면
 #              Track 0 수축, gate 재설계, 구간 조정, 측정오차 진단이 모두 막히므로
 #              재설계의 첫 산출물이다.
