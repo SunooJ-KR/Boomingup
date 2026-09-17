@@ -220,7 +220,7 @@ Phase 4를 통과하지 못했는데 Phase 5로 넘어가지 않는다. 기능�
 3. ~~API·타입·컴포넌트 교체 (P3-7·P3-8)~~ 완료. 샘플 JSON(P3-9)이 아직 v1이라 `npx tsc --noEmit`이 `lib/data.ts`에서 걸린다.
 4. build 검증과 `dev` merge (P3-10). 로컬에서 `npx tsc --noEmit`, `npm run build`, `npm run check:wording` 세 개가 모두 통과한다. 남은 것은 PR과 `dev` merge다.
 
-`004_dong_support.sql`을 아직 DB에 적용하지 않아 build 중 DB 조회가 `relation "app.dong_support" does not exist`로 실패하고 샘플 JSON으로 폴백한다. 폴백은 설계한 동작이라 build는 통과하지만, 실제 수치를 보려면 DDL 적용과 `50.load_db.py --commit`이 먼저다.
+2026-09-17에 `003_dong_index_se.sql`과 `004_dong_support.sql`을 운영 DB에 적용하고 active snapshot 5의 `app.dong_support`에 346행을 넣었다. `npm run build`가 샘플 폴백 없이 DB를 읽는다. 적재 방법은 `data/db/README.md`에 적었다.
 
 ## 6. 남은 결정
 
