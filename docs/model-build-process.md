@@ -36,7 +36,7 @@
 
 | 상태 | 작업 ID | 담당 | 시작일 | 메모 |
 |---|---|---|---|---|
-| Doing | C-diag | Claude | 2026-09-17 | 측정오차 진단. vintage 창을 9분기로 넓혀 재추정 중 |
+| Doing | K-1 | Claude | 2026-09-17 | K-S 구조 변수 클러스터 |
 
 ## 4. 작업 목록
 
@@ -72,7 +72,7 @@
 |---|---|---|---|---|---|
 | C-0/1 | 기준선 두 개 구현: δ̂=0, 구 평균 모멘텀 | Done | rolling-origin(2015Q1~2025Q3) δ MAE, origin별 Spearman 분포 산출 | `models/index/67.evaluate_delta.py` (평가 프레임 자체) | P0-1, P0-3, P0-4 |
 | C-2 | 수축 모멘텀: 동별 과거 4분기 상대 변화 × λ(SE) | Done (미채택) | C-0·C-1 대비 개선폭 신뢰구간이 0 제외 **그리고** HAC-DM p<0.05 **그리고** 4.4 진단 3종 통과 | 67의 후보 추가, `docs/model-performance.md` | C-0/1, T0-A |
-| C-diag | 측정오차 진단 배터리: feature 기점 `t−1` 이동 시 성능 하락폭, SE 구간별 계수, 저SE 부분집합 성능 | Todo | 세 결과가 보고서에 있고 해석이 결정 기록에 있음 | 67 옵션, `docs/model-performance.md` | C-2와 동시 |
+| C-diag | 측정오차 진단 배터리: feature 기점 `t−1` 이동 시 성능 하락폭, SE 구간별 계수, 저SE 부분집합 성능 | Done (1번 항목. 2·3번은 C-2가 이미 실패해 생략) | 세 결과가 보고서에 있고 해석이 결정 기록에 있음 | 67 옵션, `docs/model-performance.md` | C-2와 동시 |
 | C-3 | elastic net (전세 break 더미 포함) | Todo | C-2를 같은 기준으로 유의하게 이길 때만 채택. **C-2가 기준선을 못 이겨 사다리 규칙상 올라가지 않는다(결정 51)** | 67 후보 추가 | C-2 통과 |
 | C-3b | `policy_events` 테이블과 문턱 대비 거래가 feature, 거리 가중 인근 준공 물량 feature | Todo | feature가 `dong_feature`에 있고 as-of 원칙 검증 | 62 확장, migration | C-3 시작 시 |
 | C-4 | LightGBM pooled, `1/se²` 가중 | Todo | C-3를 유의하게 이길 때만 | 67 후보 추가 | C-3 통과 |
@@ -83,7 +83,7 @@
 
 | ID | 작업 | 상태 | 완료 조건 | 산출물 | 의존 |
 |---|---|---|---|---|---|
-| K-0 | C-1f: 구 모멘텀 × 기점 이전 자료로 적합한 계수. 그룹 모멘텀에 정보가 있는지 전제 검증 | Todo | 67에 후보 추가, C-0 대비 판정 | 67 후보 추가, `docs/model-performance.md` | 67 (vintage 9분기) |
+| K-0 | C-1f: 구 모멘텀 × 기점 이전 자료로 적합한 계수. 그룹 모멘텀에 정보가 있는지 전제 검증 | Done (실패) | 67에 후보 추가, C-0 대비 판정 | 67 후보 추가, `docs/model-performance.md` | 67 (vintage 9분기) |
 | K-1 | K-S 구조 변수 클러스터: 가격대·전세가율·정비사업 노출·준공·세대수·centroid 거리. K∈{4,5,6}, 기점 간 ARI로 K 고정 | Todo | 기점별 소속 파일, ARI 표, K 고정 결정 기록 | `models/index/66.build_dong_cluster.py`, `output/66.1` | 62, `dong_boundary` |
 | K-2 | C-1k: K-S 클러스터 모멘텀 × 적합 계수 | Todo | C-0 대비 판정 + §4.4-1(feature 기점 `t−1`) | 67 후보 추가 | K-0, K-1 |
 | K-3 | (조건부) K-δ: T−4 이전 δ 경로를 SE 가중으로 묶기. eligible만, 나머지는 인접성 배정 | Todo | K-S와 다르게 묶은 동에서만 성능이 나는지 확인. K-S로 C-1k가 실패했을 때만 | 66 옵션 | K-2 |
@@ -130,6 +130,7 @@
 | 날짜 | 작업 ID | 산출물 | 결정 번호 | 메모 |
 |---|---|---|---|---|
 | 2026-09-17 | P0-3 | `docs/decisions.md` 결정 41 | 41 | 기존 44·48 코드에 누수 없음을 확인했다. 결정 39의 관찰은 실제 결과다 |
+| 2026-09-17 | K-0, C-diag | 67 후보 C-1f, `output/67.1`·`67.2` (lag 0·lag 1), `docs/model-performance.md` R5 | 55, 56 | **C-1f 실패** (구간 [−0.0039, +0.0007]). lag 1에서 C-2 Spearman 부호 반전(+0.068 → −0.112): 남은 신호는 측정오차였다. 모멘텀 계열의 마지막 검증은 K-2 |
 | 2026-09-17 | C-0/1, C-2 | `models/index/67.evaluate_delta.py`, `_dong_weight.py`, `output/67.0`·`67.1`·`67.2`, `docs/model-performance.md` R4 | 51, 52, 53 | **성립 조건 미충족.** C-0 MAE 0.0443이 가장 낮다. C-1은 유의하게 나쁘고(p=0.013) C-2는 C-0과 구분되지 않는다(p=0.227). 사다리 규칙상 C-3으로 올라가지 않는다 |
 | 2026-09-17 | N-3 | `models/index/65.build_nowcast.py`, `output/65.1`·`65.2`, `docs/model-performance.md` R3 | 49, 50 | **미채택.** 편향은 실재하고 크지만(분기 종료 시점 MAE 0.0113) 보정식이 rolling-origin에서 0을 못 넘었다. 헤드라인 ①은 N-1까지 보류 |
 | 2026-09-17 | T0-A | `models/index/63.shrink_dong_index.py`, `output/63.1`·`63.2`, `docs/model-performance.md` R2 | 45, 46 | 현행 λ=5가 반쪽 나누기 최적(6.5) 대비 0.27%만 나빠 유지한다. 사후 shrinkage로 얻을 것이 없다. Track 0의 성과는 SE 컬럼이다 |
