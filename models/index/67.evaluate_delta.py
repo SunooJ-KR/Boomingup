@@ -83,6 +83,16 @@ print(f"  확정 지수 {len(final_index):,}칸, 잔차 SD {diagnostics['residua
 weights, coverage = dong_households(work_dir)
 print(f"  세대수 가중치 {len(weights):,}개 동, 커버리지 {coverage:.1%}")
 
+# Track K 소속 (66). 없으면 C-1k는 건너뛴다
+cluster_path = output_dir / "66.1.dong_cluster.txt"
+if cluster_path.is_file():
+    cluster_membership = pd.read_csv(cluster_path, sep="	")
+    cluster_membership["as_of"] = pd.PeriodIndex(cluster_membership["as_of"], freq="Q")
+    print(f"  클러스터 소속 {cluster_membership['as_of'].nunique()}개 기점 (66.1)")
+else:
+    cluster_membership = None
+    print("  클러스터 소속 없음 — C-1k 생략")
+
 
 # ============================================================================
 # 2. 기점별 vintage 지수 (feature용)
@@ -187,6 +197,11 @@ def momentum_at(as_of):
     frame["relative"] = frame["change"] - common
     # 구 평균 상대 모멘텀 (C-1)
     frame["gu_relative"] = frame.groupby("sggCd")["relative"].transform("mean")
+    # 클러스터 평균 상대 모멘텀 (C-1k). 소속은 그 기점의 구조 변수로 정한 것이라 as-of다
+    if cluster_membership is not None:
+        member = cluster_membership[cluster_membership["as_of"] == as_of].set_index("dong")["cluster"]
+        frame["cluster"] = frame["dong"].map(member)
+        frame["cluster_relative"] = frame.groupby("cluster")["relative"].transform("mean")
     return frame.dropna(subset=["relative"]).reset_index(drop=True)
 
 
@@ -228,6 +243,17 @@ def c1f(frame, history):
     return fitted_scale(frame["gu_relative"], history, "gu_relative")
 
 
+def c1k(frame, history):
+    """C-1k: K-S 클러스터 모멘텀 × 적합 계수. Track K의 전제 검증(계획 §2.5)."""
+    if "cluster_relative" not in frame.columns:
+        return np.zeros(len(frame))
+    filled = frame["cluster_relative"].fillna(0.0)
+    if history is None or "cluster_relative" not in history.columns:
+        return np.zeros(len(frame))
+    history = history.assign(cluster_relative=history["cluster_relative"].fillna(0.0))
+    return fitted_scale(filled, history, "cluster_relative")
+
+
 def c2(frame, history):
     """수축 모멘텀. 계수는 기점 이전 자료로만 적합한다.
 
@@ -244,7 +270,8 @@ def c2(frame, history):
     return coefficient * shrunk.to_numpy()
 
 
-CANDIDATES = {"C-0 (δ̂=0)": c0, "C-1 (구 평균)": c1, "C-1f (구 평균·적합)": c1f, "C-2 (수축 모멘텀)": c2}
+CANDIDATES = {"C-0 (δ̂=0)": c0, "C-1 (구 평균)": c1, "C-1f (구 평균·적합)": c1f,
+              "C-1k (클러스터·적합)": c1k, "C-2 (수축 모멘텀)": c2}
 
 
 # ============================================================================
@@ -327,7 +354,7 @@ def diebold_mariano(column_a, column_b, lag=HORIZON_Q - 1):
 
 print("\n===== 6. 판정 (기준선 대비) =====")
 verdicts = []
-for name in ["C-1 (구 평균)", "C-1f (구 평균·적합)", "C-2 (수축 모멘텀)"]:
+for name in ["C-1 (구 평균)", "C-1f (구 평균·적합)", "C-1k (클러스터·적합)", "C-2 (수축 모멘텀)"]:
     for baseline in ["C-0 (δ̂=0)", "C-1 (구 평균)"]:
         if name == baseline:
             continue
@@ -340,9 +367,10 @@ for name in ["C-1 (구 평균)", "C-1f (구 평균·적합)", "C-2 (수축 모�
 print(pd.DataFrame(verdicts).to_string(index=False, float_format=lambda value: f"{value:.4f}"))
 
 passed = [row for row in verdicts if row["후보"] == "C-2 (수축 모멘텀)" and row["통과"]]
-premise = [row for row in verdicts if row["후보"] == "C-1f (구 평균·적합)" and row["기준선"] == "C-0 (δ̂=0)"]
-if premise:
-    print(f"  전제 검증 C-1f가 C-0을 이겼는가: {'예' if premise[0]['통과'] else '아니오'} (계획 §2.3 분기 규칙)")
+for label in ["C-1f (구 평균·적합)", "C-1k (클러스터·적합)"]:
+    premise = [row for row in verdicts if row["후보"] == label and row["기준선"] == "C-0 (δ̂=0)"]
+    if premise:
+        print(f"  전제 검증 {label}가 C-0을 이겼는가: {'예' if premise[0]['통과'] else '아니오'} (계획 §2.3 분기 규칙)")
 print(f"\n  C-2가 두 기준선을 모두 이겼는가: {'예' if len(passed) == 2 else '아니오'}")
 print("  성립 조건(계획 §4.2)은 C-0과 C-1 둘 다를 유의하게 이기는 것이다")
 
