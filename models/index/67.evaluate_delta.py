@@ -48,6 +48,7 @@ LAST_COMPLETE_QUARTER = pd.Period("2026Q2", freq="Q")
 LAST_ORIGIN = LAST_COMPLETE_QUARTER - HORIZON_Q     # target이 성숙한 기점까지만
 MIN_SALES_4Q = 20
 MOMENTUM_Q = 4
+KEEP_Q = 9            # vintage에 남길 분기 수. 재추정이 40분 걸려 한 번에 넉넉히 받는다
 BOOTSTRAP_ROUNDS = 2000
 BOOTSTRAP_SEED = 20260917
 
@@ -108,8 +109,9 @@ else:
         )
         grid["eligible"] = grid["n_sales_4q"].ge(MIN_SALES_4Q)
         grid, _ = attach_standard_error(grid, grid_diagnostics["residual_sd"], RIDGE_LAMBDA)
-        # 기점 기준 최근 MOMENTUM_Q+1개 분기만 남긴다. 모멘텀 계산에 필요한 만큼이다
-        keep = grid["quarter"] > as_of - (MOMENTUM_Q + 1)
+        # 기점 기준 최근 KEEP_Q개 분기를 남긴다. feature 기점을 앞당기는 진단(§4.4)과
+        # 더 긴 창을 쓰는 C-3까지 같은 파일로 덮으려고 모멘텀 창보다 넉넉히 둔다
+        keep = grid["quarter"] > as_of - KEEP_Q
         grid = grid[keep & (grid["quarter"] <= as_of)].copy()
         grid["as_of"] = as_of
         frames.append(grid[["as_of", "dong", "sggCd", "quarter", "log_index",

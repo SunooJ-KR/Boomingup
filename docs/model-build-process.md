@@ -36,7 +36,7 @@
 
 | 상태 | 작업 ID | 담당 | 시작일 | 메모 |
 |---|---|---|---|---|
-| Doing | — | — | — | Phase 0·1 완료, Phase 2는 N-3 실패로 N-1까지 보류. 다음은 Phase 3 C-0/1 |
+| Doing | C-diag | Claude | 2026-09-17 | 측정오차 진단. vintage 창을 9분기로 넓혀 재추정 중 |
 
 ## 4. 작업 목록
 
@@ -70,10 +70,10 @@
 
 | ID | 작업 | 상태 | 완료 조건 | 산출물 | 의존 |
 |---|---|---|---|---|---|
-| C-0/1 | 기준선 두 개 구현: δ̂=0, 구 평균 모멘텀 | Todo | rolling-origin(2015Q1~2025Q3) δ MAE, origin별 Spearman 분포 산출 | `models/index/67.evaluate_delta.py` (평가 프레임 자체) | P0-1, P0-3, P0-4 |
-| C-2 | 수축 모멘텀: 동별 과거 4분기 상대 변화 × λ(SE) | Todo | C-0·C-1 대비 개선폭 신뢰구간이 0 제외 **그리고** HAC-DM p<0.05 **그리고** 4.4 진단 3종 통과 | 67의 후보 추가, `docs/model-performance.md` | C-0/1, T0-A |
+| C-0/1 | 기준선 두 개 구현: δ̂=0, 구 평균 모멘텀 | Done | rolling-origin(2015Q1~2025Q3) δ MAE, origin별 Spearman 분포 산출 | `models/index/67.evaluate_delta.py` (평가 프레임 자체) | P0-1, P0-3, P0-4 |
+| C-2 | 수축 모멘텀: 동별 과거 4분기 상대 변화 × λ(SE) | Done (미채택) | C-0·C-1 대비 개선폭 신뢰구간이 0 제외 **그리고** HAC-DM p<0.05 **그리고** 4.4 진단 3종 통과 | 67의 후보 추가, `docs/model-performance.md` | C-0/1, T0-A |
 | C-diag | 측정오차 진단 배터리: feature 기점 `t−1` 이동 시 성능 하락폭, SE 구간별 계수, 저SE 부분집합 성능 | Todo | 세 결과가 보고서에 있고 해석이 결정 기록에 있음 | 67 옵션, `docs/model-performance.md` | C-2와 동시 |
-| C-3 | elastic net (전세 break 더미 포함) | Todo | C-2를 같은 기준으로 유의하게 이길 때만 채택 | 67 후보 추가 | C-2 통과 |
+| C-3 | elastic net (전세 break 더미 포함) | Todo | C-2를 같은 기준으로 유의하게 이길 때만 채택. **C-2가 기준선을 못 이겨 사다리 규칙상 올라가지 않는다(결정 51)** | 67 후보 추가 | C-2 통과 |
 | C-3b | `policy_events` 테이블과 문턱 대비 거래가 feature, 거리 가중 인근 준공 물량 feature | Todo | feature가 `dong_feature`에 있고 as-of 원칙 검증 | 62 확장, migration | C-3 시작 시 |
 | C-4 | LightGBM pooled, `1/se²` 가중 | Todo | C-3를 유의하게 이길 때만 | 67 후보 추가 | C-3 통과 |
 | C-5 | 계층 베이지안 | Todo | C-2~C-4 중 하나라도 신호를 보일 때만 검토 | — | — |
@@ -110,7 +110,7 @@
 | Phase 0 → 1 | P0-1, P0-3, P0-4 Done | 진행 불가. SE 없이는 아무것도 못 한다 |
 | Phase 1 → 2·3 | T0-A 비교표 작성, 안정성이 수축 전보다 나쁘지 않음 | T0-B로 |
 | Phase 2 판정 | N-3 수정폭 MAE 개선 신뢰구간이 0 제외 | N-2로. 헤드라인 ① 보류 |
-| **Phase 3 판정** | C-2 이상 후보가 C-0·C-1 모두를 DM p<0.05로 이기고 C-diag 통과 | **δ 비공개.** 제품은 nowcast + 신뢰도 블록 + 구조 정보로 확정. 이것도 실패가 아니라 방향 결정이다 |
+| **Phase 3 판정** | C-2 이상 후보가 C-0·C-1 모두를 DM p<0.05로 이기고 C-diag 통과 | **δ 비공개.** 제품은 nowcast + 신뢰도 블록 + 구조 정보로 확정. 이것도 실패가 아니라 방향 결정이다 — **2026-09-17 실패로 판정(결정 51). nowcast도 보류 상태라 화면은 사실정보와 신뢰도 표시로 간다(결정 53)** |
 | Phase 4 판정 | 80% nominal에서 empirical coverage 75% 이상, 평균 구간 폭이 거래비용(±수%) 이내 | 구간 재설계. 화면에 "실험적" 라벨 |
 
 ## 6. 완료 기록
@@ -118,6 +118,7 @@
 | 날짜 | 작업 ID | 산출물 | 결정 번호 | 메모 |
 |---|---|---|---|---|
 | 2026-09-17 | P0-3 | `docs/decisions.md` 결정 41 | 41 | 기존 44·48 코드에 누수 없음을 확인했다. 결정 39의 관찰은 실제 결과다 |
+| 2026-09-17 | C-0/1, C-2 | `models/index/67.evaluate_delta.py`, `_dong_weight.py`, `output/67.0`·`67.1`·`67.2`, `docs/model-performance.md` R4 | 51, 52, 53 | **성립 조건 미충족.** C-0 MAE 0.0443이 가장 낮다. C-1은 유의하게 나쁘고(p=0.013) C-2는 C-0과 구분되지 않는다(p=0.227). 사다리 규칙상 C-3으로 올라가지 않는다 |
 | 2026-09-17 | N-3 | `models/index/65.build_nowcast.py`, `output/65.1`·`65.2`, `docs/model-performance.md` R3 | 49, 50 | **미채택.** 편향은 실재하고 크지만(분기 종료 시점 MAE 0.0113) 보정식이 rolling-origin에서 0을 못 넘었다. 헤드라인 ①은 N-1까지 보류 |
 | 2026-09-17 | T0-A | `models/index/63.shrink_dong_index.py`, `output/63.1`·`63.2`, `docs/model-performance.md` R2 | 45, 46 | 현행 λ=5가 반쪽 나누기 최적(6.5) 대비 0.27%만 나빠 유지한다. 사후 shrinkage로 얻을 것이 없다. Track 0의 성과는 SE 컬럼이다 |
 | 2026-09-17 | P0-2 | `data/collect/61.snapshot_trades.py`, `_trades_api.py`, `output/raw/snapshot/2026-09-17/` | — | 첫 조회일 적재 완료(매매·전월세 6개월 × 25개 구, 5.5MB). 재실행 시 건너뛰는 것 확인. **매일 돌려야 한다** — `models/AGENTS.md`에 적었다. snapshot은 응답 태그 32개를 그대로 남긴다(`FIELD_MAP`이 버리던 `rgstDate`·`cdealDay`·`umdCd` 포함) |
