@@ -8,7 +8,7 @@
 --           컬럼 이름이 곧 화면 payload 필드명이므로 바꾸려면
 --           docs/payload-schema.md도 같이 고친다.
 -- 산출: models/index/69.build_dong_support.py -> output/69.1.dong_support.txt
--- 적재: data/db/50.load_db.py --kind support
+-- 적재: data/db/50.load_db.py (다른 정제 테이블과 같은 snapshot에 함께 들어간다)
 -- app.dong_prediction은 더 이상 읽지 않지만 지우지 않고 남긴다(결정 66).
 -- ============================================================================
 

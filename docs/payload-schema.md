@@ -194,7 +194,7 @@
 
 ## 8. DB
 
-`app.dong_support` 신설. 컬럼은 `feature-spec.md` §5 + `snapshot_id`. 기본키 `(snapshot_id, dong)`. DDL은 `data/db/004_dong_support.sql`에 두고 `50.load_db.py`에 `--kind support`를 더한다.
+`app.dong_support` 신설. 컬럼은 `feature-spec.md` §5 + `snapshot_id`. 기본키 `(snapshot_id, dong)`. DDL은 `data/db/004_dong_support.sql`에 두고, 적재는 `50.load_db.py`가 다른 정제 테이블과 같은 snapshot에 함께 넣는다.
 
 DDL을 `001_boomingup_tables.sql`이 아니라 새 번호 파일에 두는 이유는 001을 이미 적용한 DB가 있기 때문이다. 컬럼을 뒤에 더한 `003_dong_index_se.sql`과 같은 방식이다. `peer_dongs`는 파일에서는 JSON 문자열이지만 테이블에서는 `jsonb`로 둔다. 적재할 때 형식이 검사되고 API가 문자열을 다시 parse하지 않아도 된다.
 

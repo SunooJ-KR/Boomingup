@@ -332,7 +332,7 @@ reason(d, p) = (z[d, v] − z[p, v])²가 가장 작은 변수 2개를 wording-g
 
 `mu_12m`은 모든 행에 같은 값이 들어간다. 파일을 한 줄만 읽어도 μ를 알 수 있게 두는 것이다.
 
-DB 적재는 `app.dong_support` 테이블로 한다. 컬럼은 위와 같고 `snapshot_id`를 앞에 붙인다. 적재 스크립트는 `data/db/50.load_db.py`에 kind 하나를 더한다. 이 결정은 `docs/decisions.md` 결정 66이다.
+DB 적재는 `app.dong_support` 테이블로 한다. 컬럼은 위와 같고 `snapshot_id`를 앞에 붙인다. 적재는 `data/db/50.load_db.py`가 다른 정제 테이블과 같은 snapshot에 함께 넣는다. 원장처럼 `--kind`로 나누지 않는다. 이 결정은 `docs/decisions.md` 결정 66이다.
 
 ## 6. 스크립트 `models/index/69.build_dong_support.py` 요구사항
 

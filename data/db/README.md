@@ -4,7 +4,7 @@
 
 법정동 경계는 GIS Developer의 행정구역(읍면동) 2023-07 자료를 사용하며, 원본은 도로명주소 DB입니다. 화면·문서 출처 표기는 `행정구역 경계: GIS Developer(gisdeveloper.co.kr), 원본 도로명주소 DB`를 사용합니다.
 
-정제 snapshot 적재는 기본적으로 rollback하는 dry-run입니다.
+정제 snapshot 적재는 기본적으로 rollback하는 dry-run입니다. 판단 보조 산출물 `output/69.1.dong_support.txt`도 다른 정제 테이블과 같은 snapshot에 함께 들어갑니다.
 
 ```bash
 .venv/bin/python data/db/50.load_db.py

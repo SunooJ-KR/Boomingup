@@ -174,7 +174,7 @@
 | P3-3 | `status`와 `dong_prediction` 처리 결정 | Done | `docs/decisions.md` 66 | — |
 | P3-4 | `prediction-card`, `status-badge` 교체 범위 확정 | Done | `payload-schema.md` §7 | — |
 | P3-5 | `check-wording.mjs`에 추가 금지어 반영 | Done | `front/scripts/check-wording.mjs` | `wording-guide.md` §2.2 |
-| P3-6 | `app.dong_support` DDL과 `50.load_db.py --kind support` | Todo | `data/db/` | P1-4 |
+| P3-6 | `app.dong_support` DDL과 `50.load_db.py` 적재 | Done | `data/db/004_dong_support.sql`, `50.load_db.py` | P1-4 |
 | P3-7 | API `queries.ts`를 `dong_support`로 교체, `flows` 집계 추가 | Todo | `front/lib/queries.ts` | P3-6 |
 | P3-8 | 화면 컴포넌트 교체 (`payload-schema.md` §7 목록) | Todo | `front/components/dong/` | P3-7, P3-5 |
 | P3-9 | 샘플 JSON v2 갱신 | Todo | `front/public/data/` | P3-2 |
@@ -216,7 +216,7 @@ Phase 4를 통과하지 못했는데 Phase 5로 넘어가지 않는다. 기능�
 문서는 전부 있다. 남은 것은 구현이다.
 
 1. ~~`check-wording.mjs` 금지어 추가 (P3-5)~~ 완료. 넣은 뒤 21곳이 걸린다. `예측` 14곳, `실적` 7곳이고 모두 `payload-schema.md` §7의 v2 교체 대상 파일이다. P3-8을 끝낼 때까지 `npm run check:wording`은 실패 상태로 둔다.
-2. `dong_support` DDL과 적재 (P3-6).
+2. ~~`dong_support` DDL과 적재 (P3-6)~~ 완료. DDL은 001이 아니라 `004_dong_support.sql`에 뒀고, 적재는 `--kind`를 새로 만들지 않고 `50.load_db.py`가 다른 정제 테이블과 같은 snapshot에 함께 넣는다.
 3. API·타입·컴포넌트 교체 (P3-7~P3-9).
 4. build 검증과 `dev` merge (P3-10).
 
