@@ -1,28 +1,21 @@
-import type { PredictionStatus } from "./types";
-
-/** 모델 출력 log 변화율을 퍼센트로 바꾼다. 소수 1자리로 맞춘다. */
+/** log 변화율을 퍼센트로 바꾼다. 소수 1자리로 맞춘다. */
 export function logChangeToPct(logChange: number | null | undefined): number | null {
   if (logChange === null || logChange === undefined || !Number.isFinite(logChange)) return null;
   return Math.round((Math.exp(logChange) - 1) * 1000) / 10;
 }
 
 /**
- * 예측 상태를 정한다.
- * 예측 행이 있으면 그 값을 쓰고, 없으면 직전 4분기 매매가 기준(결정 7)에 못 미치는지로 나눈다.
- * 기준은 넘었는데 예측이 없으면 모델이 값을 내지 않은 경우이므로 NOT_SERVED로 본다.
+ * log 단위 오차를 퍼센트 오차로 바꾼다. docs/payload-schema.md §4를 따른다.
+ * 중심값 ±se를 각각 퍼센트로 바꾼 뒤 그 폭의 절반을 낸다. 퍼센트 변환이 선형이 아니라서
+ * 위아래 폭이 조금 다르고, 그래서 이 값은 근사값이다.
  */
-export function deriveStatus(
-  predictionStatus: string | null | undefined,
-  eligible: boolean | null | undefined,
-): PredictionStatus {
-  if (
-    predictionStatus === "PREDICTED" ||
-    predictionStatus === "INSUFFICIENT_SALES" ||
-    predictionStatus === "NOT_SERVED"
-  ) {
-    return predictionStatus;
-  }
-  return eligible ? "NOT_SERVED" : "INSUFFICIENT_SALES";
+export function logSeToPct(
+  center: number | null | undefined,
+  se: number | null | undefined,
+): number | null {
+  if (center === null || center === undefined || se === null || se === undefined) return null;
+  if (!Number.isFinite(center) || !Number.isFinite(se)) return null;
+  return Math.round(((Math.exp(center + se) - Math.exp(center - se)) / 2) * 1000) / 10;
 }
 
 export type TagInput = {
