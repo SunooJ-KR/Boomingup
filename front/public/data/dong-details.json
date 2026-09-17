@@ -1,14 +1,76 @@
 {
   "11680_개포동": {
     "dong_id": "11680_개포동",
-    "prediction": {
-      "status": "PREDICTED",
-      "change_pct_est": 3.2,
-      "lower_pct": -4.1,
-      "upper_pct": 10.9
+    "sample": {
+      "n_sales_4q": 448,
+      "n_complexes_4q": 33,
+      "dominant_complex_share_4q": 0.1964285714285714,
+      "index_se": 0.0080095025536955,
+      "index_se_band": "LOW",
+      "flags": []
     },
+    "change": {
+      "dong_12m_pct": 5.0,
+      "seoul_12m_pct": 12.7,
+      "delta_12m_pct": -6.8,
+      "delta_se_pct": 1.1,
+      "delta_state": "DISTINGUISHABLE",
+      "peak_5y_gap_pct": -7.3,
+      "peak_5y_gap_se_pct": 1.4,
+      "peak_5y_state": "DISTINGUISHABLE"
+    },
+    "flows": [
+      {
+        "quarter": "2024Q3",
+        "n_sales": 112,
+        "n_jeonse": 146,
+        "monthly_rent_share": 0.3
+      },
+      {
+        "quarter": "2024Q4",
+        "n_sales": 111,
+        "n_jeonse": 144,
+        "monthly_rent_share": 0.3
+      },
+      {
+        "quarter": "2025Q1",
+        "n_sales": 113,
+        "n_jeonse": 147,
+        "monthly_rent_share": 0.3
+      },
+      {
+        "quarter": "2025Q2",
+        "n_sales": 112,
+        "n_jeonse": 146,
+        "monthly_rent_share": 0.3
+      },
+      {
+        "quarter": "2025Q3",
+        "n_sales": 111,
+        "n_jeonse": 144,
+        "monthly_rent_share": 0.3
+      },
+      {
+        "quarter": "2025Q4",
+        "n_sales": 113,
+        "n_jeonse": 147,
+        "monthly_rent_share": 0.3
+      },
+      {
+        "quarter": "2026Q1",
+        "n_sales": 112,
+        "n_jeonse": 146,
+        "monthly_rent_share": 0.3
+      },
+      {
+        "quarter": "2026Q2",
+        "n_sales": 111,
+        "n_jeonse": 144,
+        "monthly_rent_share": 0.3
+      }
+    ],
     "facts": {
-      "n_sales_4q": 212,
+      "n_sales_4q": 448,
       "jeonse_ratio_4q": 0.48,
       "redevelop_zones": {
         "designated": 3,
@@ -19,10 +81,45 @@
       "completed_households_8q": 1200,
       "reg_overheated": true
     },
-    "comparison": {
-      "seoul_change_pct": 1.1,
-      "gu_change_pct": 2.4,
-      "dong_change_pct": 3.2
+    "structure": {
+      "type": 0,
+      "desc": "평당가 높음 · 강남 7km대",
+      "as_of": "2026Q2"
+    },
+    "peers": [
+      {
+        "dong_id": "11680_일원동",
+        "gu_name": "강남구",
+        "umd_name": "일원동",
+        "reason": "신축 비중과 세대수가 가까워요"
+      },
+      {
+        "dong_id": "11680_대치동",
+        "gu_name": "강남구",
+        "umd_name": "대치동",
+        "reason": "신축 비중과 위치가 가까워요"
+      },
+      {
+        "dong_id": "11710_잠실동",
+        "gu_name": "송파구",
+        "umd_name": "잠실동",
+        "reason": "신축 비중과 전세가율이 가까워요"
+      },
+      {
+        "dong_id": "11680_도곡동",
+        "gu_name": "강남구",
+        "umd_name": "도곡동",
+        "reason": "신축 비중과 세대수가 가까워요"
+      },
+      {
+        "dong_id": "11680_삼성동",
+        "gu_name": "강남구",
+        "umd_name": "삼성동",
+        "reason": "신축 비중과 전세가율이 가까워요"
+      }
+    ],
+    "reference": {
+      "seoul_12m_pct": 12.7
     },
     "complexes": [
       {
@@ -75,14 +172,76 @@
   },
   "11680_대치동": {
     "dong_id": "11680_대치동",
-    "prediction": {
-      "status": "PREDICTED",
-      "change_pct_est": 1.8,
-      "lower_pct": -5.4,
-      "upper_pct": 9.3
+    "sample": {
+      "n_sales_4q": 331,
+      "n_complexes_4q": 47,
+      "dominant_complex_share_4q": 0.1117824773413897,
+      "index_se": 0.0093933973303087,
+      "index_se_band": "LOW",
+      "flags": []
     },
+    "change": {
+      "dong_12m_pct": -4.8,
+      "seoul_12m_pct": 12.7,
+      "delta_12m_pct": -15.6,
+      "delta_se_pct": 1.2,
+      "delta_state": "DISTINGUISHABLE",
+      "peak_5y_gap_pct": -8.1,
+      "peak_5y_gap_se_pct": 1.5,
+      "peak_5y_state": "DISTINGUISHABLE"
+    },
+    "flows": [
+      {
+        "quarter": "2024Q3",
+        "n_sales": 85,
+        "n_jeonse": 110,
+        "monthly_rent_share": 0.35
+      },
+      {
+        "quarter": "2024Q4",
+        "n_sales": 84,
+        "n_jeonse": 109,
+        "monthly_rent_share": 0.35
+      },
+      {
+        "quarter": "2025Q1",
+        "n_sales": 86,
+        "n_jeonse": 112,
+        "monthly_rent_share": 0.35
+      },
+      {
+        "quarter": "2025Q2",
+        "n_sales": 85,
+        "n_jeonse": 110,
+        "monthly_rent_share": 0.35
+      },
+      {
+        "quarter": "2025Q3",
+        "n_sales": 84,
+        "n_jeonse": 109,
+        "monthly_rent_share": 0.35
+      },
+      {
+        "quarter": "2025Q4",
+        "n_sales": 86,
+        "n_jeonse": 112,
+        "monthly_rent_share": 0.35
+      },
+      {
+        "quarter": "2026Q1",
+        "n_sales": 85,
+        "n_jeonse": 110,
+        "monthly_rent_share": 0.35
+      },
+      {
+        "quarter": "2026Q2",
+        "n_sales": 84,
+        "n_jeonse": 109,
+        "monthly_rent_share": 0.35
+      }
+    ],
     "facts": {
-      "n_sales_4q": 188,
+      "n_sales_4q": 331,
       "jeonse_ratio_4q": 0.55,
       "redevelop_zones": {
         "designated": 1,
@@ -93,10 +252,45 @@
       "completed_households_8q": 0,
       "reg_overheated": true
     },
-    "comparison": {
-      "seoul_change_pct": 1.1,
-      "gu_change_pct": 2.4,
-      "dong_change_pct": 1.8
+    "structure": {
+      "type": 0,
+      "desc": "평당가 높음 · 강남 7km대",
+      "as_of": "2026Q2"
+    },
+    "peers": [
+      {
+        "dong_id": "11680_개포동",
+        "gu_name": "강남구",
+        "umd_name": "개포동",
+        "reason": "신축 비중과 위치가 가까워요"
+      },
+      {
+        "dong_id": "11710_잠실동",
+        "gu_name": "송파구",
+        "umd_name": "잠실동",
+        "reason": "신축 비중과 평당가가 가까워요"
+      },
+      {
+        "dong_id": "11680_삼성동",
+        "gu_name": "강남구",
+        "umd_name": "삼성동",
+        "reason": "신축 비중과 강남 거리가 가까워요"
+      },
+      {
+        "dong_id": "11680_일원동",
+        "gu_name": "강남구",
+        "umd_name": "일원동",
+        "reason": "신축 비중과 세대수가 가까워요"
+      },
+      {
+        "dong_id": "11680_도곡동",
+        "gu_name": "강남구",
+        "umd_name": "도곡동",
+        "reason": "신축 비중과 도심 거리가 가까워요"
+      }
+    ],
+    "reference": {
+      "seoul_12m_pct": 12.7
     },
     "complexes": [
       {
@@ -135,14 +329,76 @@
   },
   "11710_잠실동": {
     "dong_id": "11710_잠실동",
-    "prediction": {
-      "status": "PREDICTED",
-      "change_pct_est": -0.9,
-      "lower_pct": -8.2,
-      "upper_pct": 6.8
+    "sample": {
+      "n_sales_4q": 780,
+      "n_complexes_4q": 16,
+      "dominant_complex_share_4q": 0.2628205128205128,
+      "index_se": 0.0063269603825151,
+      "index_se_band": "LOW",
+      "flags": []
     },
+    "change": {
+      "dong_12m_pct": 9.2,
+      "seoul_12m_pct": 12.7,
+      "delta_12m_pct": -3.1,
+      "delta_se_pct": 0.9,
+      "delta_state": "DISTINGUISHABLE",
+      "peak_5y_gap_pct": null,
+      "peak_5y_gap_se_pct": 1.1,
+      "peak_5y_state": "INDISTINGUISHABLE"
+    },
+    "flows": [
+      {
+        "quarter": "2024Q3",
+        "n_sales": 194,
+        "n_jeonse": 252,
+        "monthly_rent_share": 0.4
+      },
+      {
+        "quarter": "2024Q4",
+        "n_sales": 193,
+        "n_jeonse": 251,
+        "monthly_rent_share": 0.4
+      },
+      {
+        "quarter": "2025Q1",
+        "n_sales": 195,
+        "n_jeonse": 254,
+        "monthly_rent_share": 0.4
+      },
+      {
+        "quarter": "2025Q2",
+        "n_sales": 194,
+        "n_jeonse": 252,
+        "monthly_rent_share": 0.4
+      },
+      {
+        "quarter": "2025Q3",
+        "n_sales": 193,
+        "n_jeonse": 251,
+        "monthly_rent_share": 0.4
+      },
+      {
+        "quarter": "2025Q4",
+        "n_sales": 195,
+        "n_jeonse": 254,
+        "monthly_rent_share": 0.4
+      },
+      {
+        "quarter": "2026Q1",
+        "n_sales": 194,
+        "n_jeonse": 252,
+        "monthly_rent_share": 0.4
+      },
+      {
+        "quarter": "2026Q2",
+        "n_sales": 193,
+        "n_jeonse": 251,
+        "monthly_rent_share": 0.4
+      }
+    ],
     "facts": {
-      "n_sales_4q": 304,
+      "n_sales_4q": 780,
       "jeonse_ratio_4q": 0.44,
       "redevelop_zones": {
         "designated": 0,
@@ -153,10 +409,45 @@
       "completed_households_8q": 2400,
       "reg_overheated": true
     },
-    "comparison": {
-      "seoul_change_pct": 1.1,
-      "gu_change_pct": 0.2,
-      "dong_change_pct": -0.9
+    "structure": {
+      "type": 0,
+      "desc": "평당가 높음 · 강남 7km대",
+      "as_of": "2026Q2"
+    },
+    "peers": [
+      {
+        "dong_id": "11710_신천동",
+        "gu_name": "송파구",
+        "umd_name": "신천동",
+        "reason": "신축 비중과 전세가율이 가까워요"
+      },
+      {
+        "dong_id": "11680_대치동",
+        "gu_name": "강남구",
+        "umd_name": "대치동",
+        "reason": "신축 비중과 평당가가 가까워요"
+      },
+      {
+        "dong_id": "11680_일원동",
+        "gu_name": "강남구",
+        "umd_name": "일원동",
+        "reason": "신축 비중과 위치가 가까워요"
+      },
+      {
+        "dong_id": "11680_개포동",
+        "gu_name": "강남구",
+        "umd_name": "개포동",
+        "reason": "신축 비중과 전세가율이 가까워요"
+      },
+      {
+        "dong_id": "11680_삼성동",
+        "gu_name": "강남구",
+        "umd_name": "삼성동",
+        "reason": "신축 비중과 위치가 가까워요"
+      }
+    ],
+    "reference": {
+      "seoul_12m_pct": 12.7
     },
     "complexes": [
       {
@@ -209,14 +500,79 @@
   },
   "11440_연남동": {
     "dong_id": "11440_연남동",
-    "prediction": {
-      "status": "INSUFFICIENT_SALES",
-      "change_pct_est": null,
-      "lower_pct": null,
-      "upper_pct": null
+    "sample": {
+      "n_sales_4q": 32,
+      "n_complexes_4q": 6,
+      "dominant_complex_share_4q": 0.5625,
+      "index_se": 0.0346298866597044,
+      "index_se_band": "HIGH",
+      "flags": [
+        "ONE_COMPLEX_DOMINATES",
+        "HIGH_INDEX_ERROR"
+      ]
     },
+    "change": {
+      "dong_12m_pct": 7.8,
+      "seoul_12m_pct": 12.7,
+      "delta_12m_pct": null,
+      "delta_se_pct": 4.8,
+      "delta_state": "INDISTINGUISHABLE",
+      "peak_5y_gap_pct": null,
+      "peak_5y_gap_se_pct": null,
+      "peak_5y_state": null
+    },
+    "flows": [
+      {
+        "quarter": "2024Q3",
+        "n_sales": 11,
+        "n_jeonse": 14,
+        "monthly_rent_share": 0.45
+      },
+      {
+        "quarter": "2024Q4",
+        "n_sales": 10,
+        "n_jeonse": 13,
+        "monthly_rent_share": 0.45
+      },
+      {
+        "quarter": "2025Q1",
+        "n_sales": 12,
+        "n_jeonse": 16,
+        "monthly_rent_share": 0.45
+      },
+      {
+        "quarter": "2025Q2",
+        "n_sales": 11,
+        "n_jeonse": 14,
+        "monthly_rent_share": 0.45
+      },
+      {
+        "quarter": "2025Q3",
+        "n_sales": 10,
+        "n_jeonse": 13,
+        "monthly_rent_share": 0.45
+      },
+      {
+        "quarter": "2025Q4",
+        "n_sales": 12,
+        "n_jeonse": 16,
+        "monthly_rent_share": 0.45
+      },
+      {
+        "quarter": "2026Q1",
+        "n_sales": 11,
+        "n_jeonse": 14,
+        "monthly_rent_share": 0.45
+      },
+      {
+        "quarter": "2026Q2",
+        "n_sales": 10,
+        "n_jeonse": 13,
+        "monthly_rent_share": 0.45
+      }
+    ],
     "facts": {
-      "n_sales_4q": 11,
+      "n_sales_4q": 32,
       "jeonse_ratio_4q": 0.62,
       "redevelop_zones": {
         "designated": 0,
@@ -227,10 +583,45 @@
       "completed_households_8q": 0,
       "reg_overheated": false
     },
-    "comparison": {
-      "seoul_change_pct": 1.1,
-      "gu_change_pct": 1.6,
-      "dong_change_pct": null
+    "structure": {
+      "type": 3,
+      "desc": "아파트 세대수 적음 · 도심 3km대",
+      "as_of": "2026Q2"
+    },
+    "peers": [
+      {
+        "dong_id": "11410_현저동",
+        "gu_name": "서대문구",
+        "umd_name": "현저동",
+        "reason": "신축 비중과 전세가율이 가까워요"
+      },
+      {
+        "dong_id": "11410_영천동",
+        "gu_name": "서대문구",
+        "umd_name": "영천동",
+        "reason": "신축 비중과 평당가가 가까워요"
+      },
+      {
+        "dong_id": "11110_무악동",
+        "gu_name": "종로구",
+        "umd_name": "무악동",
+        "reason": "신축 비중과 세대수가 가까워요"
+      },
+      {
+        "dong_id": "11410_천연동",
+        "gu_name": "서대문구",
+        "umd_name": "천연동",
+        "reason": "신축 비중과 위치가 가까워요"
+      },
+      {
+        "dong_id": "11410_대현동",
+        "gu_name": "서대문구",
+        "umd_name": "대현동",
+        "reason": "신축 비중과 위치가 가까워요"
+      }
+    ],
+    "reference": {
+      "seoul_12m_pct": 12.7
     },
     "complexes": [
       {
@@ -251,14 +642,76 @@
   },
   "11305_수유동": {
     "dong_id": "11305_수유동",
-    "prediction": {
-      "status": "PREDICTED",
-      "change_pct_est": 0.4,
-      "lower_pct": -7.6,
-      "upper_pct": 8.9
+    "sample": {
+      "n_sales_4q": 185,
+      "n_complexes_4q": 34,
+      "dominant_complex_share_4q": 0.2972972972972973,
+      "index_se": 0.0136158039606814,
+      "index_se_band": "LOW",
+      "flags": []
     },
+    "change": {
+      "dong_12m_pct": 9.8,
+      "seoul_12m_pct": 12.7,
+      "delta_12m_pct": null,
+      "delta_se_pct": 1.9,
+      "delta_state": "INDISTINGUISHABLE",
+      "peak_5y_gap_pct": null,
+      "peak_5y_gap_se_pct": 2.0,
+      "peak_5y_state": "INDISTINGUISHABLE"
+    },
+    "flows": [
+      {
+        "quarter": "2024Q3",
+        "n_sales": 44,
+        "n_jeonse": 57,
+        "monthly_rent_share": 0.3
+      },
+      {
+        "quarter": "2024Q4",
+        "n_sales": 43,
+        "n_jeonse": 56,
+        "monthly_rent_share": 0.3
+      },
+      {
+        "quarter": "2025Q1",
+        "n_sales": 45,
+        "n_jeonse": 58,
+        "monthly_rent_share": 0.3
+      },
+      {
+        "quarter": "2025Q2",
+        "n_sales": 44,
+        "n_jeonse": 57,
+        "monthly_rent_share": 0.3
+      },
+      {
+        "quarter": "2025Q3",
+        "n_sales": 43,
+        "n_jeonse": 56,
+        "monthly_rent_share": 0.3
+      },
+      {
+        "quarter": "2025Q4",
+        "n_sales": 45,
+        "n_jeonse": 58,
+        "monthly_rent_share": 0.3
+      },
+      {
+        "quarter": "2026Q1",
+        "n_sales": 44,
+        "n_jeonse": 57,
+        "monthly_rent_share": 0.3
+      },
+      {
+        "quarter": "2026Q2",
+        "n_sales": 43,
+        "n_jeonse": 56,
+        "monthly_rent_share": 0.3
+      }
+    ],
     "facts": {
-      "n_sales_4q": 96,
+      "n_sales_4q": 185,
       "jeonse_ratio_4q": 0.58,
       "redevelop_zones": {
         "designated": 2,
@@ -269,10 +722,45 @@
       "completed_households_8q": 300,
       "reg_overheated": false
     },
-    "comparison": {
-      "seoul_change_pct": 1.1,
-      "gu_change_pct": 0.7,
-      "dong_change_pct": 0.4
+    "structure": {
+      "type": 1,
+      "desc": "강남 13km대 · 도심 9km대",
+      "as_of": "2026Q2"
+    },
+    "peers": [
+      {
+        "dong_id": "11305_번동",
+        "gu_name": "강북구",
+        "umd_name": "번동",
+        "reason": "신축 비중과 도심 거리가 가까워요"
+      },
+      {
+        "dong_id": "11320_쌍문동",
+        "gu_name": "도봉구",
+        "umd_name": "쌍문동",
+        "reason": "신축 비중과 전세가율이 가까워요"
+      },
+      {
+        "dong_id": "11305_미아동",
+        "gu_name": "강북구",
+        "umd_name": "미아동",
+        "reason": "신축 비중과 위치가 가까워요"
+      },
+      {
+        "dong_id": "11290_정릉동",
+        "gu_name": "성북구",
+        "umd_name": "정릉동",
+        "reason": "신축 비중과 위치가 가까워요"
+      },
+      {
+        "dong_id": "11380_대조동",
+        "gu_name": "은평구",
+        "umd_name": "대조동",
+        "reason": "신축 비중과 강남 거리가 가까워요"
+      }
+    ],
+    "reference": {
+      "seoul_12m_pct": 12.7
     },
     "complexes": [
       {
@@ -311,14 +799,76 @@
   },
   "11230_답십리동": {
     "dong_id": "11230_답십리동",
-    "prediction": {
-      "status": "NOT_SERVED",
-      "change_pct_est": null,
-      "lower_pct": null,
-      "upper_pct": null
+    "sample": {
+      "n_sales_4q": 872,
+      "n_complexes_4q": 35,
+      "dominant_complex_share_4q": 0.1639908256880733,
+      "index_se": 0.0074543116396256,
+      "index_se_band": "LOW",
+      "flags": []
     },
+    "change": {
+      "dong_12m_pct": 20.8,
+      "seoul_12m_pct": 12.7,
+      "delta_12m_pct": 7.1,
+      "delta_se_pct": 1.0,
+      "delta_state": "DISTINGUISHABLE",
+      "peak_5y_gap_pct": 0.0,
+      "peak_5y_gap_se_pct": 1.1,
+      "peak_5y_state": "AT_PEAK"
+    },
+    "flows": [
+      {
+        "quarter": "2024Q3",
+        "n_sales": 219,
+        "n_jeonse": 285,
+        "monthly_rent_share": 0.35
+      },
+      {
+        "quarter": "2024Q4",
+        "n_sales": 218,
+        "n_jeonse": 283,
+        "monthly_rent_share": 0.35
+      },
+      {
+        "quarter": "2025Q1",
+        "n_sales": 220,
+        "n_jeonse": 286,
+        "monthly_rent_share": 0.35
+      },
+      {
+        "quarter": "2025Q2",
+        "n_sales": 219,
+        "n_jeonse": 285,
+        "monthly_rent_share": 0.35
+      },
+      {
+        "quarter": "2025Q3",
+        "n_sales": 218,
+        "n_jeonse": 283,
+        "monthly_rent_share": 0.35
+      },
+      {
+        "quarter": "2025Q4",
+        "n_sales": 220,
+        "n_jeonse": 286,
+        "monthly_rent_share": 0.35
+      },
+      {
+        "quarter": "2026Q1",
+        "n_sales": 219,
+        "n_jeonse": 285,
+        "monthly_rent_share": 0.35
+      },
+      {
+        "quarter": "2026Q2",
+        "n_sales": 218,
+        "n_jeonse": 283,
+        "monthly_rent_share": 0.35
+      }
+    ],
     "facts": {
-      "n_sales_4q": 64,
+      "n_sales_4q": 872,
       "jeonse_ratio_4q": 0.51,
       "redevelop_zones": {
         "designated": 1,
@@ -329,10 +879,45 @@
       "completed_households_8q": 900,
       "reg_overheated": false
     },
-    "comparison": {
-      "seoul_change_pct": 1.1,
-      "gu_change_pct": 1.3,
-      "dong_change_pct": null
+    "structure": {
+      "type": 0,
+      "desc": "평당가 높음 · 강남 7km대",
+      "as_of": "2026Q2"
+    },
+    "peers": [
+      {
+        "dong_id": "11230_전농동",
+        "gu_name": "동대문구",
+        "umd_name": "전농동",
+        "reason": "신축 비중과 도심 거리가 가까워요"
+      },
+      {
+        "dong_id": "11200_하왕십리동",
+        "gu_name": "성동구",
+        "umd_name": "하왕십리동",
+        "reason": "신축 비중과 위치가 가까워요"
+      },
+      {
+        "dong_id": "11200_마장동",
+        "gu_name": "성동구",
+        "umd_name": "마장동",
+        "reason": "신축 비중과 위치가 가까워요"
+      },
+      {
+        "dong_id": "11140_신당동",
+        "gu_name": "중구",
+        "umd_name": "신당동",
+        "reason": "신축 비중과 세대수가 가까워요"
+      },
+      {
+        "dong_id": "11215_구의동",
+        "gu_name": "광진구",
+        "umd_name": "구의동",
+        "reason": "신축 비중과 강남 거리가 가까워요"
+      }
+    ],
+    "reference": {
+      "seoul_12m_pct": 12.7
     },
     "complexes": [
       {
@@ -357,14 +942,76 @@
   },
   "11620_신림동": {
     "dong_id": "11620_신림동",
-    "prediction": {
-      "status": "PREDICTED",
-      "change_pct_est": 2.1,
-      "lower_pct": -6.0,
-      "upper_pct": 10.1
+    "sample": {
+      "n_sales_4q": 856,
+      "n_complexes_4q": 68,
+      "dominant_complex_share_4q": 0.1565420560747663,
+      "index_se": 0.0063784154173279,
+      "index_se_band": "LOW",
+      "flags": []
     },
+    "change": {
+      "dong_12m_pct": 7.6,
+      "seoul_12m_pct": 12.7,
+      "delta_12m_pct": -4.6,
+      "delta_se_pct": 1.0,
+      "delta_state": "DISTINGUISHABLE",
+      "peak_5y_gap_pct": -7.3,
+      "peak_5y_gap_se_pct": 1.2,
+      "peak_5y_state": "DISTINGUISHABLE"
+    },
+    "flows": [
+      {
+        "quarter": "2024Q3",
+        "n_sales": 211,
+        "n_jeonse": 274,
+        "monthly_rent_share": 0.4
+      },
+      {
+        "quarter": "2024Q4",
+        "n_sales": 210,
+        "n_jeonse": 273,
+        "monthly_rent_share": 0.4
+      },
+      {
+        "quarter": "2025Q1",
+        "n_sales": 212,
+        "n_jeonse": 276,
+        "monthly_rent_share": 0.4
+      },
+      {
+        "quarter": "2025Q2",
+        "n_sales": 211,
+        "n_jeonse": 274,
+        "monthly_rent_share": 0.4
+      },
+      {
+        "quarter": "2025Q3",
+        "n_sales": 210,
+        "n_jeonse": 273,
+        "monthly_rent_share": 0.4
+      },
+      {
+        "quarter": "2025Q4",
+        "n_sales": 212,
+        "n_jeonse": 276,
+        "monthly_rent_share": 0.4
+      },
+      {
+        "quarter": "2026Q1",
+        "n_sales": 211,
+        "n_jeonse": 274,
+        "monthly_rent_share": 0.4
+      },
+      {
+        "quarter": "2026Q2",
+        "n_sales": 210,
+        "n_jeonse": 273,
+        "monthly_rent_share": 0.4
+      }
+    ],
     "facts": {
-      "n_sales_4q": 143,
+      "n_sales_4q": 856,
       "jeonse_ratio_4q": 0.64,
       "redevelop_zones": {
         "designated": 0,
@@ -375,10 +1022,45 @@
       "completed_households_8q": 600,
       "reg_overheated": false
     },
-    "comparison": {
-      "seoul_change_pct": 1.1,
-      "gu_change_pct": 1.9,
-      "dong_change_pct": 2.1
+    "structure": {
+      "type": 1,
+      "desc": "강남 13km대 · 도심 9km대",
+      "as_of": "2026Q2"
+    },
+    "peers": [
+      {
+        "dong_id": "11545_독산동",
+        "gu_name": "금천구",
+        "umd_name": "독산동",
+        "reason": "신축 비중과 전세가율이 가까워요"
+      },
+      {
+        "dong_id": "11545_시흥동",
+        "gu_name": "금천구",
+        "umd_name": "시흥동",
+        "reason": "신축 비중과 세대수가 가까워요"
+      },
+      {
+        "dong_id": "11560_대림동",
+        "gu_name": "영등포구",
+        "umd_name": "대림동",
+        "reason": "신축 비중과 전세가율이 가까워요"
+      },
+      {
+        "dong_id": "11530_구로동",
+        "gu_name": "구로구",
+        "umd_name": "구로동",
+        "reason": "신축 비중과 도심 거리가 가까워요"
+      },
+      {
+        "dong_id": "11545_가산동",
+        "gu_name": "금천구",
+        "umd_name": "가산동",
+        "reason": "신축 비중과 평당가가 가까워요"
+      }
+    ],
+    "reference": {
+      "seoul_12m_pct": 12.7
     },
     "complexes": [
       {
@@ -413,14 +1095,76 @@
   },
   "11500_화곡동": {
     "dong_id": "11500_화곡동",
-    "prediction": {
-      "status": "INSUFFICIENT_SALES",
-      "change_pct_est": null,
-      "lower_pct": null,
-      "upper_pct": null
+    "sample": {
+      "n_sales_4q": 801,
+      "n_complexes_4q": 153,
+      "dominant_complex_share_4q": 0.1672908863920099,
+      "index_se": 0.0068153805264142,
+      "index_se_band": "LOW",
+      "flags": []
     },
+    "change": {
+      "dong_12m_pct": 7.2,
+      "seoul_12m_pct": 12.7,
+      "delta_12m_pct": -4.9,
+      "delta_se_pct": 0.9,
+      "delta_state": "DISTINGUISHABLE",
+      "peak_5y_gap_pct": 0.0,
+      "peak_5y_gap_se_pct": 1.0,
+      "peak_5y_state": "AT_PEAK"
+    },
+    "flows": [
+      {
+        "quarter": "2024Q3",
+        "n_sales": 200,
+        "n_jeonse": 260,
+        "monthly_rent_share": 0.45
+      },
+      {
+        "quarter": "2024Q4",
+        "n_sales": 199,
+        "n_jeonse": 259,
+        "monthly_rent_share": 0.45
+      },
+      {
+        "quarter": "2025Q1",
+        "n_sales": 201,
+        "n_jeonse": 261,
+        "monthly_rent_share": 0.45
+      },
+      {
+        "quarter": "2025Q2",
+        "n_sales": 200,
+        "n_jeonse": 260,
+        "monthly_rent_share": 0.45
+      },
+      {
+        "quarter": "2025Q3",
+        "n_sales": 199,
+        "n_jeonse": 259,
+        "monthly_rent_share": 0.45
+      },
+      {
+        "quarter": "2025Q4",
+        "n_sales": 201,
+        "n_jeonse": 261,
+        "monthly_rent_share": 0.45
+      },
+      {
+        "quarter": "2026Q1",
+        "n_sales": 200,
+        "n_jeonse": 260,
+        "monthly_rent_share": 0.45
+      },
+      {
+        "quarter": "2026Q2",
+        "n_sales": 199,
+        "n_jeonse": 259,
+        "monthly_rent_share": 0.45
+      }
+    ],
     "facts": {
-      "n_sales_4q": 17,
+      "n_sales_4q": 801,
       "jeonse_ratio_4q": 0.69,
       "redevelop_zones": {
         "designated": 0,
@@ -431,10 +1175,45 @@
       "completed_households_8q": 150,
       "reg_overheated": false
     },
-    "comparison": {
-      "seoul_change_pct": 1.1,
-      "gu_change_pct": 0.9,
-      "dong_change_pct": null
+    "structure": {
+      "type": 1,
+      "desc": "강남 13km대 · 도심 9km대",
+      "as_of": "2026Q2"
+    },
+    "peers": [
+      {
+        "dong_id": "11470_신월동",
+        "gu_name": "양천구",
+        "umd_name": "신월동",
+        "reason": "신축 비중과 평당가가 가까워요"
+      },
+      {
+        "dong_id": "11500_등촌동",
+        "gu_name": "강서구",
+        "umd_name": "등촌동",
+        "reason": "신축 비중과 강남 거리가 가까워요"
+      },
+      {
+        "dong_id": "11530_고척동",
+        "gu_name": "구로구",
+        "umd_name": "고척동",
+        "reason": "신축 비중과 위치가 가까워요"
+      },
+      {
+        "dong_id": "11500_염창동",
+        "gu_name": "강서구",
+        "umd_name": "염창동",
+        "reason": "신축 비중과 세대수가 가까워요"
+      },
+      {
+        "dong_id": "11530_개봉동",
+        "gu_name": "구로구",
+        "umd_name": "개봉동",
+        "reason": "신축 비중과 평당가가 가까워요"
+      }
+    ],
+    "reference": {
+      "seoul_12m_pct": 12.7
     },
     "complexes": [
       {

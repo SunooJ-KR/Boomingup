@@ -88,6 +88,7 @@ cd front && npx tsc --noEmit && npm run build
 - 데이터 출처와 수집 기준은 `docs/data-sources.md`에 정리한다.
 - 알고리즘과 모델링 판단은 `docs/algorithms.md` 또는 관련 문서에 남긴다.
 - 코드 변경으로 사용법, 데이터 스키마, 실행 순서가 바뀌면 관련 문서도 같은 PR에서 갱신한다.
+- 화면 문구는 `docs/wording-guide.md`를 정본으로 삼는다. 관측과 전망을 구분하고, 투자 판단이나 지역의 우열로 읽히는 표현을 쓰지 않는다.
 
 ## 충돌 방지
 

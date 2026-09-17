@@ -1,27 +1,43 @@
-# 프론트 payload 스키마
+# 프론트 payload 스키마 v2
 
-> 상태: 구현 반영 (2026-09-16). 결정 19~23으로 데이터 경로가 정해져 초안 딱지를 뗐다.
-> 모델 공식 판정(결정 16·17)에 따라 12개월 예측과 구간 실측 coverage를 함께 공개한다.
-> 스키마가 바뀌면 이 문서를 같은 PR에서 갱신한다.
+> 확정: 2026-09-17. 예측 중심의 v1을 대체하는 현행 계약이다. 필드 이름은 `feature-spec.md` §5의 컬럼명을 그대로 쓴다.
+> 원칙: 예측 필드를 지우고, 그 자리에 판단 표현이 들어오지 않도록 응답 구조에서부터 막는다. 목록에는 변화율을 싣지 않는다.
 
 ## 1. 전달 경로
 
-프론트는 API로 받는다. API가 DB(active snapshot)를 읽고, 접속이 없거나 조회가 실패하면
-저장소의 샘플 JSON으로 폴백한다(결정 19). 응답의 `source`가 `db`인지 `sample`인지로 구분한다.
+프론트는 아래 API 세 개를 사용한다. API가 DB의 active snapshot을 읽고, 접속이 없거나 조회가 실패하면 `front/public/data/`의 샘플 JSON으로 폴백한다. 응답의 `source`가 `db`인지 `sample`인지로 구분하며, 샘플일 때는 실제 수치가 아님을 화면에 표시한다.
 
 | 경로 | 내용 | 응답 형태 |
 |---|---|---|
-| `GET /api/meta` | 기준 분기, 데이터 기간, 예측 기간, 구간 coverage, 규제 기준일 | `{ source, meta }` |
-| `GET /api/dongs` | 동 목록, 지역 태그, 동 대표 좌표 | `{ source, meta, dongs, centers }` |
+| `GET /api/meta` | 기준 분기, 데이터 기간, 판단 보조 기준일과 문턱 | `{ source, meta }` |
+| `GET /api/dongs` | 동 목록, 태그, 대표 좌표 | `{ source, meta, dongs, centers }` |
 | `GET /api/dong/{dong_id}?asOf={분기}` | 동 상세 | `{ source, detail }` |
 
-폴백용 샘플은 `front/public/data/`에 있다(`meta.json`, `dongs.json`, `dong-details.json`).
-실제 수치가 아니므로 화면에도 폴백 중임을 표시한다.
+`dong_id`는 `{sggCd}_{umdNm}` 형식이다. 동 목록과 메타는 한 번 읽고, 상세는 동을 선택할 때 가져온다. `centers`는 최근 매매가 있는 단지 좌표의 평균이며 좌표가 없는 동은 키를 만들지 않는다.
 
-`dong_id` = `{sggCd}_{umdNm}` (예: `11680_개포동`). 결정 4의 동 키와 같다.
-동 목록과 메타는 서버에서 한 번 읽어 화면에 내려보내고, 상세는 동을 선택할 때 가져온다(결정 20).
+새 데이터 출처는 `app.dong_support` 한 테이블이다(`feature-spec.md` §5). `app.dong_prediction`은 더 이상 읽지 않는다. 테이블은 지우지 않고 남긴다(결정 66).
 
-## 2. 동 목록 (`dongs`)
+## 2. `meta`
+
+```json
+{
+  "as_of_quarter": "2026Q2",
+  "data_period": { "sale": "2006-01 ~ 2026-08", "rent": "2011-01 ~ 2026-08" },
+  "support_as_of": "2026Q2",
+  "cluster_as_of": "2026Q2",
+  "thresholds": { "few_sales": 20, "one_complex_share": 0.5, "high_index_se": 0.032, "delta_sigma": 2 },
+  "regulation_as_of": "2026-06-30",
+  "seoul_apartment_permit_zone": true
+}
+```
+
+| 변경 | 내용 |
+|---|---|
+| 삭제 | `horizon_months`, `model_passed`, `interval_coverage_backtest`. 예측이 없으므로 뜻이 없다 |
+| 추가 | `support_as_of` (`dong_support`의 `as_of`), `cluster_as_of` (`66.1` 최신 기점), `thresholds` (화면 각주용 상수) |
+| 유지 | `as_of_quarter`, `data_period`, 규제 관련 필드 |
+
+## 3. 동 목록 (`dongs`)
 
 ```json
 {
@@ -29,36 +45,68 @@
   "sgg_cd": "11680",
   "gu_name": "강남구",
   "umd_name": "개포동",
-  "status": "PREDICTED",
-  "change_pct_est": 3.2,
-  "lower_pct": -4.1,
-  "upper_pct": 10.9,
   "n_sales_4q": 212,
+  "ppm2_med_4q_manwon": 2480,
+  "sample_flags": [],
+  "index_se_band": "LOW",
+  "structure_type": 0,
+  "structure_desc": "평당가 높음 · 강남 6km대",
   "tags": ["정비사업 정보 있음", "거래 많은 동"]
 }
 ```
 
 | 필드 | 설명 |
 |---|---|
-| `status` | `PREDICTED` 예측 제공 / `INSUFFICIENT_SALES` 직전 4분기 매매 20건 미만(결정 7) / `NOT_SERVED` 예측 미제공(결정 11). `app.dong_prediction`이 비어 있는 동안에는 `dong_index.eligible`로 뒤 두 값을 파생한다(결정 22) |
-| `change_pct_est` | 추정 변화율(%). 모델 출력 log 변화 `y`를 `(exp(y) − 1) × 100`으로 바꾼 값, 소수 1자리. `status`가 `PREDICTED`가 아니면 `null` |
-| `lower_pct`, `upper_pct` | conformal 추정 구간(%), 같은 변환. 구간이 없으면 `null` |
-| `n_sales_4q` | 기준 분기 포함 직전 4분기 매매 건수 (취소 제외) |
-| `tags` | 규칙 기반 지역 태그. 아래 §5 |
+| `status`, `change_pct_est`, `lower_pct`, `upper_pct`, `status_reason` | **삭제** |
+| `n_sales_4q` | 유지 |
+| `ppm2_med_4q_manwon` | 최근 4분기 ㎡당 매매 중앙가(만원). `dong_feature.sale_ppm2_med_4q`. 가격대 필터·정렬용 |
+| `sample_flags` | `FEW_SALES` / `ONE_COMPLEX_DOMINATES` / `HIGH_INDEX_ERROR` 배열. 없으면 `[]` |
+| `index_se_band` | `LOW` / `MID` / `HIGH` |
+| `structure_type`, `structure_desc` | 구조 유형 번호와 자동 설명. 없으면 `null` |
+| `tags` | 유지. 구조 유형은 태그가 아니라 별도 필드다 |
 
-`centers`는 지도 마커용 동 대표 좌표다. 법정동 경계 GeoJSON이 없어 최근 매매가 있는 단지
-좌표의 평균을 쓴다(결정 21). 좌표가 없는 동은 키 자체가 없다.
+**목록에 변화율이 없다.** `change_12m`, `delta_12m`을 싣지 않는다. 목록 행에 변화율이 있으면 눈으로 정렬하게 된다. 변화율은 상세에서만 오차와 함께 본다.
 
-```json
-{ "11680_개포동": { "lat": 37.4783, "lng": 127.0558 } }
-```
+`centers`는 `{ "dong_id": { "lat": number, "lng": number } }` 형태를 유지한다.
 
-## 3. 동 상세 (`detail`)
+### 3.1 목록 필터·정렬 (프론트 `lib/filter.ts` 계약)
+
+| 필터 | 필드 | 값 |
+|---|---|---|
+| 자치구 | `gu_name` | 유지 |
+| 가격대 | `ppm2_med_4q_manwon` | 구간 `[min, max]`. 구간 경계는 프론트가 전체 분포의 4분위로 만든다 |
+| 표본 상태 | `sample_flags` | "주의 없음" = 빈 배열, "주의 있음" = 하나 이상 |
+| 구조 유형 | `structure_type` | 0~3 다중 선택 |
+| 지역 태그 | `tags` | 유지 |
+
+정렬: `umd_name`, `gu_name`, `n_sales_4q`, `ppm2_med_4q_manwon`. 그 외 없음.
+
+## 4. 동 상세 (`detail`)
 
 ```json
 {
   "dong_id": "11680_개포동",
-  "prediction": { "status": "PREDICTED", "change_pct_est": 3.2, "lower_pct": -4.1, "upper_pct": 10.9 },
+  "sample": {
+    "n_sales_4q": 212,
+    "n_complexes_4q": 14,
+    "dominant_complex_share_4q": 0.21,
+    "index_se": 0.0091,
+    "index_se_band": "LOW",
+    "flags": []
+  },
+  "change": {
+    "dong_12m_pct": 15.7,
+    "seoul_12m_pct": 12.7,
+    "delta_12m_pct": 2.7,
+    "delta_se_pct": 1.3,
+    "delta_state": "DISTINGUISHABLE",
+    "peak_5y_gap_pct": 0.0,
+    "peak_5y_gap_se_pct": 1.3,
+    "peak_5y_state": "AT_PEAK"
+  },
+  "flows": [
+    { "quarter": "2024Q3", "n_sales": 48, "n_jeonse": 61, "monthly_rent_share": 0.34 }
+  ],
   "facts": {
     "n_sales_4q": 212,
     "jeonse_ratio_4q": 0.48,
@@ -66,7 +114,15 @@
     "completed_households_8q": 1200,
     "reg_overheated": null
   },
-  "comparison": { "seoul_change_pct": 13.6, "gu_change_pct": 10.3, "dong_change_pct": 10.7 },
+  "structure": {
+    "type": 0,
+    "desc": "평당가 높음 · 강남 6km대",
+    "as_of": "2026Q2"
+  },
+  "peers": [
+    { "dong_id": "11680_대치동", "gu_name": "강남구", "umd_name": "대치동", "reason": "평당가와 전세가율이 가까워요" }
+  ],
+  "reference": { "seoul_12m_pct": 12.7 },
   "area_stats": [
     { "band": "60㎡ 미만", "n_sales": 3483, "median_price_manwon": 50000, "min_price_manwon": 9700, "max_price_manwon": 108000 }
   ],
@@ -85,33 +141,25 @@
 }
 ```
 
-| 필드 | 설명 |
-|---|---|
-| `comparison` | 서울 전체·자치구·선택 동의 최근 4분기 변화율(%). `dong_index`의 log 지수 차이로 계산하고, 서울·자치구는 eligible 동의 평균이다 |
-| `area_stats` | 면적대별 과거 실적 조회. 예측이 아니라 지나간 거래 집계다. 표본이 적은 면적대는 중위값이 흔들리므로 `n_sales`를 항상 같이 쓴다 |
-| `complexes[].redevelop` | 정비사업 매칭이 된 단지만 채운다. 매칭이 없으면 `null`이며 "구역 아님"을 뜻하지 않는다. `stage_date`는 현재 DB에 없어 빈 문자열이다 |
-| `complexes[].last_sale` | 취소 제외 가장 최근 매매 |
-| `facts.reg_overheated` | 동 단위 투기과열지구 값이 없어 항상 `null`이다. 화면은 대신 `meta.seoul_apartment_permit_zone`을 쓴다(결정 23) |
-
-단지는 `app.complex`에 법정동 코드가 없어서 매매 기록의 `(sgg_cd, umd_nm)`으로 묶는다.
-매매가 한 번도 없던 단지는 목록에 나오지 않는다.
-
-## 4. `meta`
-
-| 필드 | 예 | 출처 |
+| 블록 | 설명 | 화면 블록 (`investment-support-plan.md` §4.1) |
 |---|---|---|
-| `as_of_quarter` | `"2026Q2"` | `dong_index`의 마지막 분기 |
-| `data_period` | 매매 `"2006-01 ~ 2026-08"`, 전월세 `"2011-01 ~ 2026-08"` | `trade_batch` |
-| `horizon_months` | `12` (결정 16·11) | 상수 |
-| `model_passed` | `true` (결정 16) | 상수. DB에 자리가 생기면 옮긴다 |
-| `interval_coverage_backtest` | `0.641` — 과거 검증에서 실제값이 추정 구간 안에 든 비율 (결정 17) | 상수. 같이 옮긴다 |
-| `regulation_as_of` | 규제 기준일 | `regulation_summary` |
-| `seoul_apartment_permit_zone` | 서울 전체 아파트 토지거래허가구역 지정 여부 | `regulation_summary` |
+| `prediction` | **삭제** | — |
+| `comparison` | **삭제**. `change`가 대신한다. v1의 서울·자치구 변화율은 eligible 평균이었고 오차가 없었다 | — |
+| `sample` | `dong_support`의 F-1 값 그대로 | 1 표본 상태 |
+| `change` | F-2 값을 %로 바꾼 것. `delta_state`가 `INDISTINGUISHABLE`이면 **`delta_12m_pct`를 `null`로 보낸다.** 서버가 지운다. 프론트가 숨기는 게 아니다. `peak_5y_*`도 같은 규칙, 저거래 동은 `null` | 2 지난 12개월 변화와 5년 범위 |
+| `flows` | 최근 8분기 분기별 매매 건수, 전세 건수, 월세 비중. API가 `trade_sale`·`trade_rent`에서 집계한다. `dong_support`에 없다 | 3 거래 흐름 |
+| `facts` | 전세가율, 거래 수, 정비사업, 준공, 규제 같은 관측 정보. 예측 이유처럼 설명하지 않는다 | 4 사실 정보 |
+| `structure` | F-3. 없으면 `null` | 목록·상세 구조 유형 |
+| `peers` | F-4. 표시 조건을 못 채우면 **`null`**. 빈 배열 `[]`이 아니다. 프론트는 `null`이면 블록을 그리지 않는다 | 5 함께 볼 동 |
+| `reference` | μ. 접힘 블록용. 지난 기간의 서울 평균이라는 안내 문구는 프론트 상수 | 6 참고치 |
+
+`change`의 % 변환: `(exp(x) − 1) × 100`, 소수 1자리. 오차도 같은 변환을 log 값 ±se에 적용한 뒤 반폭으로 낸다. `delta_se_pct`는 근사값이다.
+
+`area_stats`는 면적대별 매매 가격 분포다. 표본이 적으면 중앙값이 흔들리므로 `n_sales`를 항상 함께 보낸다. `complexes[].redevelop`은 매칭된 단지만 채우고, 매칭이 없으면 `null`이다. `complexes[].last_sale`은 취소되지 않은 가장 최근 매매다. 단지는 매매 원장의 `(sgg_cd, umd_nm)`과 `bjd_code`로 동에 연결한다.
 
 ## 5. 지역 태그
 
-규칙 기반이며, 서비스 대상 동 전체 분포의 상위 30%를 기준으로 붙인다
-(`docs/front/product-plan.md` §4.3).
+지역 태그는 서비스 대상 동 전체 분포의 상위 30%를 기준으로 붙인다. 구조 유형은 군집 소속이므로 태그에 넣지 않는다.
 
 | 태그 | 기준 |
 |---|---|
@@ -121,21 +169,41 @@
 | `30년 이상 단지 많은 동` | 준공 30년 이상 단지 비중 상위 30% |
 | `정비사업 정보 있음` | 정비사업 구역 수가 1개 이상 |
 
-태그 이름에 좋고 나쁨을 담지 않는다. "안정형", "성장형", "저평가형" 같은 이름은 쓰지 않는다.
+## 6. 화면 문구 규칙
 
-## 6. 화면 문구 규칙 (AGENTS §6 계승)
+`wording-guide.md`가 정한다. payload는 문구를 싣지 않고 코드값(`sample_flags`, `delta_state`, `index_se_band`)만 보낸다. 예외는 `structure_desc`와 `peers[].reason`으로, 산출 스크립트가 사전을 적용한 문자열이다. 그 사전도 `wording-guide.md` §4·§5에 있다.
 
-- 예측: "향후 {horizon_months}개월 추정 변화율 +3.2% (추정 구간 −4.1% ~ +10.9%, 기준 2026년 2분기)"
-- 구간 안내(예측 카드 하단 고정): "과거 검증에서 실제 변화율이 추정 구간 안에 든 비율은 약 64%이며, 시장 흐름이 바뀌는 시기에는 더 낮았습니다"
-- `INSUFFICIENT_SALES`: "최근 1년 매매가 적어 예측하지 않음"
-- `NOT_SERVED`: 예측 카드에 사유만 적고 수치를 만들지 않는다
-- 금지 표현은 `front/scripts/check-wording.mjs`가 검사한다. `npm run check:wording`
+## 7. 프론트 변경 범위
 
-## 7. 미정·확인 필요
+| 파일 | 변경 |
+|---|---|
+| `lib/types.ts` | `PredictionStatus`, `Prediction`, `DongComparison` 삭제. `SampleFlag`, `DongSample`, `DongChange`, `DongFlow`, `DongStructure`, `DongPeer` 추가. `AreaStat` 주석의 "과거 실적" 수정 |
+| `lib/derive.ts` | `deriveStatus` 삭제. 태그 파생은 유지 |
+| `lib/filter.ts` | `statuses` → `flagged: boolean | null`, `priceBand`, `structureTypes` |
+| `lib/format.ts` | `STATUS_LABEL`, `STATUS_REASON` 삭제. flag 문장, `delta_state` 문장은 `wording-guide.md`에서 |
+| `lib/queries.ts` | `dong_prediction` join 제거. `dong_support` join 추가. `flows` 집계 쿼리 추가 |
+| `components/dong/prediction-card.tsx` | 삭제. `sample-card.tsx`, `change-card.tsx`로 대체 |
+| `components/dong/status-badge.tsx` | flag 배지로 교체 |
+| `components/dong/comparison-card.tsx` | 삭제. `change-card`에 흡수 |
+| `components/dong/facts-panel.tsx`, `area-stats-card.tsx`, `complex-list.tsx` | 유지. 문구만 검수 |
+| `components/dong/map-panel.tsx` | 색상 기준을 flag 유무·구조 유형으로. 변화율 색칠 없음 |
+| `public/data/*.json` | 샘플을 v2 형태로 갱신 |
+| `scripts/check-wording.mjs` | `wording-guide.md` §2의 추가 금지어 반영 |
+
+`front/lib/*.test.ts`는 위 변경에 맞춰 고친다. `deriveStatus` 테스트는 삭제한다.
+
+## 8. DB
+
+`app.dong_support` 신설. 컬럼은 `feature-spec.md` §5 + `snapshot_id`. 기본키 `(snapshot_id, dong)`. DDL은 `data/db/004_dong_support.sql`에 두고, 적재는 `50.load_db.py`가 다른 정제 테이블과 같은 snapshot에 함께 넣는다.
+
+DDL을 `001_boomingup_tables.sql`이 아니라 새 번호 파일에 두는 이유는 001을 이미 적용한 DB가 있기 때문이다. 컬럼을 뒤에 더한 `003_dong_index_se.sql`과 같은 방식이다. `peer_dongs`는 파일에서는 JSON 문자열이지만 테이블에서는 `jsonb`로 둔다. 적재할 때 형식이 검사되고 API가 문자열을 다시 parse하지 않아도 된다.
+
+`app.dong_prediction`은 읽지 않지만 남긴다. 결정 22(비어 있을 때 `eligible`로 파생)는 폐기한다.
+
+## 9. 미정
 
 | 항목 | 담당 |
 |---|---|
-| `app.dong_prediction` 적재 — 지금 비어 있어 모든 동이 표본 부족·예측 미제공으로 보인다 | 김용진 |
-| 법정동 경계 GeoJSON — 지도 색칠용. 없어도 대표 좌표로 동작한다(결정 21) | 김용진·정선우 |
-| `model_passed`, `interval_coverage_backtest`를 DB에 둘 자리 | 정선우 |
-| 정비사업 단계 일자(`stage_date`) 적재 여부 | 김용진 |
+| `flows`의 월세 비중 정의(건수 기준인지 보증금 환산인지) | 프론트·데이터 |
+| 가격대 필터 구간 경계를 4분위로 할지 고정 금액으로 할지 | 프론트 |
+| `peers`의 `gu_name`, `umd_name`을 API가 붙일지 프론트가 목록에서 찾을지 | 프론트 |

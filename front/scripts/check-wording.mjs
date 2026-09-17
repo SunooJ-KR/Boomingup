@@ -1,5 +1,5 @@
 // 화면 문구에 투자 판단처럼 읽히는 표현이 들어갔는지 검사한다.
-// 금지 표현 목록은 AGENTS.md와 docs/front/product-plan.md §1을 따른다.
+// 금지 표현 목록은 docs/wording-guide.md §2를 따른다.
 // 실행: npm run check:wording
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join } from "node:path";
@@ -19,6 +19,38 @@ const BANNED = [
   "재건축으로",
   "안정형",
   "성장형",
+  // docs/wording-guide.md §2.2 추가 금지 표현
+  "대안",
+  "대체 후보",
+  "국면",
+  "냉각",
+  "회복",
+  "왜곡",
+  "하방 방어",
+  "수요 약화",
+  "실적",
+  "등급",
+  "고점",
+  "저점",
+  "바닥",
+  "꼭지",
+  "회복률",
+  "다음 오를",
+  "확산",
+  "갭 메우기",
+  "키 맞추기",
+  "갈아타기",
+  "상급지",
+  "하급지",
+  "적합한 투자자",
+  "투자 유형",
+  "성향 진단",
+  "가성비",
+  "저렴한 순",
+  "살 수 있는",
+  "예측",
+  "전망",
+  "예상",
 ];
 
 function* walk(dir) {

@@ -42,9 +42,11 @@ NEW_SNAPSHOT_TABLES = (
     "market_event",
     "event_summary",
     "event_dong_path",
-    "dong_prediction",
     "dong_boundary",
+    "dong_support",
 )
+# app.dong_prediction은 화면이 더 이상 읽지 않는다(결정 66). 테이블은 남기지만 적재하지 않으므로
+# 여기에도, 아래 컬럼 정의에도 두지 않는다. 다시 채우려면 그 결정을 먼저 고친다.
 
 BOUNDARY_SOURCE = "GIS Developer 행정구역(읍면동) 2023-07, 원본 도로명주소 DB"
 BOUNDARY_PROPERTIES = {"dong", "sgg_cd", "emd_cd", "umd_nm", "eng_nm", "in_index"}
@@ -74,9 +76,27 @@ FEATURE_INTS = {
     "rz_active_households", "rz_events_4q", "completed_hh_4q", "completed_hh_8q", "stock_hh",
 }
 
+SUPPORT_COLUMNS = (
+    "sale_n_all_4q", "n_complexes_4q", "dominant_complex_share_4q", "index_se",
+    "index_se_band", "sample_flags", "change_12m", "mu_12m", "delta_12m", "delta_se",
+    "delta_state", "peak_5y_gap", "peak_5y_gap_se", "peak_5y_state",
+    "structure_type", "structure_desc", "peer_dongs",
+)
+SUPPORT_INTS = {"sale_n_all_4q", "n_complexes_4q", "structure_type"}
+SUPPORT_FLOATS = {
+    "dominant_complex_share_4q", "index_se", "change_12m", "mu_12m",
+    "delta_12m", "delta_se", "peak_5y_gap", "peak_5y_gap_se",
+}
+SUPPORT_FLAGS = {"FEW_SALES", "ONE_COMPLEX_DOMINATES", "HIGH_INDEX_ERROR"}
+SUPPORT_ENUMS = {
+    "index_se_band": ({"LOW", "MID", "HIGH"}, False),
+    "delta_state": ({"DISTINGUISHABLE", "INDISTINGUISHABLE"}, False),
+    "peak_5y_state": ({"AT_PEAK", "DISTINGUISHABLE", "INDISTINGUISHABLE"}, True),
+}
+
 TABLE_COLUMNS = {
     "dong": ("dong", "sgg_cd", "umd_nm", "gu_name"),
-    "dong_index": ("dong", "quarter", "log_index", "n_sales", "n_sales_4q", "eligible"),
+    "dong_index": ("dong", "quarter", "log_index", "log_index_se", "n_sales", "n_sales_4q", "eligible"),
     "dong_feature": ("dong", "as_of_quarter", *FEATURE_COLUMNS),
     "market_event": ("event_id", "effective_date", "category", "direction", "label", "verified", "source"),
     "event_summary": (
@@ -86,24 +106,21 @@ TABLE_COLUMNS = {
         "post_observable", "overlapping_events", "note",
     ),
     "event_dong_path": ("event_id", "dong", "k", "quarter", "rel_log_change"),
-    "dong_prediction": (
-        "dong", "horizon_q", "origin", "status", "n_sales_4q", "market_hat",
-        "relative_hat", "gamma", "y_hat", "change_pct_est", "lower_pct", "upper_pct",
-        "model_version",
-    ),
     "dong_boundary": (
         "dong", "emd_cd", "sgg_cd", "umd_nm", "eng_nm", "in_index", "geometry",
         "min_lng", "min_lat", "max_lng", "max_lat", "centroid_lng", "centroid_lat", "source",
     ),
+    "dong_support": ("dong", "as_of", *SUPPORT_COLUMNS),
 }
 
 CLEAN_SOURCE_HEADERS = {
-    "index": ("dong", "sggCd", "umdNm", "quarter", "log_index", "n_sales", "n_sales_4q", "eligible"),
+    "index": ("dong", "sggCd", "umdNm", "quarter", "dq_effect", "log_index",
+              "n_sales", "n_sales_4q", "eligible", "log_index_se"),
     "feature": ("dong", "sggCd", "umdNm", "as_of_quarter", *FEATURE_COLUMNS),
     "events": ("event_id", "effective_date", "category", "label", "direction", "verified", "source"),
     "summary": TABLE_COLUMNS["event_summary"],
     "paths": ("event_id", "dong", "sggCd", "umdNm", "k", "quarter", "rel_log_change"),
-    "prediction": TABLE_COLUMNS["dong_prediction"],
+    "support": TABLE_COLUMNS["dong_support"],
 }
 QUARTER_PATTERN = re.compile(r"^[0-9]{4}Q[1-4]$")
 
@@ -178,10 +195,38 @@ def _require_quarter(frame: pd.DataFrame, column: str, source: str) -> None:
         raise ValueError(f"{source}: {column}은(는) YYYYQ1~YYYYQ4 형식이어야 합니다.")
 
 
-def validate_prediction_status(series: pd.Series) -> None:
-    allowed_status = {"PREDICTED", "INSUFFICIENT_SALES"}
-    if not set(series).issubset(allowed_status):
-        raise ValueError("predictions: 허용되지 않은 status가 있습니다.")
+def _require_enum(frame: pd.DataFrame, column: str, allowed: set[str], source: str, nullable: bool = False) -> None:
+    """CHECK 제약에 걸리기 전에 허용 밖의 코드값을 원천 단계에서 거부합니다."""
+    frame[column] = frame[column].map(_blank_to_none)
+    values = set(frame[column].dropna())
+    if not values.issubset(allowed):
+        raise ValueError(f"{source}: {column}에 허용되지 않은 값이 있습니다: {', '.join(sorted(values - allowed))}")
+    if not nullable and frame[column].isna().any():
+        raise ValueError(f"{source}: {column}은(는) 비어 있을 수 없습니다.")
+
+
+def validate_sample_flags(series: pd.Series) -> None:
+    """';'로 이은 주의 flag가 모두 아는 코드값인지 확인합니다."""
+    for value in series.dropna():
+        unknown = set(value.split(";")) - SUPPORT_FLAGS
+        if unknown:
+            raise ValueError(f"69.1: 모르는 sample_flags가 있습니다: {', '.join(sorted(unknown))}")
+
+
+def validate_peer_dongs(series: pd.Series, known_dongs: set[str]) -> None:
+    """jsonb로 들어갈 문자열이 [{"dong": …, "reason": …}] 형태인지 확인합니다."""
+    for value in series.dropna():
+        try:
+            peers = json.loads(value)
+        except json.JSONDecodeError as exc:
+            raise ValueError("69.1: peer_dongs를 JSON으로 읽을 수 없습니다.") from exc
+        if not isinstance(peers, list) or not peers:
+            raise ValueError("69.1: peer_dongs는 비어 있지 않은 배열이어야 합니다. 없으면 빈 칸으로 둡니다.")
+        for peer in peers:
+            if not isinstance(peer, dict) or set(peer) != {"dong", "reason"}:
+                raise ValueError("69.1: peer_dongs 원소는 dong과 reason만 가져야 합니다.")
+            if peer["dong"] not in known_dongs:
+                raise ValueError(f"69.1: 60.1에 없는 peer dong이 있습니다: {peer['dong']}")
 
 
 def _strict_number(series: pd.Series, column: str, integer: bool = False) -> pd.Series:
@@ -355,26 +400,26 @@ def load_dong_boundaries(index_dongs: Iterable[str], path: Path = BOUNDARY_PATH)
     in_index_dongs = set(frame.loc[frame["in_index"], "dong"])
     unknown_dongs = sorted(in_index_dongs - set(index_dongs))
     if unknown_dongs:
-        raise ValueError("52.1: 40.1에 없는 in_index dong이 있습니다: " + ", ".join(unknown_dongs))
+        raise ValueError("52.1: 60.1에 없는 in_index dong이 있습니다: " + ", ".join(unknown_dongs))
     if len(in_index_dongs) != 340:
         raise ValueError(f"52.1: in_index dong은 340개여야 합니다 (현재 {len(in_index_dongs)}개).")
     return frame
 
 
-def load_clean_sources(predictions: Path | None = None) -> dict[str, pd.DataFrame]:
+def load_clean_sources() -> dict[str, pd.DataFrame]:
     """원천 TSV를 읽어 DB 컬럼명·타입으로 변환하고 관계 불변식을 점검합니다."""
-    index = _read_tsv(ROOT / "output/40.1.dong_index.txt", CLEAN_SOURCE_HEADERS["index"])
+    index = _read_tsv(ROOT / "output/60.1.dong_index_se.txt", CLEAN_SOURCE_HEADERS["index"])
     index["sgg_cd"] = index["sggCd"].map(_blank_to_none)
     index["umd_nm"] = index["umdNm"].map(_blank_to_none)
     index["dong"] = index["dong"].map(_blank_to_none)
-    _require_text(index, ("dong", "sgg_cd", "umd_nm"), "40.1")
-    _require_quarter(index, "quarter", "40.1")
+    _require_text(index, ("dong", "sgg_cd", "umd_nm"), "60.1")
+    _require_quarter(index, "quarter", "60.1")
     expected_dong = index["sgg_cd"] + "_" + index["umd_nm"]
     if not (index["dong"] == expected_dong).all():
-        raise ValueError("40.1: dong = sggCd || '_' || umdNm 불변식 위반입니다.")
+        raise ValueError("60.1: dong = sggCd || '_' || umdNm 불변식 위반입니다.")
     unknown_codes = sorted(set(index["sgg_cd"]) - set(GU_BY_SGG_CD))
     if unknown_codes:
-        raise ValueError(f"40.1: 구 이름 매핑이 없는 sggCd가 있습니다: {', '.join(unknown_codes)}")
+        raise ValueError(f"60.1: 구 이름 매핑이 없는 sggCd가 있습니다: {', '.join(unknown_codes)}")
     index["log_index"] = _strict_number(index["log_index"], "log_index")
     index["n_sales"] = _strict_number(index["n_sales"], "n_sales", integer=True)
     index["n_sales_4q"] = _strict_number(index["n_sales_4q"], "n_sales_4q", integer=True)
@@ -392,7 +437,7 @@ def load_clean_sources(predictions: Path | None = None) -> dict[str, pd.DataFram
     if not (feature["dong"] == feature["sgg_cd"] + "_" + feature["umd_nm"]).all():
         raise ValueError("42.1: dong 불변식 위반입니다.")
     if not set(feature["dong"]).issubset(set(dongs["dong"])):
-        raise ValueError("42.1: 40.1에 없는 dong이 있습니다.")
+        raise ValueError("42.1: 60.1에 없는 dong이 있습니다.")
     for column in FEATURE_COLUMNS:
         feature[column] = _strict_number(feature[column], column, integer=column in FEATURE_INTS)
 
@@ -423,23 +468,34 @@ def load_clean_sources(predictions: Path | None = None) -> dict[str, pd.DataFram
     if not (paths["dong"] == paths["sgg_cd"] + "_" + paths["umd_nm"]).all():
         raise ValueError("46.1: dong 불변식 위반입니다.")
     if not set(paths["dong"]).issubset(set(dongs["dong"])):
-        raise ValueError("46.1: 40.1에 없는 dong이 있습니다.")
+        raise ValueError("46.1: 60.1에 없는 dong이 있습니다.")
     if not set(paths["event_id"]).issubset(set(events["event_id"])):
         raise ValueError("46.1: event_dates.tsv에 없는 event_id가 있습니다.")
     paths["k"] = _strict_number(paths["k"], "k", integer=True)
     paths["rel_log_change"] = _strict_number(paths["rel_log_change"], "rel_log_change")
 
-    prediction = pd.DataFrame(columns=TABLE_COLUMNS["dong_prediction"])
-    if predictions is not None:
-        prediction = _read_tsv(predictions, CLEAN_SOURCE_HEADERS["prediction"])
-        _require_text(prediction, ("dong", "origin", "status", "model_version"), "predictions")
-        for column in ("horizon_q", "n_sales_4q"):
-            prediction[column] = _strict_number(prediction[column], column, integer=True)
-        for column in ("market_hat", "relative_hat", "gamma", "y_hat", "change_pct_est", "lower_pct", "upper_pct"):
-            prediction[column] = _strict_number(prediction[column], column)
-        validate_prediction_status(prediction["status"])
-        if not set(prediction["dong"].map(_blank_to_none)).issubset(set(dongs["dong"])):
-            raise ValueError("predictions: 40.1에 없는 dong이 있습니다.")
+    support = _read_tsv(ROOT / "output/69.1.dong_support.txt", CLEAN_SOURCE_HEADERS["support"])
+    _require_text(support, ("dong", "structure_desc"), "69.1")
+    _require_quarter(support, "as_of", "69.1")
+    if support["as_of"].nunique() != 1:
+        raise ValueError("69.1: 네 산출물이 같은 기준 분기 하나를 써야 합니다.")
+    if not set(support["dong"]).issubset(set(dongs["dong"])):
+        raise ValueError("69.1: 60.1에 없는 dong이 있습니다.")
+    if support["dong"].duplicated().any():
+        raise ValueError("69.1: dong이 중복됩니다. 기준 분기 하나에 동 하나여야 합니다.")
+    for column in SUPPORT_INTS:
+        support[column] = _strict_number(support[column], column, integer=True)
+    for column in SUPPORT_FLOATS:
+        support[column] = _strict_number(support[column], column)
+    for column, (allowed, nullable) in SUPPORT_ENUMS.items():
+        _require_enum(support, column, allowed, "69.1", nullable=nullable)
+    for column in ("sample_flags", "peer_dongs"):
+        support[column] = support[column].map(_blank_to_none)
+    validate_sample_flags(support["sample_flags"])
+    validate_peer_dongs(support["peer_dongs"], set(dongs["dong"]))
+    # 매매 0건이면 비중을 낼 수 없어 결측이다. 0으로 채우면 쏠림이 없는 동과 구분되지 않는다.
+    if support.loc[support["sale_n_all_4q"] == 0, "dominant_complex_share_4q"].notna().any():
+        raise ValueError("69.1: 매매 0건인 동에 dominant_complex_share_4q가 있습니다.")
 
     return {
         "dong": dongs.loc[:, TABLE_COLUMNS["dong"]],
@@ -448,8 +504,8 @@ def load_clean_sources(predictions: Path | None = None) -> dict[str, pd.DataFram
         "market_event": events.loc[:, TABLE_COLUMNS["market_event"]],
         "event_summary": summary.loc[:, TABLE_COLUMNS["event_summary"]],
         "event_dong_path": paths.loc[:, TABLE_COLUMNS["event_dong_path"]],
-        "dong_prediction": prediction.loc[:, TABLE_COLUMNS["dong_prediction"]],
         "dong_boundary": boundaries,
+        "dong_support": support.loc[:, TABLE_COLUMNS["dong_support"]],
     }
 
 
@@ -521,7 +577,7 @@ def verify_snapshot(cursor: psycopg.Cursor[Any], old_id: int, new_id: int, frame
                 left join app.dong d using (snapshot_id, dong)
                 left join app.market_event e using (snapshot_id, event_id)
               where x.snapshot_id = %s and (d.dong is null or e.event_id is null)) +
-             (select count(*) from app.dong_prediction x left join app.dong d using (snapshot_id, dong)
+             (select count(*) from app.dong_support x left join app.dong d using (snapshot_id, dong)
               where x.snapshot_id = %s and d.dong is null)""",
         (new_id, new_id, new_id, new_id, new_id),
     )
@@ -542,7 +598,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--as-of", default="2026-08-31")
     parser.add_argument("--note")
     parser.add_argument("--commit", action="store_true", help="검증 후 새 snapshot을 활성화하고 commit합니다.")
-    parser.add_argument("--predictions", type=Path, help="dong_prediction TSV 경로입니다.")
     parser.add_argument("--validate-only", action="store_true", help="DB에 접속하지 않고 원천 파일만 검증합니다.")
     return parser.parse_args()
 
@@ -551,7 +606,7 @@ def main() -> int:
     args = parse_args()
     try:
         pd.to_datetime(args.as_of, format="%Y-%m-%d", errors="raise")
-        frames = load_clean_sources(args.predictions)
+        frames = load_clean_sources()
         if args.validate_only:
             if args.commit:
                 raise ValueError("--validate-only와 --commit은 함께 사용할 수 없습니다.")
@@ -563,11 +618,13 @@ def main() -> int:
             with connection.cursor() as cursor:
                 missing = [table for table in NEW_SNAPSHOT_TABLES if not _table_exists(cursor, table)]
                 if missing:
-                    if missing == ["dong_boundary"]:
-                        raise RuntimeError("신규 테이블이 없습니다. data/db/002_dong_boundary.sql을 먼저 적용하세요: dong_boundary")
+                    sql_by_table = {"dong_boundary": "002_dong_boundary.sql", "dong_support": "004_dong_support.sql"}
+                    files = sorted({sql_by_table.get(table, "001_boomingup_tables.sql") for table in missing})
                     raise RuntimeError(
-                        "신규 테이블이 없습니다. data/db/001_boomingup_tables.sql과 "
-                        "data/db/002_dong_boundary.sql을 먼저 적용하세요: " + ", ".join(missing)
+                        "신규 테이블이 없습니다. "
+                        + ", ".join(f"data/db/{name}" for name in files)
+                        + "을(를) 먼저 적용하세요: "
+                        + ", ".join(missing)
                     )
                 cursor.execute("select snapshot_id from app.dataset_snapshot where is_active order by snapshot_id")
                 active = cursor.fetchall()

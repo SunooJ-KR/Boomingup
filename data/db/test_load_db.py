@@ -228,11 +228,37 @@ def run_boundary_fixture_tests(clean) -> None:
     expect_value_error(lambda: clean.transform_boundary_feature(missing_property, 6))
 
 
+def run_support_fixture_tests(clean) -> None:
+    """판단 보조 산출물의 코드값·flag·peer 검사가 잘못된 값을 막는지 확인합니다."""
+    frame = pd.DataFrame({"index_se_band": ["LOW", "MID"]})
+    clean._require_enum(frame, "index_se_band", {"LOW", "MID", "HIGH"}, "fixture")
+    expect_value_error(lambda: clean._require_enum(
+        pd.DataFrame({"delta_state": ["DISTINGUISHABLE", "UNKNOWN"]}),
+        "delta_state", {"DISTINGUISHABLE", "INDISTINGUISHABLE"}, "fixture",
+    ))
+    # 빈 칸은 nullable일 때만 통과한다.
+    clean._require_enum(pd.DataFrame({"peak_5y_state": ["AT_PEAK", ""]}), "peak_5y_state",
+                        {"AT_PEAK"}, "fixture", nullable=True)
+    expect_value_error(lambda: clean._require_enum(
+        pd.DataFrame({"peak_5y_state": ["AT_PEAK", ""]}), "peak_5y_state", {"AT_PEAK"}, "fixture",
+    ))
+
+    clean.validate_sample_flags(pd.Series(["FEW_SALES;HIGH_INDEX_ERROR", None]))
+    expect_value_error(lambda: clean.validate_sample_flags(pd.Series(["FEW_SALES;MOMENTUM"])))
+
+    known = {"11110_교북동", "11140_중림동"}
+    clean.validate_peer_dongs(pd.Series(['[{"dong":"11140_중림동","reason":"가까워요"}]', None]), known)
+    expect_value_error(lambda: clean.validate_peer_dongs(pd.Series(["[]"]), known))
+    expect_value_error(lambda: clean.validate_peer_dongs(pd.Series(['[{"dong":"99999_없는동","reason":"x"}]']), known))
+    expect_value_error(lambda: clean.validate_peer_dongs(pd.Series(['[{"dong":"11140_중림동"}]']), known))
+
+
 def main() -> int:
     clean = load_module("50.load_db.py", "boomingup_clean_loader_test")
     trades = load_module("51.load_trades.py", "boomingup_trade_loader_test")
     run_fixture_tests(clean, trades)
     run_boundary_fixture_tests(clean)
+    run_support_fixture_tests(clean)
 
     frames = clean.load_clean_sources()
     assert len(clean.GU_BY_SGG_CD) == 25
@@ -240,9 +266,12 @@ def main() -> int:
     assert set(frames["dong_feature"]["dong"]).issubset(set(frames["dong"]["dong"]))
     assert set(frames["event_dong_path"]["dong"]).issubset(set(frames["dong"]["dong"]))
     assert set(frames["event_summary"]["event_id"]).issubset(set(frames["market_event"]["event_id"]))
-    assert len(frames["dong_prediction"]) == 0
     assert len(frames["dong_boundary"]) == 467
     assert frames["dong_boundary"]["in_index"].sum() == 340
+    assert set(frames["dong_support"]["dong"]).issubset(set(frames["dong"]["dong"]))
+    # 기준 분기는 하나이고 μ는 서울 전체 값이라 모든 행에서 같다.
+    assert frames["dong_support"]["as_of"].nunique() == 1
+    assert frames["dong_support"]["mu_12m"].nunique() == 1
     assert set(frames["dong_boundary"].loc[frames["dong_boundary"]["in_index"], "dong"]).issubset(set(frames["dong"]["dong"]))
 
     print("정제 원천 점검")

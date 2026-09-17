@@ -45,3 +45,4 @@ Thumbs.db
 .next/
 next-env.d.ts
 *.tsbuildinfo
+front/.next-build

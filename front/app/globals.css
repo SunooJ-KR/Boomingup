@@ -15,6 +15,14 @@
   --ring: #4136e8;
   --neutral-soft: #f0f1f4;
   --neutral-strong: #858b98;
+
+  /* 구조 유형 0~3의 지도 색. 순서에 뜻이 없는 구분용이라 밝기를 비슷하게 맞췄다.
+     높낮이로 읽히면 안 되므로 같은 색의 진하기 단계로 두지 않는다. */
+  --structure-0: #3b7dd8;
+  --structure-1: #2f9e8f;
+  --structure-2: #c4761f;
+  --structure-3: #8a62c8;
+
   --radius: 12px;
 
   /* 화면 골격 치수. 좌측 열 높이, sticky 위치, 스크롤 여백이 모두 여기서 나온다.
@@ -49,6 +57,10 @@ html {
   --color-ring: var(--ring);
   --color-neutral-soft: var(--neutral-soft);
   --color-neutral-strong: var(--neutral-strong);
+  --color-structure-0: var(--structure-0);
+  --color-structure-1: var(--structure-1);
+  --color-structure-2: var(--structure-2);
+  --color-structure-3: var(--structure-3);
 
   --radius-sm: 10px;
   --radius-md: 12px;

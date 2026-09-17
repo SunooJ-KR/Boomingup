@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { buildTags, deriveStatus, logChangeToPct } from "./derive.ts";
+import { buildTags, logChangeToPct, logSeToPct } from "./derive.ts";
 import { shiftQuarter } from "./quarter.ts";
 
 test("log 변화율을 퍼센트로 바꾼다", () => {
@@ -12,11 +12,13 @@ test("log 변화율을 퍼센트로 바꾼다", () => {
   assert.equal(logChangeToPct(null), null);
 });
 
-test("예측 행이 없으면 매매 기준 충족 여부로 상태를 나눈다", () => {
-  assert.equal(deriveStatus("PREDICTED", true), "PREDICTED");
-  assert.equal(deriveStatus(null, true), "NOT_SERVED");
-  assert.equal(deriveStatus(null, false), "INSUFFICIENT_SALES");
-  assert.equal(deriveStatus("알 수 없는 값", false), "INSUFFICIENT_SALES");
+test("log 오차를 퍼센트 오차로 바꾼다", () => {
+  // 중심이 0이면 위아래 폭이 같아 se를 그대로 퍼센트로 바꾼 값과 가깝다
+  assert.equal(logSeToPct(0, 0.01), 1);
+  // 중심이 커지면 같은 log 오차라도 퍼센트 폭이 넓어진다
+  assert.ok((logSeToPct(0.2, 0.01) ?? 0) > (logSeToPct(0, 0.01) ?? 0));
+  assert.equal(logSeToPct(0.1, null), null);
+  assert.equal(logSeToPct(null, 0.1), null);
 });
 
 test("지역 태그는 서비스 대상 동 분포의 상위 30%를 기준으로 붙는다", () => {

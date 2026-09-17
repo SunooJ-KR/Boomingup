@@ -16,7 +16,8 @@ from scipy.sparse.linalg import lsqr
 
 AREA_BIN_M2 = 3        # 1㎡ 반올림은 84.6/85.0㎡처럼 같은 평형을 가르고, 5㎡ 폭은 다른 평형을 섞는다
 RIDGE_LAMBDA = 5       # 결정 5a
-SALE_COLUMNS = ["aptSeq", "sggCd", "umdNm", "excluUseAr", "deal_ym", "is_cancelled", "deal_amount_manwon"]
+SALE_COLUMNS = ["aptSeq", "sggCd", "umdNm", "excluUseAr", "deal_ym", "dealDay", "is_cancelled", "deal_amount_manwon"]
+SALES_FRAME_COLUMNS = ["dong", "sggCd", "umdNm", "aptSeq", "cell", "quarter", "deal_date", "log_ppm2"]
 
 
 def load_sales(path):
@@ -40,8 +41,64 @@ def load_sales(path):
     sales["dong"] = sales["sggCd"] + "_" + sales["umdNm"]
     sales["quarter"] = pd.to_datetime(sales["deal_ym"], format="%Y%m").dt.to_period("Q")
     sales["cell"] = sales["aptSeq"] + "_" + (area // AREA_BIN_M2).astype(int).astype(str)
+    sales["deal_date"] = pd.to_datetime(
+        sales["deal_ym"] + sales["dealDay"].str.zfill(2), format="%Y%m%d", errors="coerce")
     sales["log_ppm2"] = np.log(price / area)
-    return sales[["dong", "sggCd", "umdNm", "cell", "quarter", "log_ppm2"]].reset_index(drop=True)
+    return sales[SALES_FRAME_COLUMNS].reset_index(drop=True)
+
+
+def load_sales_from_db(work_dir):
+    """활성 sale batch를 읽어 load_sales와 같은 모양으로 돌려준다."""
+    import importlib.util
+    import psycopg
+
+    loader_path = work_dir / "data" / "db" / "50.load_db.py"
+    spec = importlib.util.spec_from_file_location("boomingup_load_db", loader_path)
+    loader = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(loader)
+
+    query = """
+        select t.sgg_cd, t.umd_nm, t.apt_seq, t.exclu_use_ar, t.deal_ym, t.deal_day,
+               t.deal_amount_manwon
+        from app.trade_sale t
+        join app.trade_batch b on b.batch_id = t.batch_id
+        where b.kind = 'sale' and b.is_active
+          and t.is_cancelled is not true
+          and t.apt_seq is not null and t.sgg_cd is not null and t.umd_nm is not null
+          and t.exclu_use_ar > 0 and t.deal_amount_manwon > 0
+          and t.deal_ym ~ '^[0-9]{6}$'
+        -- 정렬이 없으면 실행마다 행 순서가 달라져 factorize 코드와 무작위 분할이 흔들린다
+        order by t.batch_id, t.row_no
+    """
+    with psycopg.connect(loader.database_url("DATABASE_READONLY_URL")) as connection:
+        sales = pd.DataFrame(
+            connection.execute(query).fetchall(),
+            columns=["sggCd", "umdNm", "aptSeq", "excluUseAr", "deal_ym", "dealDay",
+                     "deal_amount_manwon"],
+        )
+
+    area = pd.to_numeric(sales["excluUseAr"], errors="coerce")
+    price = pd.to_numeric(sales["deal_amount_manwon"], errors="coerce")
+    sales["dong"] = sales["sggCd"] + "_" + sales["umdNm"]
+    sales["quarter"] = pd.to_datetime(sales["deal_ym"], format="%Y%m").dt.to_period("Q")
+    sales["cell"] = sales["aptSeq"] + "_" + (area // AREA_BIN_M2).astype(int).astype(str)
+    sales["deal_date"] = pd.to_datetime(
+        sales["deal_ym"] + sales["dealDay"].astype("string").str.zfill(2),
+        format="%Y%m%d", errors="coerce")
+    sales["log_ppm2"] = np.log(price / area)
+    return sales[SALES_FRAME_COLUMNS].reset_index(drop=True)
+
+
+def load_sales_any(work_dir):
+    """매매 원장을 읽고 (원장, 원천 설명)을 돌려준다.
+
+    output/11.1이 있으면 그것을 쓰고, 없으면 DB의 활성 sale batch를 읽는다.
+    수집 스크립트를 돌린 사람과 DB만 있는 사람이 같은 코드를 쓰게 하려는 것이다.
+    """
+    sales_file = work_dir / "output" / "11.1.trades_sale.txt"
+    if sales_file.is_file():
+        return load_sales(sales_file), str(sales_file.relative_to(work_dir))
+    return load_sales_from_db(work_dir), "DB app.trade_sale (활성 batch)"
 
 
 def _solve(matrix, target, **kwargs):
@@ -52,7 +109,7 @@ def _solve(matrix, target, **kwargs):
     return coef, istop, n_iter
 
 
-def estimate_hedonic_index(sales, ridge_lambda=RIDGE_LAMBDA):
+def estimate_hedonic_index(sales, ridge_lambda=RIDGE_LAMBDA, with_components=False):
     """동×분기 log 지수 격자와 진단값을 돌려준다.
 
     구×분기 효과와 단지 FE는 구마다 상수 하나만큼 식별되지 않지만, 같은 동 안의
@@ -60,7 +117,7 @@ def estimate_hedonic_index(sales, ridge_lambda=RIDGE_LAMBDA):
     거래가 없는 동×분기는 편차 0, 즉 구 지수를 그대로 쓴다.
     """
     quarter_str = sales["quarter"].astype(str)
-    cell_code, _ = pd.factorize(sales["cell"])
+    cell_code, cell_keys = pd.factorize(sales["cell"])
     gq_code, gq_keys = pd.factorize(sales["sggCd"] + "|" + quarter_str)
     dq_code, dq_keys = pd.factorize(sales["dong"] + "|" + quarter_str)
 
@@ -90,10 +147,9 @@ def estimate_hedonic_index(sales, ridge_lambda=RIDGE_LAMBDA):
     quarters = pd.period_range(sales["quarter"].min(), sales["quarter"].max(), freq="Q")
     grid = dongs.merge(pd.DataFrame({"quarter": quarters}), how="cross")
     grid_q = grid["quarter"].astype(str)
-    grid["log_index"] = (
-        (grid["sggCd"] + "|" + grid_q).map(gq_effect)
-        + (grid["dong"] + "|" + grid_q).map(dq_effect).fillna(0.0)
-    )
+    # dq_effect(동 편차)는 SE 계산(_dong_index_se.py)이 따로 필요로 해서 컬럼으로 남긴다
+    grid["dq_effect"] = (grid["dong"] + "|" + grid_q).map(dq_effect).fillna(0.0)
+    grid["log_index"] = (grid["sggCd"] + "|" + grid_q).map(gq_effect) + grid["dq_effect"]
     counts = sales.groupby(["dong", "quarter"]).size().rename("n_sales").reset_index()
     grid = grid.merge(counts, on=["dong", "quarter"], how="left")
     grid["n_sales"] = grid["n_sales"].fillna(0).astype(int)
@@ -103,7 +159,13 @@ def estimate_hedonic_index(sales, ridge_lambda=RIDGE_LAMBDA):
         "lsqr_istop": int(istop), "lsqr_iterations": int(n_iter),
         "residual_sd": float(residual.std()), "n_sales": n_rows, "n_cells": int(n_cell),
     }
-    return grid.sort_values(["dong", "quarter"]).reset_index(drop=True), diagnostics
+    grid = grid.sort_values(["dong", "quarter"]).reset_index(drop=True)
+    if not with_components:
+        return grid, diagnostics
+    # nowcast(65)는 단지 고정효과만 재사용하고 분기 효과를 부분 표본으로 다시 계산한다
+    components = {"cell_effect": pd.Series(coef[:n_cell], index=cell_keys),
+                  "gq_effect": gq_effect, "dq_effect": dq_effect}
+    return grid, diagnostics, components
 
 
 def estimate_repeat_sales_index(sales):
