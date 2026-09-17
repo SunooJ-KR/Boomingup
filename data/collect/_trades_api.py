@@ -64,8 +64,12 @@ def mask_key(text):
     return str(text).replace(SERVICE_KEY, "***")
 
 
-def parse_response(text):
-    """공공데이터포털은 성공/실패 모두 XML이다. resultCode를 먼저 본다."""
+def parse_response(text, field_map=FIELD_MAP):
+    """공공데이터포털은 성공/실패 모두 XML이다. resultCode를 먼저 본다.
+
+    `field_map`을 None으로 주면 응답의 모든 태그를 그대로 남긴다. snapshot은 나중에
+    무엇이 필요할지 모르므로 버리지 않는다. 11은 기존 컬럼만 쓰도록 기본값을 유지한다.
+    """
     try:
         root = ET.fromstring(text)
     except ET.ParseError:
@@ -85,12 +89,16 @@ def parse_response(text):
 
     records = []
     for item in root.findall(".//item"):
-        raw = {child.tag.lower(): (child.text or "").strip() for child in item}
-        records.append({std: raw[low] for low, std in FIELD_MAP.items() if low in raw})
+        raw = {child.tag: (child.text or "").strip() for child in item}
+        if field_map is None:
+            records.append(raw)
+            continue
+        lowered = {tag.lower(): value for tag, value in raw.items()}
+        records.append({std: lowered[low] for low, std in field_map.items() if low in lowered})
     return {"records": records, "total": total}, None
 
 
-def fetch_month_pages(kind, lawd_cd, deal_ymd):
+def fetch_month_pages(kind, lawd_cd, deal_ymd, field_map=FIELD_MAP):
     """한 (구, 연월)의 전체 페이지를 받아 (페이지별 원문 XML, 레코드, 사유)를 돌려준다."""
     pages, collected = [], []
     page = 1
@@ -109,7 +117,7 @@ def fetch_month_pages(kind, lawd_cd, deal_ymd):
         if response.status_code != 200:
             return None, None, f"HTTP {response.status_code}: {response.text[:150]}"
 
-        parsed, error = parse_response(response.text)
+        parsed, error = parse_response(response.text, field_map)
         if error:
             return None, None, error
 

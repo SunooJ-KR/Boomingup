@@ -88,7 +88,9 @@ for kind in kinds:
                 skipped += 1
                 continue
 
-            pages, records, error = _api.fetch_month_pages(kind, lawd_cd, deal_ymd)
+            # 응답 태그를 버리지 않는다. rgstDate·cdealDay·umdCd처럼 지금 FIELD_MAP이
+            # 떨어뜨리는 값이 나중에 필요해지면 다시 받을 방법이 없다
+            pages, records, error = _api.fetch_month_pages(kind, lawd_cd, deal_ymd, field_map=None)
             if error:
                 failures.append({"kind": kind, "lawd_cd": lawd_cd, "gu": gu_name,
                                  "deal_ymd": deal_ymd, "error": _api.mask_key(error)[:200]})

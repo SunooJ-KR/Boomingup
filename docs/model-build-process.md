@@ -119,7 +119,7 @@
 |---|---|---|---|---|
 | 2026-09-17 | P0-3 | `docs/decisions.md` 결정 41 | 41 | 기존 44·48 코드에 누수 없음을 확인했다. 결정 39의 관찰은 실제 결과다 |
 | 2026-09-17 | T0-A | `models/index/63.shrink_dong_index.py`, `output/63.1`·`63.2`, `docs/model-performance.md` R2 | 45, 46 | 현행 λ=5가 반쪽 나누기 최적(6.5) 대비 0.27%만 나빠 유지한다. 사후 shrinkage로 얻을 것이 없다. Track 0의 성과는 SE 컬럼이다 |
-| 2026-09-17 | P0-2 | `data/collect/61.snapshot_trades.py`, `_trades_api.py`, `output/raw/snapshot/2026-09-17/` | — | 첫 조회일 적재 완료(매매·전월세 6개월 × 25개 구, 4MB). 재실행 시 건너뛰는 것 확인. **매일 돌려야 한다** — `models/AGENTS.md`에 적었다 |
+| 2026-09-17 | P0-2 | `data/collect/61.snapshot_trades.py`, `_trades_api.py`, `output/raw/snapshot/2026-09-17/` | — | 첫 조회일 적재 완료(매매·전월세 6개월 × 25개 구, 5.5MB). 재실행 시 건너뛰는 것 확인. **매일 돌려야 한다** — `models/AGENTS.md`에 적었다. snapshot은 응답 태그 32개를 그대로 남긴다(`FIELD_MAP`이 버리던 `rgstDate`·`cdealDay`·`umdCd` 포함) |
 | 2026-09-17 | P0-5 | `models/index/62.build_dong_features.py`, `output/62.1` | — | 현행 gate(4분기 20건) 통과 행의 24.1%가 한 단지 거래 비중 50% 초과다. 거래 단지 수 하위 10%는 3개뿐이다. G-1이 단일 기준을 바꿀 근거다. DB 컬럼 추가는 feature 빌더가 완성되는 C-3b에서 한다 |
 | 2026-09-17 | P0-4 | `models/index/64.measure_mu_weight.py` | 43, 47, 48 | 세대수 기준 커버리지 99.3%로 재고가중 채택. 매매 기록으로 95.6%, `bjd_code` 사전이 3.7%를 더 붙인다. 남은 188개 단지는 `bjd_code`가 비어 있다. (결정 44는 틀려서 47로 대체했다) |
 | 2026-09-17 | P0-1 | `models/index/60.build_dong_index_se.py`, `_dong_index_se.py`, `data/db/003_dong_index_se.sql`, `output/60.1` | 42 | τ=0.0585. SE 중앙값은 거래 0건 0.058에서 50건 초과 0.010까지 단조 감소. 적재는 42.1 등 다른 산출물이 로컬에 없어 아직 못 했다 |
