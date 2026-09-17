@@ -4,11 +4,12 @@
     "sgg_cd": "11680",
     "gu_name": "강남구",
     "umd_name": "개포동",
-    "status": "PREDICTED",
-    "change_pct_est": 3.2,
-    "lower_pct": -4.1,
-    "upper_pct": 10.9,
-    "n_sales_4q": 212,
+    "n_sales_4q": 448,
+    "ppm2_med_4q_manwon": 2480,
+    "sample_flags": [],
+    "index_se_band": "LOW",
+    "structure_type": 0,
+    "structure_desc": "평당가 높음 · 강남 7km대",
     "tags": [
       "정비사업 정보 있음",
       "거래 많은 동"
@@ -19,11 +20,12 @@
     "sgg_cd": "11680",
     "gu_name": "강남구",
     "umd_name": "대치동",
-    "status": "PREDICTED",
-    "change_pct_est": 1.8,
-    "lower_pct": -5.4,
-    "upper_pct": 9.3,
-    "n_sales_4q": 188,
+    "n_sales_4q": 331,
+    "ppm2_med_4q_manwon": 2610,
+    "sample_flags": [],
+    "index_se_band": "LOW",
+    "structure_type": 0,
+    "structure_desc": "평당가 높음 · 강남 7km대",
     "tags": [
       "전세가율 높은 동"
     ]
@@ -33,11 +35,12 @@
     "sgg_cd": "11710",
     "gu_name": "송파구",
     "umd_name": "잠실동",
-    "status": "PREDICTED",
-    "change_pct_est": -0.9,
-    "lower_pct": -8.2,
-    "upper_pct": 6.8,
-    "n_sales_4q": 304,
+    "n_sales_4q": 780,
+    "ppm2_med_4q_manwon": 2190,
+    "sample_flags": [],
+    "index_se_band": "LOW",
+    "structure_type": 0,
+    "structure_desc": "평당가 높음 · 강남 7km대",
     "tags": [
       "거래 많은 동"
     ]
@@ -47,11 +50,15 @@
     "sgg_cd": "11440",
     "gu_name": "마포구",
     "umd_name": "연남동",
-    "status": "INSUFFICIENT_SALES",
-    "change_pct_est": null,
-    "lower_pct": null,
-    "upper_pct": null,
-    "n_sales_4q": 11,
+    "n_sales_4q": 32,
+    "ppm2_med_4q_manwon": 1480,
+    "sample_flags": [
+      "ONE_COMPLEX_DOMINATES",
+      "HIGH_INDEX_ERROR"
+    ],
+    "index_se_band": "HIGH",
+    "structure_type": 3,
+    "structure_desc": "아파트 세대수 적음 · 도심 3km대",
     "tags": []
   },
   {
@@ -59,11 +66,12 @@
     "sgg_cd": "11305",
     "gu_name": "강북구",
     "umd_name": "수유동",
-    "status": "PREDICTED",
-    "change_pct_est": 0.4,
-    "lower_pct": -7.6,
-    "upper_pct": 8.9,
-    "n_sales_4q": 96,
+    "n_sales_4q": 185,
+    "ppm2_med_4q_manwon": null,
+    "sample_flags": [],
+    "index_se_band": "LOW",
+    "structure_type": 1,
+    "structure_desc": "강남 13km대 · 도심 9km대",
     "tags": [
       "30년 이상 단지 많은 동"
     ]
@@ -73,11 +81,12 @@
     "sgg_cd": "11230",
     "gu_name": "동대문구",
     "umd_name": "답십리동",
-    "status": "NOT_SERVED",
-    "change_pct_est": null,
-    "lower_pct": null,
-    "upper_pct": null,
-    "n_sales_4q": 64,
+    "n_sales_4q": 872,
+    "ppm2_med_4q_manwon": null,
+    "sample_flags": [],
+    "index_se_band": "LOW",
+    "structure_type": 0,
+    "structure_desc": "평당가 높음 · 강남 7km대",
     "tags": [
       "정비사업 정보 있음"
     ]
@@ -87,11 +96,12 @@
     "sgg_cd": "11620",
     "gu_name": "관악구",
     "umd_name": "신림동",
-    "status": "PREDICTED",
-    "change_pct_est": 2.1,
-    "lower_pct": -6.0,
-    "upper_pct": 10.1,
-    "n_sales_4q": 143,
+    "n_sales_4q": 856,
+    "ppm2_med_4q_manwon": 1120,
+    "sample_flags": [],
+    "index_se_band": "LOW",
+    "structure_type": 1,
+    "structure_desc": "강남 13km대 · 도심 9km대",
     "tags": [
       "전세가율 높은 동"
     ]
@@ -101,11 +111,12 @@
     "sgg_cd": "11500",
     "gu_name": "강서구",
     "umd_name": "화곡동",
-    "status": "INSUFFICIENT_SALES",
-    "change_pct_est": null,
-    "lower_pct": null,
-    "upper_pct": null,
-    "n_sales_4q": 17,
+    "n_sales_4q": 801,
+    "ppm2_med_4q_manwon": 1060,
+    "sample_flags": [],
+    "index_se_band": "LOW",
+    "structure_type": 1,
+    "structure_desc": "강남 13km대 · 도심 9km대",
     "tags": []
   }
 ]
