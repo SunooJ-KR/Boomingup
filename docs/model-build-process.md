@@ -3,7 +3,7 @@
 `docs/model-develope-plan.md`의 계획을 실제 작업으로 옮긴 진행표다. **모델 작업은 이 문서를 읽고 시작하고, 끝나면 이 문서의 상태를 갱신한다.**
 기존 `models/index/40~52` 스크립트는 참고용일 뿐, 이 계획의 산출물로 치지 않는다. 계획대로 처음부터 다시 만든다.
 
-마지막 갱신: 2026-09-17
+마지막 갱신: 2026-09-17 (Track K 추가)
 
 ## 1. 운용 규칙
 
@@ -63,7 +63,7 @@
 | ID | 작업 | 상태 | 완료 조건 | 산출물 | 의존 |
 |---|---|---|---|---|---|
 | N-3 | 수정폭 회귀: (확정치 − 잠정치)를 경과일수·관측 건수·취소율로 회귀. 계약일+30일 근사 vintage 사용 | Done (미채택) | 무보정 대비 잠정→확정 수정폭 MAE 개선폭에 block bootstrap 신뢰구간이 있고 0을 제외 | `models/index/65.build_nowcast.py`, `docs/model-performance.md` | P0-1 (T0-A와 병렬 가능) |
-| N-1 | 도착률 보정: 실제 snapshot에서 도착 곡선 추정 | Todo | snapshot 4분기 이상 축적 후 시작. N-3와 성능 비교 | `models/index/66.*` | P0-2 축적 |
+| N-1 | 도착률 보정: 실제 snapshot에서 도착 곡선 추정 | Todo | snapshot 4분기 이상 축적 후 시작. N-3와 성능 비교 | `models/index/71.*` (66은 Track K가 쓴다) | P0-2 축적 |
 | N-2 | (조건부) 상태공간 필터 | Todo | N-3가 개선을 못 보일 때만. **N-3가 실패했으나 원인이 신고 시차 가정이라 N-2도 같은 한계를 안는다. N-1(실측 snapshot)을 기다리는 편이 낫다** | — | N-3 |
 
 ### Phase 3 — Track C δ 사다리
@@ -78,6 +78,17 @@
 | C-4 | LightGBM pooled, `1/se²` 가중 | Todo | C-3를 유의하게 이길 때만 | 67 후보 추가 | C-3 통과 |
 | C-5 | 계층 베이지안 | Todo | C-2~C-4 중 하나라도 신호를 보일 때만 검토 | — | — |
 | P3-5 | `dong_prediction` 스키마 확장 (nowcast 행, `prob_above_seoul`, δ 구간, `mu_ref`, `insufficient_reason`) 후 적재 | Todo | 프론트 payload 스키마 합의 후 migration 반영, 정선우 님 확인 | migration, `docs/payload-schema.md` | Phase 3 게이트 결과 |
+
+### Phase 3K — Track K 그룹 구조 검증 (2026-09-17 개정으로 추가, 한 번만 실행)
+
+| ID | 작업 | 상태 | 완료 조건 | 산출물 | 의존 |
+|---|---|---|---|---|---|
+| K-0 | C-1f: 구 모멘텀 × 기점 이전 자료로 적합한 계수. 그룹 모멘텀에 정보가 있는지 전제 검증 | Todo | 67에 후보 추가, C-0 대비 판정 | 67 후보 추가, `docs/model-performance.md` | 67 (vintage 9분기) |
+| K-1 | K-S 구조 변수 클러스터: 가격대·전세가율·정비사업 노출·준공·세대수·centroid 거리. K∈{4,5,6}, 기점 간 ARI로 K 고정 | Todo | 기점별 소속 파일, ARI 표, K 고정 결정 기록 | `models/index/66.build_dong_cluster.py`, `output/66.1` | 62, `dong_boundary` |
+| K-2 | C-1k: K-S 클러스터 모멘텀 × 적합 계수 | Todo | C-0 대비 판정 + §4.4-1(feature 기점 `t−1`) | 67 후보 추가 | K-0, K-1 |
+| K-3 | (조건부) K-δ: T−4 이전 δ 경로를 SE 가중으로 묶기. eligible만, 나머지는 인접성 배정 | Todo | K-S와 다르게 묶은 동에서만 성능이 나는지 확인. K-S로 C-1k가 실패했을 때만 | 66 옵션 | K-2 |
+| K-4 | C-3k: elastic net + 클러스터 × 이벤트, 클러스터 × 정책 문턱 상호작용 | Todo | C-0·C-1을 유의하게 이기고 계수 부호가 해석 가능 | 67 후보 추가 | K-1, C-3b(`policy_events`) |
+| K-5 | 화면용: 최신 기점 클러스터 소속과 "함께 움직여 온 동" 목록 (예측과 무관한 사실 정보) | Todo | payload 스키마 합의 후 적재 | migration, `docs/payload-schema.md` | K-1, 정선우 님 합의 |
 
 ### Phase 4 — Track I 구간과 gate
 
@@ -111,6 +122,7 @@
 | Phase 1 → 2·3 | T0-A 비교표 작성, 안정성이 수축 전보다 나쁘지 않음 | T0-B로 |
 | Phase 2 판정 | N-3 수정폭 MAE 개선 신뢰구간이 0 제외 | N-2로. 헤드라인 ① 보류 |
 | **Phase 3 판정** | C-2 이상 후보가 C-0·C-1 모두를 DM p<0.05로 이기고 C-diag 통과 | **δ 비공개.** 제품은 nowcast + 신뢰도 블록 + 구조 정보로 확정. 이것도 실패가 아니라 방향 결정이다 — **2026-09-17 실패로 판정(결정 51). nowcast도 보류 상태라 화면은 사실정보와 신뢰도 표시로 간다(결정 53)** |
+| **Phase 3K 판정** | K-0 또는 K-2가 C-0을 유의하게 이김 | 모멘텀 계열 종료. K-4(C-3k)를 이벤트·문턱 feature만으로 시도. K-4도 실패면 δ 비공개 확정. **Phase 3K는 한 번만 실행하고 변형을 더 시도하지 않는다** |
 | Phase 4 판정 | 80% nominal에서 empirical coverage 75% 이상, 평균 구간 폭이 거래비용(±수%) 이내 | 구간 재설계. 화면에 "실험적" 라벨 |
 
 ## 6. 완료 기록
