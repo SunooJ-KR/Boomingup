@@ -16,13 +16,12 @@
 # 0. 환경 설정
 # ============================================================================
 
-import importlib.util
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from _dong_index import AREA_BIN_M2, RIDGE_LAMBDA, estimate_hedonic_index, load_sales
+from _dong_index import RIDGE_LAMBDA, estimate_hedonic_index, load_sales_any
 from _dong_index_se import attach_standard_error
 
 work_dir = Path(__file__).resolve().parents[2]
@@ -30,52 +29,13 @@ output_dir = work_dir / "output"
 
 LAST_COMPLETE_QUARTER = pd.Period("2026Q2", freq="Q")
 MIN_SALES_4Q = 20
-SALES_FILE = output_dir / "11.1.trades_sale.txt"
-
-
-def load_sales_from_db():
-    """활성 sale batch를 읽어 load_sales와 같은 모양으로 돌려준다."""
-    import psycopg
-
-    loader_path = work_dir / "data" / "db" / "50.load_db.py"
-    spec = importlib.util.spec_from_file_location("boomingup_load_db", loader_path)
-    loader = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(loader)
-
-    query = """
-        select t.sgg_cd, t.umd_nm, t.apt_seq, t.exclu_use_ar, t.deal_ym, t.deal_amount_manwon
-        from app.trade_sale t
-        join app.trade_batch b on b.batch_id = t.batch_id
-        where b.kind = 'sale' and b.is_active
-          and t.is_cancelled is not true
-          and t.apt_seq is not null and t.sgg_cd is not null and t.umd_nm is not null
-          and t.exclu_use_ar > 0 and t.deal_amount_manwon > 0
-          and t.deal_ym ~ '^[0-9]{6}$'
-    """
-    with psycopg.connect(loader.database_url("DATABASE_READONLY_URL")) as connection:
-        sales = pd.DataFrame(
-            connection.execute(query).fetchall(),
-            columns=["sggCd", "umdNm", "aptSeq", "excluUseAr", "deal_ym", "deal_amount_manwon"],
-        )
-
-    area = pd.to_numeric(sales["excluUseAr"], errors="coerce")
-    price = pd.to_numeric(sales["deal_amount_manwon"], errors="coerce")
-    sales["dong"] = sales["sggCd"] + "_" + sales["umdNm"]
-    sales["quarter"] = pd.to_datetime(sales["deal_ym"], format="%Y%m").dt.to_period("Q")
-    sales["cell"] = sales["aptSeq"] + "_" + (area // AREA_BIN_M2).astype(int).astype(str)
-    sales["log_ppm2"] = np.log(price / area)
-    return sales[["dong", "sggCd", "umdNm", "cell", "quarter", "log_ppm2"]].reset_index(drop=True)
 
 
 # ============================================================================
 # 1. 매매 적재
 # ============================================================================
 
-if SALES_FILE.is_file():
-    sales, source = load_sales(SALES_FILE), str(SALES_FILE.relative_to(work_dir))
-else:
-    sales, source = load_sales_from_db(), "DB app.trade_sale (활성 batch)"
-
+sales, source = load_sales_any(work_dir)
 sales = sales[sales["quarter"] <= LAST_COMPLETE_QUARTER].reset_index(drop=True)
 print("===== 1. 매매 적재 완료 =====")
 print(f"  원천: {source}")

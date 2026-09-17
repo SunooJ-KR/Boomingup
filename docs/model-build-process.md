@@ -36,7 +36,7 @@
 
 | 상태 | 작업 ID | 담당 | 시작일 | 메모 |
 |---|---|---|---|---|
-| Doing | P0-5 | Claude | 2026-09-17 | 거래 단지 수·집중도 feature |
+| Doing | P0-2 | Claude | 2026-09-17 | 원천 snapshot 적재 시작 |
 
 ## 4. 작업 목록
 
@@ -48,7 +48,7 @@
 | P0-2 | 원천 API 응답 snapshot 적재 시작 (실거래 매매·전월세, 날짜별 파일) | Todo | 첫 snapshot이 `output/raw/snapshot/{YYYY-MM-DD}/`에 저장되고 재실행해도 덮어쓰지 않음 | `data/collect/61.snapshot_trades.py` | — (P0-1과 병렬 가능) |
 | P0-3 | 평가 코드의 embargo 규칙(`s + horizon ≤ T`)을 새 평가 스크립트 설계에 명시하고 결정 기록 | Done | 결정 기록에 규칙과 근거가 있음 | `docs/decisions.md` | — |
 | P0-4 | μ 가중 방식 확정: `complex.total_households`의 동 매핑 커버리지 측정 후 재고가중/거래가중 결정 | Done | 커버리지 수치와 결정이 `docs/decisions.md`에 있음 | 결정 기록, 측정 스크립트 | — |
-| P0-5 | `dong_feature`에 `n_complexes_4q`, `dominant_complex_share_4q` 추가 | Todo | 전 동×기점에 값이 있고 `trade_sale` 수동 집계와 표본 3개 일치 | `models/index/62.build_dong_features.py` (신규 feature 빌더의 첫 버전) | — |
+| P0-5 | `dong_feature`에 `n_complexes_4q`, `dominant_complex_share_4q` 추가 | Done | 전 동×기점에 값이 있고 `trade_sale` 수동 집계와 표본 3개 일치 | `models/index/62.build_dong_features.py` (신규 feature 빌더의 첫 버전) | — |
 
 ### Phase 1 — Track 0 지수 개선
 
@@ -118,5 +118,6 @@
 | 날짜 | 작업 ID | 산출물 | 결정 번호 | 메모 |
 |---|---|---|---|---|
 | 2026-09-17 | P0-3 | `docs/decisions.md` 결정 41 | 41 | 기존 44·48 코드에 누수 없음을 확인했다. 결정 39의 관찰은 실제 결과다 |
+| 2026-09-17 | P0-5 | `models/index/62.build_dong_features.py`, `output/62.1` | — | 현행 gate(4분기 20건) 통과 행의 24.1%가 한 단지 거래 비중 50% 초과다. 거래 단지 수 하위 10%는 3개뿐이다. G-1이 단일 기준을 바꿀 근거다. DB 컬럼 추가는 feature 빌더가 완성되는 C-3b에서 한다 |
 | 2026-09-17 | P0-4 | `models/index/64.measure_mu_weight.py` | 43, 44 | 세대수 기준 커버리지 95.6%로 재고가중 채택. 빠진 464개는 대부분 임대 단지다. `complex.bjd_code`는 법정동 코드가 아니어서 못 쓴다 |
 | 2026-09-17 | P0-1 | `models/index/60.build_dong_index_se.py`, `_dong_index_se.py`, `data/db/003_dong_index_se.sql`, `output/60.1` | 42 | τ=0.0585. SE 중앙값은 거래 0건 0.058에서 50건 초과 0.010까지 단조 감소. 적재는 42.1 등 다른 산출물이 로컬에 없어 아직 못 했다 |

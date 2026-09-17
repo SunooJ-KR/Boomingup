@@ -17,6 +17,7 @@ from scipy.sparse.linalg import lsqr
 AREA_BIN_M2 = 3        # 1㎡ 반올림은 84.6/85.0㎡처럼 같은 평형을 가르고, 5㎡ 폭은 다른 평형을 섞는다
 RIDGE_LAMBDA = 5       # 결정 5a
 SALE_COLUMNS = ["aptSeq", "sggCd", "umdNm", "excluUseAr", "deal_ym", "is_cancelled", "deal_amount_manwon"]
+SALES_FRAME_COLUMNS = ["dong", "sggCd", "umdNm", "aptSeq", "cell", "quarter", "log_ppm2"]
 
 
 def load_sales(path):
@@ -41,7 +42,54 @@ def load_sales(path):
     sales["quarter"] = pd.to_datetime(sales["deal_ym"], format="%Y%m").dt.to_period("Q")
     sales["cell"] = sales["aptSeq"] + "_" + (area // AREA_BIN_M2).astype(int).astype(str)
     sales["log_ppm2"] = np.log(price / area)
-    return sales[["dong", "sggCd", "umdNm", "cell", "quarter", "log_ppm2"]].reset_index(drop=True)
+    return sales[SALES_FRAME_COLUMNS].reset_index(drop=True)
+
+
+def load_sales_from_db(work_dir):
+    """활성 sale batch를 읽어 load_sales와 같은 모양으로 돌려준다."""
+    import importlib.util
+    import psycopg
+
+    loader_path = work_dir / "data" / "db" / "50.load_db.py"
+    spec = importlib.util.spec_from_file_location("boomingup_load_db", loader_path)
+    loader = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(loader)
+
+    query = """
+        select t.sgg_cd, t.umd_nm, t.apt_seq, t.exclu_use_ar, t.deal_ym, t.deal_amount_manwon
+        from app.trade_sale t
+        join app.trade_batch b on b.batch_id = t.batch_id
+        where b.kind = 'sale' and b.is_active
+          and t.is_cancelled is not true
+          and t.apt_seq is not null and t.sgg_cd is not null and t.umd_nm is not null
+          and t.exclu_use_ar > 0 and t.deal_amount_manwon > 0
+          and t.deal_ym ~ '^[0-9]{6}$'
+    """
+    with psycopg.connect(loader.database_url("DATABASE_READONLY_URL")) as connection:
+        sales = pd.DataFrame(
+            connection.execute(query).fetchall(),
+            columns=["sggCd", "umdNm", "aptSeq", "excluUseAr", "deal_ym", "deal_amount_manwon"],
+        )
+
+    area = pd.to_numeric(sales["excluUseAr"], errors="coerce")
+    price = pd.to_numeric(sales["deal_amount_manwon"], errors="coerce")
+    sales["dong"] = sales["sggCd"] + "_" + sales["umdNm"]
+    sales["quarter"] = pd.to_datetime(sales["deal_ym"], format="%Y%m").dt.to_period("Q")
+    sales["cell"] = sales["aptSeq"] + "_" + (area // AREA_BIN_M2).astype(int).astype(str)
+    sales["log_ppm2"] = np.log(price / area)
+    return sales[SALES_FRAME_COLUMNS].reset_index(drop=True)
+
+
+def load_sales_any(work_dir):
+    """매매 원장을 읽고 (원장, 원천 설명)을 돌려준다.
+
+    output/11.1이 있으면 그것을 쓰고, 없으면 DB의 활성 sale batch를 읽는다.
+    수집 스크립트를 돌린 사람과 DB만 있는 사람이 같은 코드를 쓰게 하려는 것이다.
+    """
+    sales_file = work_dir / "output" / "11.1.trades_sale.txt"
+    if sales_file.is_file():
+        return load_sales(sales_file), str(sales_file.relative_to(work_dir))
+    return load_sales_from_db(work_dir), "DB app.trade_sale (활성 batch)"
 
 
 def _solve(matrix, target, **kwargs):
