@@ -7,9 +7,15 @@ import { DongList } from "@/components/dong/dong-list";
 import { MapPanel, type MapItem } from "@/components/dong/map-panel";
 import { EmptyState } from "@/components/dong/empty-state";
 import { Pagination } from "@/components/dong/pagination";
-import { SearchPanel } from "@/components/dong/search-panel";
+import { SearchPanel, type StructureOption } from "@/components/dong/search-panel";
 import { Button } from "@/components/ui/button";
-import { EMPTY_FILTER, filterDongs, isFilterActive, type DongFilter } from "@/lib/filter";
+import {
+  EMPTY_FILTER,
+  filterDongs,
+  isFilterActive,
+  priceBandsOf,
+  type DongFilter,
+} from "@/lib/filter";
 import { clampPage, fitPageSize, pageCount } from "@/lib/paginate";
 import type { DongDetail, DongSummary, Meta } from "@/lib/types";
 
@@ -50,6 +56,19 @@ export function DongExplorer({
   const cache = useRef(new Map<string, DongDetail>());
 
   const visibleDongs = useMemo(() => filterDongs(dongs, filter), [dongs, filter]);
+  const priceBands = useMemo(() => priceBandsOf(dongs), [dongs]);
+
+  // 구조 유형 칩에는 번호 대신 자동 설명을 붙인다. 같은 유형은 설명도 같다.
+  const structureOptions = useMemo<StructureOption[]>(() => {
+    const byType = new Map<number, string>();
+    dongs.forEach((dong) => {
+      if (dong.structure_type === null || dong.structure_desc === null) return;
+      if (!byType.has(dong.structure_type)) byType.set(dong.structure_type, dong.structure_desc);
+    });
+    return [...byType.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([type, desc]) => ({ type, desc }));
+  }, [dongs]);
   const selectedDong = dongs.find((dong) => dong.dong_id === selectedId) ?? null;
 
   // 필터가 바뀌면 목록이 줄어드니 들고 있던 번호를 그대로 쓰지 않는다
@@ -104,7 +123,8 @@ export function DongExplorer({
             subtitle: dong.gu_name,
             lat: center.lat,
             lng: center.lng,
-            status: dong.status === "PREDICTED" ? ("default" as const) : ("muted" as const),
+            structureType: dong.structure_type,
+            flagged: dong.sample_flags.length > 0,
           },
         ];
       }),
@@ -182,6 +202,8 @@ export function DongExplorer({
             onChange={changeFilter}
             guNames={guNames}
             tags={tags}
+            priceBands={priceBands}
+            structureOptions={structureOptions}
             resultCount={visibleDongs.length}
           />
         </div>
@@ -240,6 +262,7 @@ export function DongExplorer({
             meta={meta}
             state={detailState}
             onRetry={retry}
+            onSelect={setSelectedId}
           />
         </section>
       </div>

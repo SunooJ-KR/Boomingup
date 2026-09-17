@@ -1,6 +1,7 @@
 import { AppHeader } from "@/components/app-header";
 import { DongExplorer } from "@/components/dong/dong-explorer";
 import { guNamesOf, loadIndex, tagsOf } from "@/lib/data";
+import { FOOTNOTES } from "@/lib/format";
 import { readRootEnv } from "@/lib/root-env";
 
 // 동 목록은 자주 바뀌지 않으므로 10분마다 다시 만든다. snapshot이 교체되면 그때 반영된다.
@@ -18,8 +19,7 @@ export default async function Home() {
       <main className="mx-auto max-w-[1400px] px-4 py-4">
         {source === "sample" ? (
           <p className="mb-3 rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
-            데이터베이스에 연결하지 못해서 샘플 데이터를 보여주고 있어요. 실제 수치가 아니니 참고만
-            해주세요.
+            {FOOTNOTES.fallback}
           </p>
         ) : null}
 

@@ -3,30 +3,33 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { statusLabel } from "@/lib/format";
-import type { DongFilter } from "@/lib/filter";
-import { isFilterActive } from "@/lib/filter";
-import type { PredictionStatus } from "@/lib/types";
+import { EMPTY_FILTER, isFilterActive, type DongFilter } from "@/lib/filter";
+import { formatManwon } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-const STATUSES: PredictionStatus[] = ["PREDICTED", "INSUFFICIENT_SALES", "NOT_SERVED"];
+export type StructureOption = { type: number; desc: string };
 
 type SearchPanelProps = {
   filter: DongFilter;
   onChange: (filter: DongFilter) => void;
   guNames: string[];
   tags: string[];
+  /** 가격대 칩. 전체 분포의 4분위로 화면이 만든다 */
+  priceBands: [number, number][];
+  /** 구조 유형 칩. 번호 대신 자동 설명을 붙인다 */
+  structureOptions: StructureOption[];
   resultCount: number;
 };
 
-export function SearchPanel({ filter, onChange, guNames, tags, resultCount }: SearchPanelProps) {
-  const toggleStatus = (status: PredictionStatus) => {
-    const next = filter.statuses.includes(status)
-      ? filter.statuses.filter((item) => item !== status)
-      : [...filter.statuses, status];
-    onChange({ ...filter, statuses: next });
-  };
-
+export function SearchPanel({
+  filter,
+  onChange,
+  guNames,
+  tags,
+  priceBands,
+  structureOptions,
+  resultCount,
+}: SearchPanelProps) {
   const toggleTag = (tag: string) => {
     const next = filter.tags.includes(tag)
       ? filter.tags.filter((item) => item !== tag)
@@ -34,7 +37,23 @@ export function SearchPanel({ filter, onChange, guNames, tags, resultCount }: Se
     onChange({ ...filter, tags: next });
   };
 
-  const detailCount = filter.statuses.length + filter.tags.length;
+  const toggleStructure = (type: number) => {
+    const next = filter.structureTypes.includes(type)
+      ? filter.structureTypes.filter((item) => item !== type)
+      : [...filter.structureTypes, type];
+    onChange({ ...filter, structureTypes: next });
+  };
+
+  const sameBand = (band: [number, number]) =>
+    filter.priceBand !== null &&
+    filter.priceBand[0] === band[0] &&
+    filter.priceBand[1] === band[1];
+
+  const detailCount =
+    (filter.flagged === null ? 0 : 1) +
+    (filter.priceBand === null ? 0 : 1) +
+    filter.structureTypes.length +
+    filter.tags.length;
 
   return (
     <div className="space-y-4">
@@ -70,7 +89,7 @@ export function SearchPanel({ filter, onChange, guNames, tags, resultCount }: Se
         </select>
       </div>
 
-      {/* 상태와 태그 칩이 좌측 열 높이의 절반쯤을 먹어 목록이 밀린다.
+      {/* 칩이 좌측 열 높이의 절반쯤을 먹어 목록이 밀린다.
           접어 두고 몇 개 걸렸는지만 알려준 뒤, 필요할 때 펼치게 한다. */}
       {/* open을 값으로 넘기면 다시 그릴 때마다 React가 상태를 되돌려 펼친 칩이 접힌다.
           열고 닫는 상태는 브라우저에 맡기고 여기서는 몇 개 걸렸는지만 알려준다. */}
@@ -84,18 +103,58 @@ export function SearchPanel({ filter, onChange, guNames, tags, resultCount }: Se
 
         <div className="space-y-4 pt-3">
           <fieldset className="space-y-1.5">
-            <legend className="text-sm font-medium text-foreground">예측 상태</legend>
+            <legend className="text-sm font-medium text-foreground">표본 상태</legend>
             <div className="flex flex-wrap gap-1.5">
-              {STATUSES.map((status) => (
-                <FilterChip
-                  key={status}
-                  label={statusLabel(status)}
-                  active={filter.statuses.includes(status)}
-                  onClick={() => toggleStatus(status)}
-                />
-              ))}
+              <FilterChip
+                label="주의 없음"
+                active={filter.flagged === false}
+                onClick={() =>
+                  onChange({ ...filter, flagged: filter.flagged === false ? null : false })
+                }
+              />
+              <FilterChip
+                label="주의 있음"
+                active={filter.flagged === true}
+                onClick={() =>
+                  onChange({ ...filter, flagged: filter.flagged === true ? null : true })
+                }
+              />
             </div>
           </fieldset>
+
+          {priceBands.length > 0 ? (
+            <fieldset className="space-y-1.5">
+              <legend className="text-sm font-medium text-foreground">㎡당 매매 중앙가</legend>
+              <div className="flex flex-wrap gap-1.5">
+                {priceBands.map((band) => (
+                  <FilterChip
+                    key={band[0]}
+                    label={`${formatManwon(band[0])} ~ ${formatManwon(band[1])}`}
+                    active={sameBand(band)}
+                    onClick={() =>
+                      onChange({ ...filter, priceBand: sameBand(band) ? null : band })
+                    }
+                  />
+                ))}
+              </div>
+            </fieldset>
+          ) : null}
+
+          {structureOptions.length > 0 ? (
+            <fieldset className="space-y-1.5">
+              <legend className="text-sm font-medium text-foreground">구조 유형</legend>
+              <div className="flex flex-wrap gap-1.5">
+                {structureOptions.map((option) => (
+                  <FilterChip
+                    key={option.type}
+                    label={option.desc}
+                    active={filter.structureTypes.includes(option.type)}
+                    onClick={() => toggleStructure(option.type)}
+                  />
+                ))}
+              </div>
+            </fieldset>
+          ) : null}
 
           {tags.length > 0 ? (
             <fieldset className="space-y-1.5">
@@ -121,11 +180,7 @@ export function SearchPanel({ filter, onChange, guNames, tags, resultCount }: Se
       <div className="flex items-center justify-between">
         <Badge variant="neutral">{resultCount}개 동</Badge>
         {isFilterActive(filter) ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onChange({ query: "", gu: null, statuses: [], tags: [] })}
-          >
+          <Button variant="ghost" size="sm" onClick={() => onChange(EMPTY_FILTER)}>
             필터 지우기
           </Button>
         ) : null}

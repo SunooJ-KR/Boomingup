@@ -80,7 +80,7 @@ export function peakSentence(
   return `5년 최고 대비 ${formatPct(gapPct)} (오차 ±${formatAbsPct(sePct)})`;
 }
 
-/** 접힘 블록으로 두는 서울 전체 참고치. 예측이 아니라 지나간 기간의 평균이다 */
+/** 접힘 블록으로 두는 서울 전체 참고치. 앞날의 값이 아니라 지나간 기간의 평균이다 */
 export function referenceSentence(seoulPct: number | null): string {
   return `지난 12개월 서울 아파트 지수 변화 ${formatPct(seoulPct)}. 지나간 기간의 평균이에요.`;
 }

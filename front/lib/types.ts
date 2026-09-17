@@ -1,5 +1,5 @@
 // docs/payload-schema.md v2를 따른다. 필드 이름은 docs/feature-spec.md §5의 컬럼명과 같다.
-// 예측 필드는 없다. 화면에 판단 표현이 들어오지 않도록 응답 구조에서부터 막는다(결정 66).
+// 앞날을 추정하는 필드는 없다. 화면에 판단 표현이 들어오지 않도록 응답 구조에서부터 막는다(결정 66).
 
 export type SampleFlag = "FEW_SALES" | "ONE_COMPLEX_DOMINATES" | "HIGH_INDEX_ERROR";
 

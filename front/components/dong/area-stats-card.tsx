@@ -15,9 +15,9 @@ export function AreaStatsCard({ stats, period }: AreaStatsCardProps) {
     <Card>
       <CardBody className="space-y-3">
         <SectionHeading
-          eyebrow="과거 실적"
+          eyebrow="매매 가격 분포"
           title="면적대별 거래"
-          description={`${period}에 실제로 있었던 매매를 모은 값이에요. 앞으로의 가격을 뜻하지 않아요.`}
+          description={`${period}에 실제로 있었던 매매를 모은 값이에요.`}
         />
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">이 기간에는 매매가 없어요.</p>

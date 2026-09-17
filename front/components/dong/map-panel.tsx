@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { FOOTNOTES } from "@/lib/format";
 import { boundsOf, projectToBounds, type Bounds } from "@/lib/map";
 import { cn } from "@/lib/utils";
 
@@ -11,7 +12,10 @@ export type MapItem = {
   subtitle?: string;
   lat: number;
   lng: number;
-  status: "default" | "muted";
+  /** 구조 유형 0~3. 없으면 회색으로 둔다 */
+  structureType: number | null;
+  /** 표본 주의 flag가 하나라도 있으면 흐리게 그린다 */
+  flagged: boolean;
 };
 
 type MapPanelProps = {
@@ -78,7 +82,7 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
       marker.title = item.title;
       marker.setAttribute("aria-label", `${item.title} 선택`);
       marker.textContent = item.title;
-      marker.className = markerClassName(item.status, item.id === selectedId);
+      marker.className = markerClassName(item, item.id === selectedId);
       marker.addEventListener("click", () => onSelectRef.current(item.id));
 
       const overlay = new kakao.maps.CustomOverlay({
@@ -151,7 +155,11 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
         <p className="shrink-0 border-t border-border px-3 py-2 text-xs text-muted-foreground">
           보여줄 좌표가 없어요. 목록에서 동을 선택해주세요.
         </p>
-      ) : null}
+      ) : (
+        <p className="shrink-0 border-t border-border px-3 py-2 text-xs text-muted-foreground">
+          {FOOTNOTES.map}
+        </p>
+      )}
     </div>
   );
 }
@@ -176,7 +184,7 @@ function FallbackPreview({
             style={{ left: `${x}%`, top: `${y}%` }}
             className={cn(
               "absolute -translate-x-1/2 -translate-y-1/2",
-              markerClassName(item.status, item.id === selectedId),
+              markerClassName(item, item.id === selectedId),
             )}
           >
             {item.title}
@@ -187,11 +195,24 @@ function FallbackPreview({
   );
 }
 
-function markerClassName(status: MapItem["status"], selected: boolean) {
+/**
+ * 구조 유형별 색. Tailwind가 클래스 이름을 훑어야 하므로 문자열을 그대로 적는다.
+ * 순서에 뜻이 없는 구분용이라 진하기 단계로 두지 않는다(globals.css의 --structure-*).
+ */
+const STRUCTURE_BG = ["bg-structure-0", "bg-structure-1", "bg-structure-2", "bg-structure-3"];
+
+/** 색은 구조 유형, 흐린 정도는 표본 주의 여부다. 변화율로는 색칠하지 않는다. */
+function markerClassName(item: MapItem, selected: boolean) {
+  const background =
+    item.structureType === null
+      ? "bg-neutral-strong"
+      : (STRUCTURE_BG[item.structureType] ?? "bg-neutral-strong");
+
   return cn(
     "rounded-sm px-1.5 py-0.5 text-[11px] font-medium text-primary-foreground shadow-float transition-transform duration-150",
-    status === "muted" ? "bg-neutral-strong" : "bg-primary",
-    selected ? "scale-110 bg-primary-hover ring-2 ring-ring" : "",
+    background,
+    item.flagged ? "opacity-60" : "",
+    selected ? "scale-110 ring-2 ring-ring" : "",
   );
 }
 
