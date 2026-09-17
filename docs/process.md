@@ -153,7 +153,7 @@
 | P1-1 | 표본 주의 flag 3개 판정 규칙 확정 | Done | `feature-spec.md` §1 | `output/62.1`, 결정 7·42 |
 | P1-2 | `HIGH_INDEX_ERROR`의 SE 구간 경계를 분포로 확인 | Done | `feature-spec.md` §1.5. 경계 0.032 | `dong_index.log_index_se` |
 | P1-3 | δ 오차 문턱(2σ)에서 `DISTINGUISHABLE` 동 수 집계 | Done | `feature-spec.md` §2.5. 137/346 | μ는 등가중 근사. 세대수 가중은 69에서 |
-| P1-4 | 산출 스크립트 작성 | Todo | `models/index/69`, `output/69.1` | `feature-spec.md` §6 |
+| P1-4 | 산출 스크립트 작성 | Doing | `models/index/69`, `output/69.1` | `feature-spec.md` §6 |
 | P1-5 | 경계 사례 표를 `test_69.py`로 옮기고 통과 확인 | Todo | `models/index/test_69.py` | P1-4 |
 
 ### Phase 2 — 구조 유형과 함께 볼 동
