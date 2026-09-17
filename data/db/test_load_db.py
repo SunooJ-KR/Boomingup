@@ -266,7 +266,6 @@ def main() -> int:
     assert set(frames["dong_feature"]["dong"]).issubset(set(frames["dong"]["dong"]))
     assert set(frames["event_dong_path"]["dong"]).issubset(set(frames["dong"]["dong"]))
     assert set(frames["event_summary"]["event_id"]).issubset(set(frames["market_event"]["event_id"]))
-    assert len(frames["dong_prediction"]) == 0
     assert len(frames["dong_boundary"]) == 467
     assert frames["dong_boundary"]["in_index"].sum() == 340
     assert set(frames["dong_support"]["dong"]).issubset(set(frames["dong"]["dong"]))

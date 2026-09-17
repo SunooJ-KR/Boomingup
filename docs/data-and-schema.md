@@ -17,7 +17,7 @@
 건축물대장·지오코딩 →  19.1, 14.1              →  app.complex(기존 적재분)
 법정동 경계 SHP     →  output/52.1.geojson     →  app.dong_boundary → front/public/data/*.geojson
 매매 원장           →  60.1 (동 지수+추정오차) →  app.dong_index
-모델(48·49)         →  49.1.latest_predictions →  app.dong_prediction (아직 비어 있음)
+판단 보조(69)       →  69.1.dong_support      →  app.dong_support             →  /api/*
 ```
 
 DB는 원천 전체가 아니라 **서비스와 모델이 공통으로 읽는 정제 테이블 + 거래 원장**만 담는다.
@@ -46,13 +46,13 @@ DB는 원천 전체가 아니라 **서비스와 모델이 공통으로 읽는 �
 
 | 항목 | 상태 |
 |---|---|
-| `app.dong_prediction` | **테이블은 있으나 행이 없다.** 프론트는 `dong_index.eligible`로 상태를 파생한다(결정 22) |
+| `app.dong_prediction` | **테이블은 있으나 행이 없고 적재도 하지 않는다.** 화면이 더 이상 읽지 않는다(결정 66). 테이블은 지우지 않고 남긴다. 결정 22의 `eligible` 파생은 폐기했다 |
 | 동 단위 투기과열지구 값 | 없다. 화면은 `meta.seoul_apartment_permit_zone`을 대신 쓴다(결정 23) |
 | 정비사업 단계 일자(`stage_date`) | DB에 없어 payload에서 빈 문자열이다 |
 | 교통 호재(역 개통일) | 미수집. 1차 출처에 개통일 항목이 없다 |
 | 입주 예정 물량 | 미수집. 건축물대장 사용승인일로 과거 준공만 만든다 |
 | 주담대 금리 | 미수집. 한국은행 ECOS API 키가 필요하다 |
-| `model_passed`, `interval_coverage_backtest` | DB에 자리가 없어 상수로 내려보낸다 |
+| `meta.thresholds` | DB에 자리가 없어 `front/lib/queries.ts`의 상수로 내려보낸다. 값의 근거는 `feature-spec.md` §1.5·§2.5다 |
 
 ### 2.3 알려진 품질 이슈
 

@@ -11,7 +11,7 @@
 .venv/bin/python data/db/50.load_db.py --as-of 2026-08-31 --note "2026년 8월 정제 데이터" --commit
 ```
 
-`--commit`은 기존 active snapshot의 기존 데이터 테이블 8개(`complex`, `complex_metrics`, `horizon_profile`, `price_cell`, `price_series`, `estimate`, `comparable`, `regulation_summary`)를 새 snapshot으로 복사하고, 정제 테이블을 적재·검증한 뒤에만 active를 전환합니다. `share`는 `snapshot_id`가 없어 snapshot 복사 대상이 아니며 거래 원장도 별도 batch로 관리합니다. 예측 파일이 준비되면 `--predictions PATH`에 탭 구분 파일을 지정합니다.
+`--commit`은 기존 active snapshot의 기존 데이터 테이블 8개(`complex`, `complex_metrics`, `horizon_profile`, `price_cell`, `price_series`, `estimate`, `comparable`, `regulation_summary`)를 새 snapshot으로 복사하고, 정제 테이블을 적재·검증한 뒤에만 active를 전환합니다. `share`는 `snapshot_id`가 없어 snapshot 복사 대상이 아니며 거래 원장도 별도 batch로 관리합니다. `app.dong_prediction`은 화면이 읽지 않으므로 적재 대상이 아닙니다(결정 66).
 
 거래 원장은 kind별 batch로 관리합니다. 기본 dry-run은 각 파일 앞 10,000행을 적재한 뒤 rollback합니다.
 

@@ -42,10 +42,11 @@ NEW_SNAPSHOT_TABLES = (
     "market_event",
     "event_summary",
     "event_dong_path",
-    "dong_prediction",
     "dong_boundary",
     "dong_support",
 )
+# app.dong_prediction은 화면이 더 이상 읽지 않는다(결정 66). 테이블은 남기지만 적재하지 않으므로
+# 여기에도, 아래 컬럼 정의에도 두지 않는다. 다시 채우려면 그 결정을 먼저 고친다.
 
 BOUNDARY_SOURCE = "GIS Developer 행정구역(읍면동) 2023-07, 원본 도로명주소 DB"
 BOUNDARY_PROPERTIES = {"dong", "sgg_cd", "emd_cd", "umd_nm", "eng_nm", "in_index"}
@@ -105,11 +106,6 @@ TABLE_COLUMNS = {
         "post_observable", "overlapping_events", "note",
     ),
     "event_dong_path": ("event_id", "dong", "k", "quarter", "rel_log_change"),
-    "dong_prediction": (
-        "dong", "horizon_q", "origin", "status", "n_sales_4q", "market_hat",
-        "relative_hat", "gamma", "y_hat", "change_pct_est", "lower_pct", "upper_pct",
-        "model_version",
-    ),
     "dong_boundary": (
         "dong", "emd_cd", "sgg_cd", "umd_nm", "eng_nm", "in_index", "geometry",
         "min_lng", "min_lat", "max_lng", "max_lat", "centroid_lng", "centroid_lat", "source",
@@ -124,7 +120,6 @@ CLEAN_SOURCE_HEADERS = {
     "events": ("event_id", "effective_date", "category", "label", "direction", "verified", "source"),
     "summary": TABLE_COLUMNS["event_summary"],
     "paths": ("event_id", "dong", "sggCd", "umdNm", "k", "quarter", "rel_log_change"),
-    "prediction": TABLE_COLUMNS["dong_prediction"],
     "support": TABLE_COLUMNS["dong_support"],
 }
 QUARTER_PATTERN = re.compile(r"^[0-9]{4}Q[1-4]$")
@@ -232,12 +227,6 @@ def validate_peer_dongs(series: pd.Series, known_dongs: set[str]) -> None:
                 raise ValueError("69.1: peer_dongs 원소는 dong과 reason만 가져야 합니다.")
             if peer["dong"] not in known_dongs:
                 raise ValueError(f"69.1: 60.1에 없는 peer dong이 있습니다: {peer['dong']}")
-
-
-def validate_prediction_status(series: pd.Series) -> None:
-    allowed_status = {"PREDICTED", "INSUFFICIENT_SALES"}
-    if not set(series).issubset(allowed_status):
-        raise ValueError("predictions: 허용되지 않은 status가 있습니다.")
 
 
 def _strict_number(series: pd.Series, column: str, integer: bool = False) -> pd.Series:
@@ -417,7 +406,7 @@ def load_dong_boundaries(index_dongs: Iterable[str], path: Path = BOUNDARY_PATH)
     return frame
 
 
-def load_clean_sources(predictions: Path | None = None) -> dict[str, pd.DataFrame]:
+def load_clean_sources() -> dict[str, pd.DataFrame]:
     """원천 TSV를 읽어 DB 컬럼명·타입으로 변환하고 관계 불변식을 점검합니다."""
     index = _read_tsv(ROOT / "output/60.1.dong_index_se.txt", CLEAN_SOURCE_HEADERS["index"])
     index["sgg_cd"] = index["sggCd"].map(_blank_to_none)
@@ -508,18 +497,6 @@ def load_clean_sources(predictions: Path | None = None) -> dict[str, pd.DataFram
     if support.loc[support["sale_n_all_4q"] == 0, "dominant_complex_share_4q"].notna().any():
         raise ValueError("69.1: 매매 0건인 동에 dominant_complex_share_4q가 있습니다.")
 
-    prediction = pd.DataFrame(columns=TABLE_COLUMNS["dong_prediction"])
-    if predictions is not None:
-        prediction = _read_tsv(predictions, CLEAN_SOURCE_HEADERS["prediction"])
-        _require_text(prediction, ("dong", "origin", "status", "model_version"), "predictions")
-        for column in ("horizon_q", "n_sales_4q"):
-            prediction[column] = _strict_number(prediction[column], column, integer=True)
-        for column in ("market_hat", "relative_hat", "gamma", "y_hat", "change_pct_est", "lower_pct", "upper_pct"):
-            prediction[column] = _strict_number(prediction[column], column)
-        validate_prediction_status(prediction["status"])
-        if not set(prediction["dong"].map(_blank_to_none)).issubset(set(dongs["dong"])):
-            raise ValueError("predictions: 60.1에 없는 dong이 있습니다.")
-
     return {
         "dong": dongs.loc[:, TABLE_COLUMNS["dong"]],
         "dong_index": index.rename(columns={"sggCd": "sgg_cd", "umdNm": "umd_nm"}).loc[:, TABLE_COLUMNS["dong_index"]],
@@ -527,7 +504,6 @@ def load_clean_sources(predictions: Path | None = None) -> dict[str, pd.DataFram
         "market_event": events.loc[:, TABLE_COLUMNS["market_event"]],
         "event_summary": summary.loc[:, TABLE_COLUMNS["event_summary"]],
         "event_dong_path": paths.loc[:, TABLE_COLUMNS["event_dong_path"]],
-        "dong_prediction": prediction.loc[:, TABLE_COLUMNS["dong_prediction"]],
         "dong_boundary": boundaries,
         "dong_support": support.loc[:, TABLE_COLUMNS["dong_support"]],
     }
@@ -601,11 +577,9 @@ def verify_snapshot(cursor: psycopg.Cursor[Any], old_id: int, new_id: int, frame
                 left join app.dong d using (snapshot_id, dong)
                 left join app.market_event e using (snapshot_id, event_id)
               where x.snapshot_id = %s and (d.dong is null or e.event_id is null)) +
-             (select count(*) from app.dong_prediction x left join app.dong d using (snapshot_id, dong)
-              where x.snapshot_id = %s and d.dong is null) +
              (select count(*) from app.dong_support x left join app.dong d using (snapshot_id, dong)
               where x.snapshot_id = %s and d.dong is null)""",
-        (new_id, new_id, new_id, new_id, new_id, new_id),
+        (new_id, new_id, new_id, new_id, new_id),
     )
     if cursor.fetchone()[0]:
         raise RuntimeError("신규 테이블 FK 위반이 있습니다.")
@@ -624,7 +598,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--as-of", default="2026-08-31")
     parser.add_argument("--note")
     parser.add_argument("--commit", action="store_true", help="검증 후 새 snapshot을 활성화하고 commit합니다.")
-    parser.add_argument("--predictions", type=Path, help="dong_prediction TSV 경로입니다.")
     parser.add_argument("--validate-only", action="store_true", help="DB에 접속하지 않고 원천 파일만 검증합니다.")
     return parser.parse_args()
 
@@ -633,7 +606,7 @@ def main() -> int:
     args = parse_args()
     try:
         pd.to_datetime(args.as_of, format="%Y-%m-%d", errors="raise")
-        frames = load_clean_sources(args.predictions)
+        frames = load_clean_sources()
         if args.validate_only:
             if args.commit:
                 raise ValueError("--validate-only와 --commit은 함께 사용할 수 없습니다.")

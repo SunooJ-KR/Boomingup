@@ -26,7 +26,7 @@ export type TagInput = {
   redevelop_zone_count: number;
 };
 
-/** 상위 몇 %를 태그로 볼지. docs/front/product-plan.md §4.3의 "상위 30%"를 따른다. */
+/** 상위 몇 %를 태그로 볼지. docs/payload-schema.md §5의 "상위 30%"를 따른다. */
 const TOP_SHARE = 0.3;
 
 /**
