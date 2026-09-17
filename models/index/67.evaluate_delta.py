@@ -57,6 +57,8 @@ parser.add_argument("--feature-lag", type=int, default=0,
                     help="feature 기점을 몇 분기 앞당길지. 1이면 측정오차 진단(계획 §4.4-1)")
 parser.add_argument("--rebuild-vintage", action="store_true", help="vintage 지수를 다시 만든다")
 parser.add_argument("--first-origin", default=None, help="기점 시작을 늦춘다 (점검용, 예: 2023Q1)")
+parser.add_argument("--cluster-file", default="66.1.dong_cluster.txt",
+                    help="C-1k가 쓸 클러스터 소속 파일. 66.4.dong_cluster_delta.txt면 K-δ")
 args = parser.parse_args()
 
 vintage_path = output_dir / "67.0.vintage_index.txt"
@@ -84,7 +86,7 @@ weights, coverage = dong_households(work_dir)
 print(f"  세대수 가중치 {len(weights):,}개 동, 커버리지 {coverage:.1%}")
 
 # Track K 소속 (66). 없으면 C-1k는 건너뛴다
-cluster_path = output_dir / "66.1.dong_cluster.txt"
+cluster_path = output_dir / args.cluster_file
 if cluster_path.is_file():
     cluster_membership = pd.read_csv(cluster_path, sep="	")
     cluster_membership["as_of"] = pd.PeriodIndex(cluster_membership["as_of"], freq="Q")
@@ -381,6 +383,8 @@ print("  성립 조건(계획 §4.2)은 C-0과 C-1 둘 다를 유의하게 이�
 
 # 기점을 줄인 점검 실행이 정식 산출물을 덮어쓰지 않게 한다 (models/AGENTS.md의 .trial_ 규칙)
 suffix = f".lag{args.feature_lag}" if args.feature_lag else ""
+if args.cluster_file != "66.1.dong_cluster.txt":
+    suffix += ".kdelta"
 if args.first_origin:
     suffix += f".trial_{args.first_origin}"
 result.to_csv(output_dir / f"67.1.delta_by_origin{suffix}.txt", sep="\t", index=False, lineterminator="\n")

@@ -36,7 +36,7 @@
 
 | 상태 | 작업 ID | 담당 | 시작일 | 메모 |
 |---|---|---|---|---|
-| Doing | K-3 | Claude | 2026-09-17 | K-δ: δ 경로 클러스터. K-S로 C-1k가 실패해 조건 발동 |
+| Doing | — | — | — | Phase 3K 종료(전부 실패). 다음은 사람 결정: C-3b `policy_events` 수동 입력 후 K-4, 또는 Phase 4·화면 작업 |
 
 ## 4. 작업 목록
 
@@ -86,8 +86,8 @@
 | K-0 | C-1f: 구 모멘텀 × 기점 이전 자료로 적합한 계수. 그룹 모멘텀에 정보가 있는지 전제 검증 | Done (실패) | 67에 후보 추가, C-0 대비 판정 | 67 후보 추가, `docs/model-performance.md` | 67 (vintage 9분기) |
 | K-1 | K-S 구조 변수 클러스터: 가격대·전세가율·준공·세대수·centroid 거리 (정비사업은 시계열이 없어 제외). K∈{4,5,6}, 기점 간 ARI로 K 고정 | Done | 기점별 소속 파일, ARI 표, K 고정 결정 기록 | `models/index/66.build_dong_cluster.py`, `output/66.1` | 62, `dong_boundary` |
 | K-2 | C-1k: K-S 클러스터 모멘텀 × 적합 계수 | Done (실패) | C-0 대비 판정 + §4.4-1(feature 기점 `t−1`) | 67 후보 추가 | K-0, K-1 |
-| K-3 | (조건부) K-δ: T−4 이전 δ 경로를 SE 가중으로 묶기. eligible만, 나머지는 인접성 배정 | Todo | K-S와 다르게 묶은 동에서만 성능이 나는지 확인. K-S로 C-1k가 실패했을 때만 | 66 옵션 | K-2 |
-| K-4 | C-3k: elastic net + 클러스터 × 이벤트, 클러스터 × 정책 문턱 상호작용 | Todo | C-0·C-1을 유의하게 이기고 계수 부호가 해석 가능 | 67 후보 추가 | K-1, C-3b(`policy_events`) |
+| K-3 | (조건부) K-δ: T−4 이전 δ 경로를 SE 가중으로 묶기. eligible만, 나머지는 K-S 동료로 배정 | Done (실패) | K-S와 다르게 묶은 동에서만 성능이 나는지 확인. K-S로 C-1k가 실패했을 때만 | 66 옵션 | K-2 |
+| K-4 | C-3k: elastic net + 클러스터 × 이벤트, 클러스터 × 정책 문턱 상호작용. **모멘텀 feature 없이** 이벤트·문턱만 | Todo | C-0·C-1을 유의하게 이기고 계수 부호가 해석 가능. 한 번만 시도 | 67 후보 추가 | K-1, C-3b(`policy_events` 수동 입력) |
 | K-5 | 화면용: 최신 기점 클러스터 소속과 "함께 움직여 온 동" 목록 (예측과 무관한 사실 정보) | Todo | payload 스키마 합의 후 적재 | migration, `docs/payload-schema.md` | K-1, 정선우 님 합의 |
 
 ### Phase 4 — Track I 구간과 gate
@@ -130,6 +130,7 @@
 | 날짜 | 작업 ID | 산출물 | 결정 번호 | 메모 |
 |---|---|---|---|---|
 | 2026-09-17 | P0-3 | `docs/decisions.md` 결정 41 | 41 | 기존 44·48 코드에 누수 없음을 확인했다. 결정 39의 관찰은 실제 결과다 |
+| 2026-09-17 | K-3 | `66 --input delta`, `output/66.4`, `67.1`·`67.2` `.kdelta`, `docs/model-performance.md` R7 | 58 | **실패.** MAE 0.0445 대 0.0443, 계수 0. 인접 기점 ARI 0.28. Phase 3K 종료 |
 | 2026-09-17 | K-1, K-2 | `models/index/66.build_dong_cluster.py`, `output/66.1`~`66.3`, 67 후보 C-1k, `docs/model-performance.md` R6 | 57 | K=4 고정(ARI 0.903), 구와의 ARI 0.110. **C-1k 실패** (구간 [−0.0040, +0.0001]). 분기 규칙 두 조건 모두 실패 → 모멘텀 계열 종료 |
 | 2026-09-17 | K-0, C-diag | 67 후보 C-1f, `output/67.1`·`67.2` (lag 0·lag 1), `docs/model-performance.md` R5 | 55, 56 | **C-1f 실패** (구간 [−0.0039, +0.0007]). lag 1에서 C-2 Spearman 부호 반전(+0.068 → −0.112): 남은 신호는 측정오차였다. 모멘텀 계열의 마지막 검증은 K-2 |
 | 2026-09-17 | C-0/1, C-2 | `models/index/67.evaluate_delta.py`, `_dong_weight.py`, `output/67.0`·`67.1`·`67.2`, `docs/model-performance.md` R4 | 51, 52, 53 | **성립 조건 미충족.** C-0 MAE 0.0443이 가장 낮다. C-1은 유의하게 나쁘고(p=0.013) C-2는 C-0과 구분되지 않는다(p=0.227). 사다리 규칙상 C-3으로 올라가지 않는다 |

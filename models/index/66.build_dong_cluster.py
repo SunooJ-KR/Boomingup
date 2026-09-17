@@ -41,6 +41,18 @@ LAST_AS_OF = pd.Period("2026Q2", freq="Q")
 K_CANDIDATES = [4, 5, 6]
 SEED = 20260917
 
+import argparse
+parser = argparse.ArgumentParser(description="동 클러스터링 (Track K)")
+parser.add_argument("--input", choices=["structure", "delta"], default="structure",
+                    help="structure=K-S 구조 변수, delta=K-δ δ 경로 (K-S로 C-1k가 실패했을 때만)")
+args = parser.parse_args()
+
+# K-δ 설정. 묶는 창은 T−8..T−4로, 모멘텀 창(T−4..T)과 겹치지 않는다(계획 §2.5 이중 사용 방지).
+# K는 K-S가 안정성으로 고른 값을 그대로 쓴다. 두 번 고르지 않는다
+DELTA_WINDOW_END_LAG = 4
+DELTA_K = 4
+MOMENTUM_Q = 4
+
 # 서울시청, 강남역. 도심·강남 거리는 위치를 한 축으로 줄인 것이다
 CBD = (37.5665, 126.9780)
 GANGNAM = (37.4979, 127.0276)
@@ -57,6 +69,84 @@ def database_url(env_name="DATABASE_READONLY_URL"):
 def km_distance(lat, lng, point):
     """위경도 두 점의 대략 거리(km). 서울 안에서는 평면 근사로 충분하다."""
     return np.sqrt(((lat - point[0]) * 111.0) ** 2 + ((lng - point[1]) * 88.0) ** 2)
+
+
+# ============================================================================
+# K-δ — δ 경로로 묶는다 (--input delta)
+# ============================================================================
+
+if args.input == "delta":
+    from _dong_weight import dong_households
+
+    vintage_path = output_dir / "67.0.vintage_index.txt"
+    ks_path = output_dir / "66.1.dong_cluster.txt"
+    if not vintage_path.is_file() or not ks_path.is_file():
+        raise SystemExit("67.0 vintage 지수와 66.1 K-S 소속이 먼저 있어야 한다")
+
+    vintage = pd.read_csv(vintage_path, sep="\t")
+    vintage["as_of"] = pd.PeriodIndex(vintage["as_of"], freq="Q")
+    vintage["quarter"] = pd.PeriodIndex(vintage["quarter"], freq="Q")
+    ks = pd.read_csv(ks_path, sep="\t")
+    ks["as_of"] = pd.PeriodIndex(ks["as_of"], freq="Q")
+    weights, _ = dong_households(work_dir)
+
+    print("===== K-δ. δ 경로 클러스터링 =====")
+    print(f"  묶는 창 T−{DELTA_WINDOW_END_LAG + MOMENTUM_Q}..T−{DELTA_WINDOW_END_LAG}, K={DELTA_K} (K-S와 같은 값)")
+
+    labels_delta, ari_vs_ks = {}, []
+    for as_of in sorted(vintage["as_of"].unique()):
+        block = vintage[vintage["as_of"] == as_of]
+        wide = block.pivot_table(index="dong", columns="quarter", values="log_index")
+        quarters = [as_of - lag for lag in range(DELTA_WINDOW_END_LAG + MOMENTUM_Q, DELTA_WINDOW_END_LAG - 1, -1)]
+        if any(quarter not in wide.columns for quarter in quarters):
+            continue
+        path = wide[quarters].diff(axis=1).iloc[:, 1:]                      # 분기별 변화 4개
+        weight = path.index.map(weights).fillna(0.0).to_numpy()
+        common = np.average(path.to_numpy(), axis=0, weights=weight) if weight.sum() > 0 else path.mean().to_numpy()
+        path = path - common                                                # 서울 공통 몫을 뺀 δ 경로
+
+        latest = block[block["quarter"] == as_of].set_index("dong")
+        eligible = latest["eligible"].reindex(path.index).fillna(False).astype(bool)
+        se = latest["log_index_se"].reindex(path.index)
+        core = path[eligible & path.notna().all(axis=1)]
+        if len(core) < 50:
+            continue
+        # 측정오차가 큰 동은 덜 믿는다. 잡음을 묶으면 잡음 클러스터가 나온다
+        sample_weight = (1.0 / se.loc[core.index] ** 2).to_numpy()
+        model = KMeans(n_clusters=DELTA_K, n_init=10, random_state=SEED).fit(core.to_numpy(), sample_weight=sample_weight)
+        label = pd.Series(model.labels_, index=core.index)
+
+        # 비eligible 동은 δ 경로가 잡음이라 같은 K-S 클러스터의 eligible 동이 가장 많이 속한 K-δ 클러스터로 보낸다
+        ks_now = ks[ks["as_of"] == as_of].set_index("dong")["cluster"]
+        rest = [dong for dong in path.index if dong not in label.index and dong in ks_now.index]
+        if rest:
+            mates = pd.DataFrame({"ks": ks_now.reindex(label.index), "kd": label}).dropna()
+            mode_by_ks = mates.groupby("ks")["kd"].agg(lambda values: values.mode().iloc[0])
+            fallback = pd.Series(ks_now.loc[rest].map(mode_by_ks), index=rest).dropna().astype(int)
+            label = pd.concat([label, fallback])
+        label.index.name = "dong"   # 비eligible 배정을 붙이면 index 이름이 사라진다
+        labels_delta[as_of] = label
+
+        shared = label.index.intersection(ks_now.index)
+        ari_vs_ks.append(adjusted_rand_score(ks_now.loc[shared], label.loc[shared]))
+
+    ordered = sorted(labels_delta)
+    adjacent = []
+    for previous, current in zip(ordered[:-1], ordered[1:]):
+        shared = labels_delta[previous].index.intersection(labels_delta[current].index)
+        adjacent.append(adjusted_rand_score(labels_delta[previous].loc[shared], labels_delta[current].loc[shared]))
+
+    print(f"  기점 {len(labels_delta)}개")
+    print(f"  인접 기점 간 ARI 중앙값 {np.median(adjacent):.3f}, 최소 {np.min(adjacent):.3f}")
+    print(f"  K-S와의 ARI 중앙값 {np.median(ari_vs_ks):.3f} (낮을수록 K-S와 다르게 묶는다)")
+
+    membership = pd.concat(
+        [series.rename("cluster").reset_index().assign(as_of=as_of) for as_of, series in labels_delta.items()],
+        ignore_index=True)[["as_of", "dong", "cluster"]]
+    membership_path = output_dir / "66.4.dong_cluster_delta.txt"
+    membership.to_csv(membership_path, sep="\t", index=False, lineterminator="\n")
+    print(f"\n소속: {membership_path}")
+    raise SystemExit(0)
 
 
 # ============================================================================
