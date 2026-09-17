@@ -33,6 +33,8 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import adjusted_rand_score
 from sklearn.preprocessing import StandardScaler
 
+from _dong_cluster import feature_matrix
+
 work_dir = Path(__file__).resolve().parents[2]
 output_dir = work_dir / "output"
 
@@ -53,22 +55,12 @@ DELTA_WINDOW_END_LAG = 4
 DELTA_K = 4
 MOMENTUM_Q = 4
 
-# 서울시청, 강남역. 도심·강남 거리는 위치를 한 축으로 줄인 것이다
-CBD = (37.5665, 126.9780)
-GANGNAM = (37.4979, 127.0276)
-
-
 def database_url(env_name="DATABASE_READONLY_URL"):
     loader_path = work_dir / "data" / "db" / "50.load_db.py"
     spec = importlib.util.spec_from_file_location("boomingup_load_db", loader_path)
     loader = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(loader)
     return loader.database_url(env_name)
-
-
-def km_distance(lat, lng, point):
-    """위경도 두 점의 대략 거리(km). 서울 안에서는 평면 근사로 충분하다."""
-    return np.sqrt(((lat - point[0]) * 111.0) ** 2 + ((lng - point[1]) * 88.0) ** 2)
 
 
 # ============================================================================
@@ -186,27 +178,7 @@ print(f"  경계 centroid 없는 동 {int(features['lat'].isna().groupby(feature
 
 
 # ============================================================================
-# 2. 기점별 feature 행렬
-# ============================================================================
-
-def feature_matrix(block):
-    """한 기점의 동별 구조 변수. 결측은 같은 구의 중앙값으로 채운다."""
-    frame = block.copy()
-    frame["log_ppm2"] = np.log(frame["ppm2"])
-    frame["log_stock"] = np.log1p(frame["stock_hh"])
-    frame["new_share"] = frame["completed_hh_8q"] / frame["stock_hh"].replace(0, np.nan)
-    frame["dist_cbd"] = km_distance(frame["lat"], frame["lng"], CBD)
-    frame["dist_gangnam"] = km_distance(frame["lat"], frame["lng"], GANGNAM)
-
-    columns = ["log_ppm2", "jeonse_ratio", "log_stock", "new_share", "lat", "lng", "dist_cbd", "dist_gangnam"]
-    for column in columns:
-        by_gu = frame.groupby("sggCd")[column].transform("median")
-        frame[column] = frame[column].fillna(by_gu).fillna(frame[column].median())
-    return frame[["dong"] + columns].dropna().reset_index(drop=True)
-
-
-# ============================================================================
-# 3. 기점별 클러스터링과 K별 안정성
+# 2. 기점별 클러스터링과 K별 안정성
 # ============================================================================
 
 as_of_list = sorted(features["as_of"].unique())
