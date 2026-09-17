@@ -1,6 +1,6 @@
 # Boomingup DB 적재
 
-`001_boomingup_tables.sql`은 신규 정제 테이블과 거래 원장 테이블만 만들며 기존 테이블을 변경하지 않습니다. 이어서 `002_dong_boundary.sql`로 법정동 경계 테이블을 적용합니다. 각 파일은 `begin`/`commit`으로 전체 DDL을 하나의 transaction으로 적용합니다. 관리자 권한으로 Railway의 SQL 실행 화면에서 번호순으로 먼저 적용하고, 다음 적재 전에는 읽기 전용 `check_schema.sql`로 신규 테이블의 schema를 확인합니다. 적재 role에는 DDL 권한이 필요 없습니다.
+`001_boomingup_tables.sql`은 신규 정제 테이블과 거래 원장 테이블만 만들며 기존 테이블을 변경하지 않습니다. 이어서 `002_dong_boundary.sql`로 법정동 경계 테이블을, `003_dong_index_se.sql`로 동 지수 추정오차 컬럼을, `004_dong_support.sql`로 판단 보조 화면이 읽는 `app.dong_support` 테이블을 적용합니다. 각 파일은 `begin`/`commit`으로 전체 DDL을 하나의 transaction으로 적용합니다. 관리자 권한으로 Railway의 SQL 실행 화면에서 번호순으로 먼저 적용하고, 다음 적재 전에는 읽기 전용 `check_schema.sql`로 신규 테이블의 schema를 확인합니다. 적재 role에는 DDL 권한이 필요 없습니다.
 
 법정동 경계는 GIS Developer의 행정구역(읍면동) 2023-07 자료를 사용하며, 원본은 도로명주소 DB입니다. 화면·문서 출처 표기는 `행정구역 경계: GIS Developer(gisdeveloper.co.kr), 원본 도로명주소 DB`를 사용합니다.
 
