@@ -16,8 +16,8 @@ from scipy.sparse.linalg import lsqr
 
 AREA_BIN_M2 = 3        # 1㎡ 반올림은 84.6/85.0㎡처럼 같은 평형을 가르고, 5㎡ 폭은 다른 평형을 섞는다
 RIDGE_LAMBDA = 5       # 결정 5a
-SALE_COLUMNS = ["aptSeq", "sggCd", "umdNm", "excluUseAr", "deal_ym", "is_cancelled", "deal_amount_manwon"]
-SALES_FRAME_COLUMNS = ["dong", "sggCd", "umdNm", "aptSeq", "cell", "quarter", "log_ppm2"]
+SALE_COLUMNS = ["aptSeq", "sggCd", "umdNm", "excluUseAr", "deal_ym", "dealDay", "is_cancelled", "deal_amount_manwon"]
+SALES_FRAME_COLUMNS = ["dong", "sggCd", "umdNm", "aptSeq", "cell", "quarter", "deal_date", "log_ppm2"]
 
 
 def load_sales(path):
@@ -41,6 +41,8 @@ def load_sales(path):
     sales["dong"] = sales["sggCd"] + "_" + sales["umdNm"]
     sales["quarter"] = pd.to_datetime(sales["deal_ym"], format="%Y%m").dt.to_period("Q")
     sales["cell"] = sales["aptSeq"] + "_" + (area // AREA_BIN_M2).astype(int).astype(str)
+    sales["deal_date"] = pd.to_datetime(
+        sales["deal_ym"] + sales["dealDay"].str.zfill(2), format="%Y%m%d", errors="coerce")
     sales["log_ppm2"] = np.log(price / area)
     return sales[SALES_FRAME_COLUMNS].reset_index(drop=True)
 
@@ -56,7 +58,8 @@ def load_sales_from_db(work_dir):
     spec.loader.exec_module(loader)
 
     query = """
-        select t.sgg_cd, t.umd_nm, t.apt_seq, t.exclu_use_ar, t.deal_ym, t.deal_amount_manwon
+        select t.sgg_cd, t.umd_nm, t.apt_seq, t.exclu_use_ar, t.deal_ym, t.deal_day,
+               t.deal_amount_manwon
         from app.trade_sale t
         join app.trade_batch b on b.batch_id = t.batch_id
         where b.kind = 'sale' and b.is_active
@@ -70,7 +73,8 @@ def load_sales_from_db(work_dir):
     with psycopg.connect(loader.database_url("DATABASE_READONLY_URL")) as connection:
         sales = pd.DataFrame(
             connection.execute(query).fetchall(),
-            columns=["sggCd", "umdNm", "aptSeq", "excluUseAr", "deal_ym", "deal_amount_manwon"],
+            columns=["sggCd", "umdNm", "aptSeq", "excluUseAr", "deal_ym", "dealDay",
+                     "deal_amount_manwon"],
         )
 
     area = pd.to_numeric(sales["excluUseAr"], errors="coerce")
@@ -78,6 +82,9 @@ def load_sales_from_db(work_dir):
     sales["dong"] = sales["sggCd"] + "_" + sales["umdNm"]
     sales["quarter"] = pd.to_datetime(sales["deal_ym"], format="%Y%m").dt.to_period("Q")
     sales["cell"] = sales["aptSeq"] + "_" + (area // AREA_BIN_M2).astype(int).astype(str)
+    sales["deal_date"] = pd.to_datetime(
+        sales["deal_ym"] + sales["dealDay"].astype("string").str.zfill(2),
+        format="%Y%m%d", errors="coerce")
     sales["log_ppm2"] = np.log(price / area)
     return sales[SALES_FRAME_COLUMNS].reset_index(drop=True)
 
@@ -102,7 +109,7 @@ def _solve(matrix, target, **kwargs):
     return coef, istop, n_iter
 
 
-def estimate_hedonic_index(sales, ridge_lambda=RIDGE_LAMBDA):
+def estimate_hedonic_index(sales, ridge_lambda=RIDGE_LAMBDA, with_components=False):
     """동×분기 log 지수 격자와 진단값을 돌려준다.
 
     구×분기 효과와 단지 FE는 구마다 상수 하나만큼 식별되지 않지만, 같은 동 안의
@@ -110,7 +117,7 @@ def estimate_hedonic_index(sales, ridge_lambda=RIDGE_LAMBDA):
     거래가 없는 동×분기는 편차 0, 즉 구 지수를 그대로 쓴다.
     """
     quarter_str = sales["quarter"].astype(str)
-    cell_code, _ = pd.factorize(sales["cell"])
+    cell_code, cell_keys = pd.factorize(sales["cell"])
     gq_code, gq_keys = pd.factorize(sales["sggCd"] + "|" + quarter_str)
     dq_code, dq_keys = pd.factorize(sales["dong"] + "|" + quarter_str)
 
@@ -152,7 +159,13 @@ def estimate_hedonic_index(sales, ridge_lambda=RIDGE_LAMBDA):
         "lsqr_istop": int(istop), "lsqr_iterations": int(n_iter),
         "residual_sd": float(residual.std()), "n_sales": n_rows, "n_cells": int(n_cell),
     }
-    return grid.sort_values(["dong", "quarter"]).reset_index(drop=True), diagnostics
+    grid = grid.sort_values(["dong", "quarter"]).reset_index(drop=True)
+    if not with_components:
+        return grid, diagnostics
+    # nowcast(65)는 단지 고정효과만 재사용하고 분기 효과를 부분 표본으로 다시 계산한다
+    components = {"cell_effect": pd.Series(coef[:n_cell], index=cell_keys),
+                  "gq_effect": gq_effect, "dq_effect": dq_effect}
+    return grid, diagnostics, components
 
 
 def estimate_repeat_sales_index(sales):
