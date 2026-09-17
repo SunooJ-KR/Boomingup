@@ -36,7 +36,7 @@
 
 | 상태 | 작업 ID | 담당 | 시작일 | 메모 |
 |---|---|---|---|---|
-| Doing | — | — | — | Phase 0 완료. 다음은 Phase 1 T0-A |
+| Doing | — | — | — | Phase 0·1 완료. 다음은 Phase 2 N-3 (nowcast) |
 
 ## 4. 작업 목록
 
@@ -54,8 +54,8 @@
 
 | ID | 작업 | 상태 | 완료 조건 | 산출물 | 의존 |
 |---|---|---|---|---|---|
-| T0-A | `n_sales` 기반 Empirical Bayes shrinkage로 동 시점효과를 구 평균 쪽으로 수축 | Todo | 수축 전후 지수 안정성(분기 간 수정폭, 저거래 동 분산) 비교표 작성 | `models/index/63.shrink_dong_index.py`, `docs/model-performance.md` 비교표 | P0-1 |
-| T0-B | (조건부) multilevel hedonic 재추정 | Todo | T0-A가 안정성 기준을 못 넘길 때만 시작. 그 전엔 `Doing`으로 올리지 않는다 | `models/index/70.*` | T0-A |
+| T0-A | `n_sales` 기반 Empirical Bayes shrinkage로 동 시점효과를 구 평균 쪽으로 수축 | Done | 수축 전후 지수 안정성(분기 간 수정폭, 저거래 동 분산) 비교표 작성 | `models/index/63.shrink_dong_index.py`, `docs/model-performance.md` 비교표 | P0-1 |
+| T0-B | (조건부) multilevel hedonic 재추정 | Todo | T0-A가 안정성 기준을 못 넘길 때만 시작. 그 전엔 `Doing`으로 올리지 않는다. **T0-A가 기준을 넘겼으므로 지금은 시작하지 않는다** | `models/index/70.*` | T0-A |
 | T0-C | (조건부) 인접 동 가중 pooling 비교 | Todo | T0-A와 안정성 비교 | `dong_boundary`에서 인접 행렬 산출 | T0-A |
 
 ### Phase 2 — Track N nowcast
@@ -118,6 +118,7 @@
 | 날짜 | 작업 ID | 산출물 | 결정 번호 | 메모 |
 |---|---|---|---|---|
 | 2026-09-17 | P0-3 | `docs/decisions.md` 결정 41 | 41 | 기존 44·48 코드에 누수 없음을 확인했다. 결정 39의 관찰은 실제 결과다 |
+| 2026-09-17 | T0-A | `models/index/63.shrink_dong_index.py`, `output/63.1`·`63.2`, `docs/model-performance.md` R2 | 45, 46 | 현행 λ=5가 반쪽 나누기 최적(6.5) 대비 0.27%만 나빠 유지한다. 사후 shrinkage로 얻을 것이 없다. Track 0의 성과는 SE 컬럼이다 |
 | 2026-09-17 | P0-2 | `data/collect/61.snapshot_trades.py`, `_trades_api.py`, `output/raw/snapshot/2026-09-17/` | — | 첫 조회일 적재 완료(매매·전월세 6개월 × 25개 구, 4MB). 재실행 시 건너뛰는 것 확인. **매일 돌려야 한다** — `models/AGENTS.md`에 적었다 |
 | 2026-09-17 | P0-5 | `models/index/62.build_dong_features.py`, `output/62.1` | — | 현행 gate(4분기 20건) 통과 행의 24.1%가 한 단지 거래 비중 50% 초과다. 거래 단지 수 하위 10%는 3개뿐이다. G-1이 단일 기준을 바꿀 근거다. DB 컬럼 추가는 feature 빌더가 완성되는 C-3b에서 한다 |
 | 2026-09-17 | P0-4 | `models/index/64.measure_mu_weight.py` | 43, 44 | 세대수 기준 커버리지 95.6%로 재고가중 채택. 빠진 464개는 대부분 임대 단지다. `complex.bjd_code`는 법정동 코드가 아니어서 못 쓴다 |

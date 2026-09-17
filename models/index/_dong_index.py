@@ -64,6 +64,8 @@ def load_sales_from_db(work_dir):
           and t.apt_seq is not null and t.sgg_cd is not null and t.umd_nm is not null
           and t.exclu_use_ar > 0 and t.deal_amount_manwon > 0
           and t.deal_ym ~ '^[0-9]{6}$'
+        -- 정렬이 없으면 실행마다 행 순서가 달라져 factorize 코드와 무작위 분할이 흔들린다
+        order by t.batch_id, t.row_no
     """
     with psycopg.connect(loader.database_url("DATABASE_READONLY_URL")) as connection:
         sales = pd.DataFrame(
