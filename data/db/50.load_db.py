@@ -76,7 +76,7 @@ FEATURE_INTS = {
 
 TABLE_COLUMNS = {
     "dong": ("dong", "sgg_cd", "umd_nm", "gu_name"),
-    "dong_index": ("dong", "quarter", "log_index", "n_sales", "n_sales_4q", "eligible"),
+    "dong_index": ("dong", "quarter", "log_index", "log_index_se", "n_sales", "n_sales_4q", "eligible"),
     "dong_feature": ("dong", "as_of_quarter", *FEATURE_COLUMNS),
     "market_event": ("event_id", "effective_date", "category", "direction", "label", "verified", "source"),
     "event_summary": (
@@ -98,7 +98,8 @@ TABLE_COLUMNS = {
 }
 
 CLEAN_SOURCE_HEADERS = {
-    "index": ("dong", "sggCd", "umdNm", "quarter", "log_index", "n_sales", "n_sales_4q", "eligible"),
+    "index": ("dong", "sggCd", "umdNm", "quarter", "dq_effect", "log_index",
+              "n_sales", "n_sales_4q", "eligible", "log_index_se"),
     "feature": ("dong", "sggCd", "umdNm", "as_of_quarter", *FEATURE_COLUMNS),
     "events": ("event_id", "effective_date", "category", "label", "direction", "verified", "source"),
     "summary": TABLE_COLUMNS["event_summary"],
@@ -355,7 +356,7 @@ def load_dong_boundaries(index_dongs: Iterable[str], path: Path = BOUNDARY_PATH)
     in_index_dongs = set(frame.loc[frame["in_index"], "dong"])
     unknown_dongs = sorted(in_index_dongs - set(index_dongs))
     if unknown_dongs:
-        raise ValueError("52.1: 40.1에 없는 in_index dong이 있습니다: " + ", ".join(unknown_dongs))
+        raise ValueError("52.1: 60.1에 없는 in_index dong이 있습니다: " + ", ".join(unknown_dongs))
     if len(in_index_dongs) != 340:
         raise ValueError(f"52.1: in_index dong은 340개여야 합니다 (현재 {len(in_index_dongs)}개).")
     return frame
@@ -363,18 +364,18 @@ def load_dong_boundaries(index_dongs: Iterable[str], path: Path = BOUNDARY_PATH)
 
 def load_clean_sources(predictions: Path | None = None) -> dict[str, pd.DataFrame]:
     """원천 TSV를 읽어 DB 컬럼명·타입으로 변환하고 관계 불변식을 점검합니다."""
-    index = _read_tsv(ROOT / "output/40.1.dong_index.txt", CLEAN_SOURCE_HEADERS["index"])
+    index = _read_tsv(ROOT / "output/60.1.dong_index_se.txt", CLEAN_SOURCE_HEADERS["index"])
     index["sgg_cd"] = index["sggCd"].map(_blank_to_none)
     index["umd_nm"] = index["umdNm"].map(_blank_to_none)
     index["dong"] = index["dong"].map(_blank_to_none)
-    _require_text(index, ("dong", "sgg_cd", "umd_nm"), "40.1")
-    _require_quarter(index, "quarter", "40.1")
+    _require_text(index, ("dong", "sgg_cd", "umd_nm"), "60.1")
+    _require_quarter(index, "quarter", "60.1")
     expected_dong = index["sgg_cd"] + "_" + index["umd_nm"]
     if not (index["dong"] == expected_dong).all():
-        raise ValueError("40.1: dong = sggCd || '_' || umdNm 불변식 위반입니다.")
+        raise ValueError("60.1: dong = sggCd || '_' || umdNm 불변식 위반입니다.")
     unknown_codes = sorted(set(index["sgg_cd"]) - set(GU_BY_SGG_CD))
     if unknown_codes:
-        raise ValueError(f"40.1: 구 이름 매핑이 없는 sggCd가 있습니다: {', '.join(unknown_codes)}")
+        raise ValueError(f"60.1: 구 이름 매핑이 없는 sggCd가 있습니다: {', '.join(unknown_codes)}")
     index["log_index"] = _strict_number(index["log_index"], "log_index")
     index["n_sales"] = _strict_number(index["n_sales"], "n_sales", integer=True)
     index["n_sales_4q"] = _strict_number(index["n_sales_4q"], "n_sales_4q", integer=True)
@@ -392,7 +393,7 @@ def load_clean_sources(predictions: Path | None = None) -> dict[str, pd.DataFram
     if not (feature["dong"] == feature["sgg_cd"] + "_" + feature["umd_nm"]).all():
         raise ValueError("42.1: dong 불변식 위반입니다.")
     if not set(feature["dong"]).issubset(set(dongs["dong"])):
-        raise ValueError("42.1: 40.1에 없는 dong이 있습니다.")
+        raise ValueError("42.1: 60.1에 없는 dong이 있습니다.")
     for column in FEATURE_COLUMNS:
         feature[column] = _strict_number(feature[column], column, integer=column in FEATURE_INTS)
 
@@ -423,7 +424,7 @@ def load_clean_sources(predictions: Path | None = None) -> dict[str, pd.DataFram
     if not (paths["dong"] == paths["sgg_cd"] + "_" + paths["umd_nm"]).all():
         raise ValueError("46.1: dong 불변식 위반입니다.")
     if not set(paths["dong"]).issubset(set(dongs["dong"])):
-        raise ValueError("46.1: 40.1에 없는 dong이 있습니다.")
+        raise ValueError("46.1: 60.1에 없는 dong이 있습니다.")
     if not set(paths["event_id"]).issubset(set(events["event_id"])):
         raise ValueError("46.1: event_dates.tsv에 없는 event_id가 있습니다.")
     paths["k"] = _strict_number(paths["k"], "k", integer=True)
@@ -439,7 +440,7 @@ def load_clean_sources(predictions: Path | None = None) -> dict[str, pd.DataFram
             prediction[column] = _strict_number(prediction[column], column)
         validate_prediction_status(prediction["status"])
         if not set(prediction["dong"].map(_blank_to_none)).issubset(set(dongs["dong"])):
-            raise ValueError("predictions: 40.1에 없는 dong이 있습니다.")
+            raise ValueError("predictions: 60.1에 없는 dong이 있습니다.")
 
     return {
         "dong": dongs.loc[:, TABLE_COLUMNS["dong"]],

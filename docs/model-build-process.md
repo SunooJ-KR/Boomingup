@@ -36,7 +36,7 @@
 
 | 상태 | 작업 ID | 담당 | 시작일 | 메모 |
 |---|---|---|---|---|
-| Doing | P0-1 | Claude | 2026-09-17 | hedonic SE 산출. `output/11.1` 없어 DB `app.trade_sale`에서 읽는다 |
+| Doing | P0-4 | Claude | 2026-09-17 | μ 가중 방식. 세대수 동 매핑 커버리지 측정 |
 
 ## 4. 작업 목록
 
@@ -44,7 +44,7 @@
 
 | ID | 작업 | 상태 | 완료 조건 | 산출물 | 의존 |
 |---|---|---|---|---|---|
-| P0-1 | hedonic 지수를 재추정하며 동×분기 시점효과의 SE를 함께 산출하고 `dong_index.log_index_se` 컬럼을 추가 | Todo | `dong_index` 전 행에 SE가 있고, 저거래 동일수록 SE가 큰지 산점도로 확인 | `models/index/60.build_dong_index_se.py`, 스키마 migration, `docs/data-and-schema.md` 갱신 | — |
+| P0-1 | hedonic 지수를 재추정하며 동×분기 시점효과의 SE를 함께 산출하고 `dong_index.log_index_se` 컬럼을 추가 | Done | `dong_index` 전 행에 SE가 있고, 저거래 동일수록 SE가 큰지 산점도로 확인 | `models/index/60.build_dong_index_se.py`, 스키마 migration, `docs/data-and-schema.md` 갱신 | — |
 | P0-2 | 원천 API 응답 snapshot 적재 시작 (실거래 매매·전월세, 날짜별 파일) | Todo | 첫 snapshot이 `output/raw/snapshot/{YYYY-MM-DD}/`에 저장되고 재실행해도 덮어쓰지 않음 | `data/collect/61.snapshot_trades.py` | — (P0-1과 병렬 가능) |
 | P0-3 | 평가 코드의 embargo 규칙(`s + horizon ≤ T`)을 새 평가 스크립트 설계에 명시하고 결정 기록 | Done | 결정 기록에 규칙과 근거가 있음 | `docs/decisions.md` | — |
 | P0-4 | μ 가중 방식 확정: `complex.total_households`의 동 매핑 커버리지 측정 후 재고가중/거래가중 결정 | Todo | 커버리지 수치와 결정이 `docs/decisions.md`에 있음 | 결정 기록, 측정 스크립트 | — |
@@ -118,3 +118,4 @@
 | 날짜 | 작업 ID | 산출물 | 결정 번호 | 메모 |
 |---|---|---|---|---|
 | 2026-09-17 | P0-3 | `docs/decisions.md` 결정 41 | 41 | 기존 44·48 코드에 누수 없음을 확인했다. 결정 39의 관찰은 실제 결과다 |
+| 2026-09-17 | P0-1 | `models/index/60.build_dong_index_se.py`, `_dong_index_se.py`, `data/db/003_dong_index_se.sql`, `output/60.1` | 42 | τ=0.0585. SE 중앙값은 거래 0건 0.058에서 50건 초과 0.010까지 단조 감소. 적재는 42.1 등 다른 산출물이 로컬에 없어 아직 못 했다 |

@@ -90,10 +90,9 @@ def estimate_hedonic_index(sales, ridge_lambda=RIDGE_LAMBDA):
     quarters = pd.period_range(sales["quarter"].min(), sales["quarter"].max(), freq="Q")
     grid = dongs.merge(pd.DataFrame({"quarter": quarters}), how="cross")
     grid_q = grid["quarter"].astype(str)
-    grid["log_index"] = (
-        (grid["sggCd"] + "|" + grid_q).map(gq_effect)
-        + (grid["dong"] + "|" + grid_q).map(dq_effect).fillna(0.0)
-    )
+    # dq_effect(동 편차)는 SE 계산(_dong_index_se.py)이 따로 필요로 해서 컬럼으로 남긴다
+    grid["dq_effect"] = (grid["dong"] + "|" + grid_q).map(dq_effect).fillna(0.0)
+    grid["log_index"] = (grid["sggCd"] + "|" + grid_q).map(gq_effect) + grid["dq_effect"]
     counts = sales.groupby(["dong", "quarter"]).size().rename("n_sales").reset_index()
     grid = grid.merge(counts, on=["dong", "quarter"], how="left")
     grid["n_sales"] = grid["n_sales"].fillna(0).astype(int)
