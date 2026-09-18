@@ -141,6 +141,13 @@ export async function fetchDongs(asOfQuarter: string): Promise<DongSummary[]> {
     structure_type: row.structure_type ?? null,
     structure_desc: row.structure_desc ?? null,
     tags: tags[at],
+    tag_sort_values: {
+      "정비사업 정보 있음": numberOrNull(row.redevelop_zone_count),
+      "거래 많은 동": numberOrNull(row.n_sales_4q),
+      "전세가율 높은 동": numberOrNull(row.jeonse_ratio_4q),
+      "최근 준공 많은 동": numberOrNull(row.completed_share_8q),
+      "30년 이상 단지 많은 동": numberOrNull(row.old30_share_4q),
+    },
   }));
 }
 

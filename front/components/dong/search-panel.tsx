@@ -5,7 +5,12 @@ import { ArrowLeft, ChevronDown, MapPinned, Search, SlidersHorizontal } from "lu
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { EMPTY_FILTER, hasDetailFilter, type DongFilter } from "@/lib/filter";
+import {
+  EMPTY_FILTER,
+  hasDetailFilter,
+  regionTagLabel,
+  type DongFilter,
+} from "@/lib/filter";
 import { compactClusterDesc, formatManwon } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -35,9 +40,7 @@ export function SearchPanel({
   onBack,
 }: SearchPanelProps) {
   const toggleTag = (tag: string) => {
-    const next = filter.tags.includes(tag)
-      ? filter.tags.filter((item) => item !== tag)
-      : [...filter.tags, tag];
+    const next = filter.tags.includes(tag) ? [] : [tag];
     onChange({ ...filter, tags: next });
   };
 
@@ -211,19 +214,19 @@ export function SearchPanel({
 
           {tags.length > 0 ? (
             <fieldset className="space-y-1.5">
-              <legend className="text-sm font-medium text-foreground">지역 태그</legend>
+              <legend className="text-sm font-medium text-foreground">지역 태그 정렬</legend>
               <div className="flex flex-wrap gap-1.5">
                 {tags.map((tag) => (
                   <FilterChip
                     key={tag}
-                    label={tag}
+                    label={regionTagLabel(tag)}
                     active={filter.tags.includes(tag)}
                     onClick={() => toggleTag(tag)}
                   />
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                태그는 동네에서 관측된 특징이에요. 좋고 나쁨을 뜻하지 않아요.
+                하나를 선택하면 해당 특징이 두드러진 동을 많은 값부터 보여줘요.
               </p>
             </fieldset>
           ) : null}
