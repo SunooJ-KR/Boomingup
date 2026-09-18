@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, type ReactNode } from "react";
 import { ArrowLeft, ChevronDown, MapPinned, Search, SlidersHorizontal } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import { compactClusterDesc, formatManwon } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export type StructureOption = { type: number; desc: string };
+type FilterSectionId = "sample" | "price" | "cluster" | "tag";
 
 type SearchPanelProps = {
   filter: DongFilter;
@@ -39,6 +41,8 @@ export function SearchPanel({
   resultCount,
   onBack,
 }: SearchPanelProps) {
+  const [openFilterSection, setOpenFilterSection] = useState<FilterSectionId | null>(null);
+
   const toggleTag = (tag: string) => {
     const next = filter.tags.includes(tag) ? [] : [tag];
     onChange({ ...filter, tags: next });
@@ -157,9 +161,16 @@ export function SearchPanel({
           </span>
         </summary>
 
-        <div className="space-y-4 border-t border-border bg-muted/50 p-3">
-          <fieldset className="space-y-1.5">
-            <legend className="text-sm font-medium text-foreground">표본 상태</legend>
+        <div className="max-h-[clamp(12rem,32dvh,22rem)] space-y-1 overflow-y-auto overscroll-contain border-t border-border bg-muted/50 p-2">
+          <FilterSection
+            id="sample"
+            label="표본 상태"
+            selectedCount={filter.flagged === null ? 0 : 1}
+            open={openFilterSection === "sample"}
+            onToggle={() =>
+              setOpenFilterSection((current) => (current === "sample" ? null : "sample"))
+            }
+          >
             <div className="flex flex-wrap gap-1.5">
               <FilterChip
                 label="주의 없음"
@@ -176,11 +187,18 @@ export function SearchPanel({
                 }
               />
             </div>
-          </fieldset>
+          </FilterSection>
 
           {priceBands.length > 0 ? (
-            <fieldset className="space-y-1.5">
-              <legend className="text-sm font-medium text-foreground">㎡당 매매 중앙가</legend>
+            <FilterSection
+              id="price"
+              label="㎡당 매매 중앙가"
+              selectedCount={filter.priceBand === null ? 0 : 1}
+              open={openFilterSection === "price"}
+              onToggle={() =>
+                setOpenFilterSection((current) => (current === "price" ? null : "price"))
+              }
+            >
               <div className="flex flex-wrap gap-1.5">
                 {priceBands.map((band) => (
                   <FilterChip
@@ -193,12 +211,21 @@ export function SearchPanel({
                   />
                 ))}
               </div>
-            </fieldset>
+            </FilterSection>
           ) : null}
 
           {structureOptions.length > 0 ? (
-            <fieldset className="space-y-1.5">
-              <legend className="text-sm font-medium text-foreground">클러스터</legend>
+            <FilterSection
+              id="cluster"
+              label="클러스터"
+              selectedCount={filter.structureTypes.length}
+              open={openFilterSection === "cluster"}
+              onToggle={() =>
+                setOpenFilterSection((current) =>
+                  current === "cluster" ? null : "cluster",
+                )
+              }
+            >
               <div className="flex flex-wrap gap-1.5">
                 {structureOptions.map((option) => (
                   <FilterChip
@@ -209,12 +236,19 @@ export function SearchPanel({
                   />
                 ))}
               </div>
-            </fieldset>
+            </FilterSection>
           ) : null}
 
           {tags.length > 0 ? (
-            <fieldset className="space-y-1.5">
-              <legend className="text-sm font-medium text-foreground">지역 태그 정렬</legend>
+            <FilterSection
+              id="tag"
+              label="지역 태그 정렬"
+              selectedCount={filter.tags.length}
+              open={openFilterSection === "tag"}
+              onToggle={() =>
+                setOpenFilterSection((current) => (current === "tag" ? null : "tag"))
+              }
+            >
               <div className="flex flex-wrap gap-1.5">
                 {tags.map((tag) => (
                   <FilterChip
@@ -228,7 +262,7 @@ export function SearchPanel({
               <p className="text-xs text-muted-foreground">
                 하나를 선택하면 해당 특징이 두드러진 동을 많은 값부터 보여줘요.
               </p>
-            </fieldset>
+            </FilterSection>
           ) : null}
         </div>
       </details>
@@ -248,6 +282,53 @@ export function SearchPanel({
         ) : null}
       </div>
     </div>
+  );
+}
+
+function FilterSection({
+  id,
+  label,
+  selectedCount,
+  open,
+  onToggle,
+  children,
+}: {
+  id: FilterSectionId;
+  label: string;
+  selectedCount: number;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  const panelId = `condition-filter-${id}`;
+
+  return (
+    <section className="overflow-hidden rounded-md bg-card">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={onToggle}
+        className="flex min-h-10 w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      >
+        <span>{label}</span>
+        <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+          {selectedCount > 0 ? `${selectedCount}개 선택` : "전체"}
+          <ChevronDown
+            aria-hidden="true"
+            className={cn("size-4 transition-transform", open && "rotate-180")}
+          />
+        </span>
+      </button>
+      {open ? (
+        <div id={panelId} className="border-t border-border px-3 py-3">
+          <fieldset className="space-y-2">
+            <legend className="sr-only">{label}</legend>
+            {children}
+          </fieldset>
+        </div>
+      ) : null}
+    </section>
   );
 }
 
