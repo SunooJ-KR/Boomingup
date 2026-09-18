@@ -23,6 +23,10 @@
   --structure-2: #c4761f;
   --structure-3: #8a62c8;
 
+  --font-pretendard: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR",
+    "Malgun Gothic", sans-serif;
+
   --radius: 12px;
 
   /* 화면 골격 치수. 좌측 열 높이, sticky 위치, 스크롤 여백이 모두 여기서 나온다.
@@ -61,6 +65,7 @@ html {
   --color-structure-1: var(--structure-1);
   --color-structure-2: var(--structure-2);
   --color-structure-3: var(--structure-3);
+  --font-sans: var(--font-pretendard);
 
   --radius-sm: 10px;
   --radius-md: 12px;
@@ -145,7 +150,14 @@ html {
 body {
   background: var(--muted);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans KR", sans-serif;
+  font-family: var(--font-pretendard);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
 /* 애니메이션은 opacity와 transform만 쓰고, 사용자가 줄이기를 원하면 사실상 끈다 */
