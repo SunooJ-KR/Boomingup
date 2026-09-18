@@ -1,5 +1,6 @@
 import { AppHeader } from "@/components/app-header";
 import { DongExplorer } from "@/components/dong/dong-explorer";
+import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { guNamesOf, loadIndex, tagsOf } from "@/lib/data";
 import { FOOTNOTES } from "@/lib/format";
 import { readRootEnv } from "@/lib/root-env";
@@ -32,6 +33,8 @@ export default async function Home() {
           kakaoJsKey={kakaoJsKey}
         />
       </main>
+
+      <ScrollToTop />
     </div>
   );
 }
