@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ChevronDown, Search } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +41,39 @@ export function SearchPanel({
   resultCount,
   onBack,
 }: SearchPanelProps) {
+  const [filterOpen, setFilterOpen] = useState(false);
   const [openFilterSection, setOpenFilterSection] = useState<FilterSectionId | null>(null);
+  const filterMenuRef = useRef<HTMLDivElement>(null);
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!filterOpen) return;
+
+    const closeOnPointerOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !filterMenuRef.current?.contains(event.target)) {
+        setFilterOpen(false);
+      }
+    };
+    const closeOnFocusOutside = (event: FocusEvent) => {
+      if (event.target instanceof Node && !filterMenuRef.current?.contains(event.target)) {
+        setFilterOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setFilterOpen(false);
+      filterButtonRef.current?.focus();
+    };
+
+    document.addEventListener("pointerdown", closeOnPointerOutside);
+    document.addEventListener("focusin", closeOnFocusOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnPointerOutside);
+      document.removeEventListener("focusin", closeOnFocusOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [filterOpen]);
 
   const toggleTag = (tag: string) => {
     const next = filter.tags.includes(tag) ? [] : [tag];
@@ -139,12 +171,17 @@ export function SearchPanel({
         </div>
       </div>
 
-      {/* 칩이 좌측 열 높이의 절반쯤을 먹어 목록이 밀린다.
-          접어 두고 몇 개 걸렸는지만 알려준 뒤, 필요할 때 펼치게 한다. */}
-      {/* open을 값으로 넘기면 다시 그릴 때마다 React가 상태를 되돌려 펼친 칩이 접힌다.
-          열고 닫는 상태는 브라우저에 맡기고 여기서는 몇 개 걸렸는지만 알려준다. */}
-      <details className="group overflow-hidden rounded-md border border-border bg-card">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-sm font-bold text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+      {/* 필터는 목록 높이를 줄이지 않도록 떠 있는 패널로 연다.
+          바깥 클릭·포커스 이동·Escape로 닫혀 별도 닫기 동작을 요구하지 않는다. */}
+      <div ref={filterMenuRef} className="relative">
+        <button
+          ref={filterButtonRef}
+          type="button"
+          aria-expanded={filterOpen}
+          aria-controls="condition-filter-menu"
+          onClick={() => setFilterOpen((open) => !open)}
+          className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2 text-sm font-bold text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        >
           <span>조건 필터</span>
           <span className="flex items-center gap-2">
             <Badge variant={detailCount > 0 ? "accent" : "neutral"}>
@@ -152,12 +189,21 @@ export function SearchPanel({
             </Badge>
             <ChevronDown
               aria-hidden="true"
-              className="size-4 text-muted-foreground transition-transform group-open:rotate-180"
+              className={cn(
+                "size-4 text-muted-foreground transition-transform",
+                filterOpen && "rotate-180",
+              )}
             />
           </span>
-        </summary>
+        </button>
 
-        <div className="max-h-[clamp(12rem,32dvh,22rem)] space-y-1 overflow-y-auto overscroll-contain border-t border-border bg-muted/50 p-2">
+        {filterOpen ? (
+          <div
+            id="condition-filter-menu"
+            role="region"
+            aria-label="조건 필터 세부 항목"
+            className="absolute inset-x-0 top-full z-30 mt-2 max-h-[min(45dvh,24rem)] space-y-1 overflow-y-auto overscroll-contain rounded-md border border-border bg-muted p-2 shadow-float"
+          >
           <FilterSection
             id="sample"
             label="표본 상태"
@@ -260,8 +306,9 @@ export function SearchPanel({
               </p>
             </FilterSection>
           ) : null}
-        </div>
-      </details>
+          </div>
+        ) : null}
+      </div>
 
       <div className="flex items-center justify-between border-t border-border pt-3">
         <p className="text-sm text-muted-foreground">
