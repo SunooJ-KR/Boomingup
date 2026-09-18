@@ -133,10 +133,18 @@ export function DongExplorer({
     return () => observer.disconnect();
   }, [filter.gu]);
 
-  // 지도는 페이지와 상관없이 필터에 걸린 동을 전부 찍는다
+  // 지도는 페이지와 상관없이 필터에 걸린 동을 전부 찍는다.
+  // 상세의 함께 볼 동처럼 현재 필터 밖의 동을 골라도 선택 마커는 지도에 포함한다.
+  const mapDongs = useMemo(() => {
+    if (!selectedDong || visibleDongs.some((dong) => dong.dong_id === selectedDong.dong_id)) {
+      return visibleDongs;
+    }
+    return [...visibleDongs, selectedDong];
+  }, [selectedDong, visibleDongs]);
+
   const mapItems = useMemo<MapItem[]>(
     () =>
-      visibleDongs.flatMap((dong) => {
+      mapDongs.flatMap((dong) => {
         const center = centers[dong.dong_id];
         if (!center) return [];
         return [
@@ -151,7 +159,7 @@ export function DongExplorer({
           },
         ];
       }),
-    [visibleDongs, centers],
+    [mapDongs, centers],
   );
 
   const guMapItems = useMemo<MapItem[]>(
@@ -172,6 +180,7 @@ export function DongExplorer({
       ),
     [guSummaries],
   );
+  const showDongMap = filter.gu !== null || selectedId !== null;
 
   // 상세는 API에서 선택 시점에 가져온다. 동이 300개가 넘어 첫 화면에 다 실어 보내지 않는다.
   useEffect(() => {
@@ -284,11 +293,11 @@ export function DongExplorer({
           </summary>
           <div className="mt-2 lg:mt-0">
             <MapPanel
-              items={filter.gu === null ? guMapItems : mapItems}
-              selectedId={filter.gu === null ? null : selectedId}
-              onSelect={filter.gu === null ? selectGu : selectDong}
+              items={showDongMap ? mapItems : guMapItems}
+              selectedId={showDongMap ? selectedId : null}
+              onSelect={showDongMap ? selectDong : selectGu}
               kakaoJsKey={kakaoJsKey}
-              itemKind={filter.gu === null ? "gu" : "dong"}
+              itemKind={showDongMap ? "dong" : "gu"}
             />
           </div>
         </details>

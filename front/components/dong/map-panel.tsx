@@ -30,6 +30,8 @@ type Mode = "loading" | "kakao" | "fallback";
 
 const SDK_TIMEOUT_MS = 8000;
 const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 };
+/** 카카오 지도는 숫자가 작을수록 확대된다. 동과 주변을 함께 볼 수 있는 수준이다. */
+const SELECTED_DONG_LEVEL = 5;
 
 export function MapPanel({
   items,
@@ -45,11 +47,20 @@ export function MapPanel({
   // 마커 DOM은 매번 다시 만들지 않으므로 최신 콜백을 ref로 들고 있는다
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
-  // 동을 고를 때는 목록이 바뀐 것이 아니므로 범위를 다시 잡지 않는다
-  const itemsRef = useRef(items);
-  itemsRef.current = items;
 
   const bounds = useMemo(() => boundsOf(items), [items]);
+  const selectedItem = useMemo(
+    () => items.find((item) => item.id === selectedId) ?? null,
+    [items, selectedId],
+  );
+  const previewBounds = useMemo(
+    () => (selectedItem ? boundsOf([selectedItem]) : bounds),
+    [bounds, selectedItem],
+  );
+  const previewItems = useMemo(
+    () => (selectedItem ? [selectedItem] : items),
+    [items, selectedItem],
+  );
 
   useEffect(() => {
     if (!kakaoJsKey) return;
@@ -116,15 +127,18 @@ export function MapPanel({
     );
   }, [bounds, items.length, mode]);
 
-  // 동을 고르면 확대 수준은 그대로 두고 그 동이 가운데에 오게만 옮긴다
+  // 동을 고르면 현재보다 축소하지 않는 범위에서 동 단위 수준으로 확대하고 가운데로 옮긴다.
   useEffect(() => {
     const kakao = getKakao();
     const map = mapRef.current;
-    if (mode !== "kakao" || !kakao || !map || !selectedId) return;
-    const selected = itemsRef.current.find((item) => item.id === selectedId);
-    if (!selected) return;
-    map.panTo(new kakao.maps.LatLng(selected.lat, selected.lng));
-  }, [selectedId, mode]);
+    if (mode !== "kakao" || !kakao || !map || itemKind !== "dong" || !selectedItem) return;
+    const position = new kakao.maps.LatLng(selectedItem.lat, selectedItem.lng);
+    map.setLevel(Math.min(map.getLevel(), SELECTED_DONG_LEVEL), {
+      anchor: position,
+      animate: true,
+    });
+    map.panTo(position);
+  }, [itemKind, mode, selectedItem]);
 
   return (
     // 좌측 동 목록 열과 같은 높이에서 --map-peek만큼 줄인다.
@@ -145,8 +159,8 @@ export function MapPanel({
         <div ref={containerRef} className="h-[320px] w-full bg-muted lg:h-auto lg:min-h-0 lg:flex-1" />
       ) : (
         <FallbackPreview
-          items={items}
-          bounds={bounds}
+          items={previewItems}
+          bounds={previewBounds}
           selectedId={selectedId}
           onSelect={onSelect}
           itemKind={itemKind}
@@ -243,7 +257,12 @@ function markerClassName(item: MapItem, selected: boolean, itemKind: "gu" | "don
 type KakaoLatLng = object;
 type KakaoLatLngBounds = object;
 type KakaoMap = {
+  getLevel: () => number;
   panTo: (latlng: KakaoLatLng) => void;
+  setLevel: (
+    level: number,
+    options?: { anchor?: KakaoLatLng; animate?: boolean | { duration: number } },
+  ) => void;
   setBounds: (bounds: KakaoLatLngBounds) => void;
 };
 type KakaoOverlay = { setMap: (map: KakaoMap | null) => void };
