@@ -110,7 +110,9 @@ export function DongExplorer({
       }
       setSelectedId(dongId);
     },
-    [dongs, filter.gu],
+    // 자치구뿐 아니라 상세 조건이 바뀔 때도 최신 필터를 참조해야 한다.
+    // 그렇지 않으면 처음 렌더링의 빈 조건을 보고 자치구 선택으로 잘못 전환한다.
+    [dongs, filter],
   );
 
   const changePage = useCallback((next: number) => {
