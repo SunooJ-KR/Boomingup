@@ -519,4 +519,30 @@ fig.text(0.5, -0.01, "2016Q1 이후 누적, 시장 평균 대비 %", ha="center"
 fig.tight_layout()
 save(fig, "09h_dong_paths_by_cluster")
 
+# ============================================================
+# 18. 클러스터 peer 모멘텀의 예측 증분가치 — 기본 모델 vs 클러스터 peer 추가 모델의
+# 2023년 이후(out-of-sample) 예측 오차(MAE) 비교
+# ============================================================
+pm = pd.read_csv("../output/09c_peer_momentum_predictive_test.csv", index_col=0)
+pm.index = pm.index.astype(int)
+
+fig, ax = plt.subplots(figsize=(8.5, 5.8))
+x = np.arange(len(pm))
+w = 0.32
+ax.bar(x - w / 2, pm["mae_base_test"], width=w, color=GREY, label="기본 모델(자기+시장+구 평균 모멘텀)", zorder=3)
+ax.bar(x + w / 2, pm["mae_aug_test"], width=w, color=TEAL, label="+ 클러스터 peer 모멘텀 추가", zorder=3)
+for i, h in enumerate(pm.index):
+    pct = pm.loc[h, "mae_improve_pct"]
+    label = f"{pct:+.1f}%"
+    color = GREEN if pct > 0 else RED
+    ax.text(i, max(pm.loc[h, "mae_base_test"], pm.loc[h, "mae_aug_test"]) + 0.003, label,
+            ha="center", fontsize=9.5, color=color, weight="bold")
+ax.set_xticks(x)
+ax.set_xticklabels([f"{h}분기 뒤 예측" for h in pm.index])
+ax.legend(frameon=False, fontsize=9, loc="upper left")
+style_ax(ax, "클러스터 peer 모멘텀을 추가해도 예측 오차(MAE)가 줄지 않음 (2023Q1~ 검증, 낮을수록 좋음)",
+         "", "평균절대오차(MAE, log)")
+fig.tight_layout()
+save(fig, "09i_peer_momentum_predictive_test")
+
 print("\n전체 그림 생성 완료:", OUT_DIR)
