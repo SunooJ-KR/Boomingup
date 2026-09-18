@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from _short_index import estimate_index, publication_lag, ym_to_mi
+from _short_events import validate_feature_time_guard
 
 TREND = {"11110_A": 0.010, "11110_B": -0.005, "11140_C": 0.000, "11140_D": 0.015}   # 월 log 기울기
 N_MONTHS = 24
@@ -62,5 +63,20 @@ for ym in (201912, 202003, 202501):
     forecast_max = t - lag
     assert main_price_max <= t - 3
     assert forecast_max <= t - lag
+
+# P8 audit guard가 실제 source 최대월 오염을 잡는지 확인한다.
+origin = 202001; t = int(ym_to_mi(origin)); lag = int(publication_lag(t))
+audit_row = pd.DataFrame([{"origin": origin, "mi": t, "rail_max_public_ym": origin,
+                           "supply_max_completion_ym": int(201911)}])
+for column, value, message in (
+        ("rail_max_public_ym", 202002, "미래 공개 rail row guard가 실패하지 않았다"),
+        ("supply_max_completion_ym", 202001, "미래 completion row guard가 실패하지 않았다")):
+    contaminated = audit_row.copy(); contaminated[column] = value
+    try:
+        validate_feature_time_guard(contaminated)
+    except AssertionError:
+        pass
+    else:
+        raise AssertionError(message)
 
 print("모든 점검 통과")
