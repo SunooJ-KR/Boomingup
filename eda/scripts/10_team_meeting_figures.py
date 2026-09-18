@@ -479,4 +479,44 @@ style_ax(ax, "클러스터 개수(k)별 실루엣 점수 (빨강 = 이번에 쓴
 fig.tight_layout()
 save(fig, "09g_silhouette_by_k")
 
+# ============================================================
+# 17. 클러스터별 동 개별 경로 — 같은 클러스터 동끼리 실제로 비슷하게 움직이는지 눈으로 확인
+# (클러스터링에 쓴 지표(분기별 시장 대비 초과 변화율)를 누적합해서, 각 동이 2016Q1 이후
+# 시장 대비 얼마나 앞서/뒤처졌는지 경로로 그린다 — 새 지표가 아니라 같은 지표를 보기 좋게
+# 누적한 것일 뿐이다)
+# ============================================================
+paths = pd.read_csv("../output/09b_dong_cum_excess_path.csv")
+paths["cum_excess_pct"] = 100 * (np.exp(paths["cum_excess"]) - 1)
+quarters_sorted = sorted(paths["quarter"].unique())
+q_pos = {q: i for i, q in enumerate(quarters_sorted)}
+paths["q_pos"] = paths["quarter"].map(q_pos)
+
+fig, axes = plt.subplots(2, 3, figsize=(14, 8), sharex=True, sharey=True)
+for cl, ax in zip(sorted(paths["cluster"].unique()), axes.flat):
+    color = palette9[(int(cl) - 1) % len(palette9)]
+    sub = paths[paths["cluster"] == cl]
+    for dong, g in sub.groupby("dong"):
+        g = g.sort_values("q_pos")
+        ax.plot(g["q_pos"], g["cum_excess_pct"], color=color, alpha=0.18, linewidth=0.8, zorder=2)
+    avg = sub.groupby("q_pos")["cum_excess_pct"].mean()
+    ax.plot(avg.index, avg.values, color=NAVY, linewidth=2.4, zorder=4)
+    ax.axhline(0, color="#C3C2B7", linewidth=0.9, linestyle=":", zorder=1)
+    n_dong_cl = sub["dong"].nunique()
+    ax.set_title(f"클러스터 {cl} (동 {n_dong_cl}개)", fontsize=11, color=NAVY, weight="bold")
+    ax.tick_params(colors=GREY, labelsize=8)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_color("#C3C2B7")
+    ax.spines["bottom"].set_color("#C3C2B7")
+
+tick_idx = list(range(0, len(quarters_sorted), 8))
+for ax in axes[-1]:
+    ax.set_xticks(tick_idx)
+    ax.set_xticklabels([quarters_sorted[i] for i in tick_idx], rotation=45, ha="right", fontsize=8)
+fig.suptitle("클러스터별 동 개별 누적 초과 변화율 경로 (얇은 선=개별 동, 굵은 남색 선=클러스터 평균)",
+             fontsize=13, fontweight="bold", color=NAVY, y=1.0)
+fig.text(0.5, -0.01, "2016Q1 이후 누적, 시장 평균 대비 %", ha="center", fontsize=9.5, color=GREY)
+fig.tight_layout()
+save(fig, "09h_dong_paths_by_cluster")
+
 print("\n전체 그림 생성 완료:", OUT_DIR)
