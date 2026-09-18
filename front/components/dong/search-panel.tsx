@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { ArrowLeft, ChevronDown, MapPinned, Search, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, ChevronDown, Search } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -114,9 +114,8 @@ export function SearchPanel({
       <div className="space-y-2 rounded-md bg-muted p-3">
         <label
           htmlFor="dong-gu"
-          className="flex items-center gap-2 text-sm font-bold text-foreground"
+          className="text-sm font-bold text-foreground"
         >
-          <MapPinned aria-hidden="true" className="size-4 text-primary" />
           자치구 선택
         </label>
         <div className="relative">
@@ -146,10 +145,7 @@ export function SearchPanel({
           열고 닫는 상태는 브라우저에 맡기고 여기서는 몇 개 걸렸는지만 알려준다. */}
       <details className="group overflow-hidden rounded-md border border-border bg-card">
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-sm font-bold text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
-          <span className="flex items-center gap-2">
-            <SlidersHorizontal aria-hidden="true" className="size-4 text-primary" />
-            조건 필터
-          </span>
+          <span>조건 필터</span>
           <span className="flex items-center gap-2">
             <Badge variant={detailCount > 0 ? "accent" : "neutral"}>
               {detailCount > 0 ? `${detailCount}개 적용` : "선택 안 함"}
