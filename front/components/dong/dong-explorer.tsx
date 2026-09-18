@@ -296,6 +296,7 @@ export function DongExplorer({
               items={showDongMap ? mapItems : guMapItems}
               selectedId={showDongMap ? selectedId : null}
               onSelect={showDongMap ? selectDong : selectGu}
+              onReset={showAllGu}
               kakaoJsKey={kakaoJsKey}
               itemKind={showDongMap ? "dong" : "gu"}
               activeGuName={filter.gu}

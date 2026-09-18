@@ -27,6 +27,17 @@ test("자치구 하나만 남으면 그 좌표들만 담는 좁은 범위가 나
   assert.ok(bounds.minLng < 127.05 && bounds.maxLng > 127.09);
 });
 
+test("보이는 범위가 지도 한 축의 90%를 차지하도록 여백을 둔다", () => {
+  const points = [
+    { lat: 37.4, lng: 126.8 },
+    { lat: 37.6, lng: 127.2 },
+  ];
+  const bounds = boundsOf(points);
+
+  assert.ok(Math.abs(0.2 / span(bounds).lat - 0.9) < 1e-9);
+  assert.ok(Math.abs(0.4 / span(bounds).lng - 0.9) < 1e-9);
+});
+
 test("동이 하나뿐이어도 최소 범위만큼은 벌어진다", () => {
   const bounds = boundsOf([{ lat: 37.5, lng: 127.0 }]);
   assert.ok(span(bounds).lat >= 0.02 - 1e-9);

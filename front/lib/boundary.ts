@@ -78,16 +78,26 @@ export function boundsOfFeature(feature: BoundaryFeature): Bounds {
   return { minLat, maxLat, minLng, maxLng };
 }
 
+/** 여러 경계를 모두 포함하는 최소 범위. 초기 서울 화면처럼 여백 없이 꽉 채울 때 쓴다. */
+export function tightBoundsOfFeatures(features: BoundaryFeature[]): Bounds | null {
+  if (features.length === 0) return null;
+  const bounds = features.map(boundsOfFeature);
+  return {
+    minLat: Math.min(...bounds.map((item) => item.minLat)),
+    maxLat: Math.max(...bounds.map((item) => item.maxLat)),
+    minLng: Math.min(...bounds.map((item) => item.minLng)),
+    maxLng: Math.max(...bounds.map((item) => item.maxLng)),
+  };
+}
+
 /** 각 도형의 모서리만 다시 범위 계산에 넣어 최소 폭과 바깥 여백을 함께 적용한다. */
 export function boundsOfFeatures(features: BoundaryFeature[]): Bounds | null {
-  if (features.length === 0) return null;
+  const tightBounds = tightBoundsOfFeatures(features);
+  if (!tightBounds) return null;
   return boundsOf(
-    features.flatMap((feature) => {
-      const bounds = boundsOfFeature(feature);
-      return [
-        { lat: bounds.minLat, lng: bounds.minLng },
-        { lat: bounds.maxLat, lng: bounds.maxLng },
-      ];
-    }),
+    [
+      { lat: tightBounds.minLat, lng: tightBounds.minLng },
+      { lat: tightBounds.maxLat, lng: tightBounds.maxLng },
+    ],
   );
 }

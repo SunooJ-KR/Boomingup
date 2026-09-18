@@ -6,6 +6,7 @@ import {
   boundaryId,
   boundsOfFeature,
   polygonsOf,
+  tightBoundsOfFeatures,
   visibleBoundaries,
   type BoundaryData,
   type BoundaryGeometry,
@@ -45,5 +46,24 @@ test("Polygon을 한 개짜리 Polygon 배열로 바꾸고 경계 범위를 계�
     maxLat: 37.6,
     minLng: 126.9,
     maxLng: 127,
+  });
+});
+
+test("여러 경계의 최소 범위에는 추가 여백을 넣지 않는다", () => {
+  const eastGeometry: BoundaryGeometry = {
+    type: "Polygon",
+    coordinates: [[[127.1, 37.4], [127.2, 37.4], [127.2, 37.7], [127.1, 37.4]]],
+  };
+  const eastGu: GuBoundaryFeature = {
+    type: "Feature",
+    properties: { sgg_cd: "11740", gu_name: "강동구" },
+    geometry: eastGeometry,
+  };
+
+  assert.deepEqual(tightBoundsOfFeatures([data.gus[0], eastGu]), {
+    minLat: 37.4,
+    maxLat: 37.7,
+    minLng: 126.9,
+    maxLng: 127.2,
   });
 });
