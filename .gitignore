@@ -7,6 +7,11 @@ node_modules/
 dist/
 build/
 .vite/
+.next/
+front/.next/
+next-env.d.ts
+front/next-env.d.ts
+*.tsbuildinfo
 *.local
 npm-debug.log*
 yarn-error.log*
@@ -35,3 +40,9 @@ Thumbs.db
 *.parquet
 *.db
 *.sqlite3
+
+# Next.js
+.next/
+next-env.d.ts
+*.tsbuildinfo
+front/.next-build

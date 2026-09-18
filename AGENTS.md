@@ -1,7 +1,7 @@
 # Boomingup 작업 지침
 
 이 파일은 `README.md`의 협업 규칙을 AI 에이전트가 따라야 할 형태로 정리한 것이다.
-규칙이 바뀌면 `README.md`, `CLAUDE.md`, `AGENTS.md`를 함께 갱신한다.
+규칙이 바뀌면 `README.md`와 `AGENTS.md`를 함께 갱신한다. `CLAUDE.md`는 `@AGENTS.md` 한 줄로 이 파일을 참조하므로 따로 고치지 않는다.
 
 ## 언어 규칙
 
@@ -14,7 +14,7 @@
 - `main`에 직접 push하지 않는다. 급한 수정도 브랜치와 PR을 거친다.
 - 모든 작업은 최신 `dev`에서 분기한 작업 브랜치에서 진행한다.
 - 작업 브랜치 → PR → `dev` → build 검증 → PR → `main` 순서를 지킨다.
-- GitHub 기본 브랜치는 `dev`다. `main`으로 올릴 때만 PR base를 직접 `main`으로 바꾼다.
+- GitHub 기본 브랜치는 `main`이다. 작업 브랜치 PR은 base를 `dev`로 직접 지정하고, `dev`를 `main`으로 올릴 때는 base를 `main`으로 둔다.
 - `main`에 hotfix가 들어갔으면 `main`을 `dev`로 다시 merge해 두 브랜치를 맞춘다.
 
 브랜치 이름 예시:
@@ -88,6 +88,7 @@ cd front && npx tsc --noEmit && npm run build
 - 데이터 출처와 수집 기준은 `docs/data-sources.md`에 정리한다.
 - 알고리즘과 모델링 판단은 `docs/algorithms.md` 또는 관련 문서에 남긴다.
 - 코드 변경으로 사용법, 데이터 스키마, 실행 순서가 바뀌면 관련 문서도 같은 PR에서 갱신한다.
+- 화면 문구는 `docs/wording-guide.md`를 정본으로 삼는다. 관측과 전망을 구분하고, 투자 판단이나 지역의 우열로 읽히는 표현을 쓰지 않는다.
 
 ## 충돌 방지
 

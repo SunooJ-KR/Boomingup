@@ -1,0 +1,40 @@
+import { AppHeader } from "@/components/app-header";
+import { DongExplorer } from "@/components/dong/dong-explorer";
+import { ScrollToTop } from "@/components/ui/scroll-to-top";
+import { guNamesOf, loadIndex, tagsOf } from "@/lib/data";
+import { FOOTNOTES } from "@/lib/format";
+import { readRootEnv } from "@/lib/root-env";
+
+// 동 목록은 자주 바뀌지 않으므로 10분마다 다시 만든다. snapshot이 교체되면 그때 반영된다.
+export const revalidate = 600;
+
+export default async function Home() {
+  const { meta, dongs, centers, source } = await loadIndex();
+  // 공개용 JavaScript 키다. Kakao 콘솔에 등록한 도메인에서만 동작한다.
+  const kakaoJsKey = readRootEnv("NEXT_PUBLIC_KAKAO_JS_KEY") ?? readRootEnv("KAKAO_JS_KEY");
+
+  return (
+    <div className="min-h-screen">
+      <AppHeader asOfQuarter={meta.as_of_quarter} salePeriod={meta.data_period.sale} />
+
+      <main className="mx-auto max-w-[1400px] px-4 py-4">
+        {source === "sample" ? (
+          <p className="mb-3 rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
+            {FOOTNOTES.fallback}
+          </p>
+        ) : null}
+
+        <DongExplorer
+          dongs={dongs}
+          meta={meta}
+          guNames={guNamesOf(dongs)}
+          tags={tagsOf(dongs)}
+          centers={centers}
+          kakaoJsKey={kakaoJsKey}
+        />
+      </main>
+
+      <ScrollToTop />
+    </div>
+  );
+}

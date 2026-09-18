@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #1d2433;
+  --card: #ffffff;
+  --muted: #f6f7f9;
+  --muted-foreground: #697386;
+  --primary: #4136e8;
+  --primary-foreground: #ffffff;
+  --primary-hover: #2f25c9;
+  --primary-soft: #eeedff;
+  --border: #e6e8ee;
+  --input: #f6f7f9;
+  --ring: #4136e8;
+  --neutral-soft: #f0f1f4;
+  --neutral-strong: #858b98;
+
+  /* 구조 유형 0~3의 지도 색. 순서에 뜻이 없는 구분용이라 밝기를 비슷하게 맞췄다.
+     높낮이로 읽히면 안 되므로 같은 색의 진하기 단계로 두지 않는다. */
+  --structure-0: #3b7dd8;
+  --structure-1: #2f9e8f;
+  --structure-2: #c4761f;
+  --structure-3: #8a62c8;
+
+  --font-pretendard: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR",
+    "Malgun Gothic", sans-serif;
+
+  --radius: 12px;
+
+  /* 화면 골격 치수. 좌측 열 높이, sticky 위치, 스크롤 여백이 모두 여기서 나온다.
+     --app-header-h는 components/app-header.tsx가 실제로 잰 높이로 덮어쓴다.
+     좁은 폭에서 머리말이 두 줄로 접히면 49px에서 69px로 바뀐다. */
+  --app-header-h: 49px;
+  --app-gutter: 1rem;
+  --app-column-h: calc(100dvh - var(--app-header-h) - var(--app-gutter) * 2);
+  /* 지도 아래로 상세가 이만큼 비쳐 보인다. 화면이 지도로 꽉 차 보이지 않게 하고,
+     아래에 이어지는 내용이 있다는 것도 함께 알려 준다 */
+  --map-peek: 7rem;
+}
+
+html {
+  /* sticky 머리말에 가리지 않도록 스크롤을 그만큼 덜 내린다.
+     scrollIntoView와 # 앵커 이동에 모두 걸리므로 요소마다 scroll-margin을 적지 않아도 된다 */
+  scroll-padding-top: calc(var(--app-header-h) + var(--app-gutter));
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-neutral-soft: var(--neutral-soft);
+  --color-neutral-strong: var(--neutral-strong);
+  --color-structure-0: var(--structure-0);
+  --color-structure-1: var(--structure-1);
+  --color-structure-2: var(--structure-2);
+  --color-structure-3: var(--structure-3);
+  --font-sans: var(--font-pretendard);
+
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+
+  --shadow-panel: 0 1px 2px rgb(29 36 51 / 0.04), 0 6px 20px rgb(29 36 51 / 0.05);
+  --shadow-float: 0 2px 6px rgb(29 36 51 / 0.06), 0 16px 40px rgb(29 36 51 / 0.09);
+  --ease-out-soft: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  /* 화면 아래에 상세가 새로 붙었다는 것을 알리는 등장 효과 (animate-rise-in) */
+  --animate-rise-in: rise-in 360ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes skeleton-sweep {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes loading-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0) scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1);
+  }
+}
+
+@keyframes loading-marker {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(65 54 232 / 0.24);
+    opacity: 0.65;
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgb(65 54 232 / 0);
+    opacity: 1;
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-shimmer::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.78), transparent);
+  content: "";
+  transform: translateX(-120%);
+  animation: skeleton-sweep 1.8s var(--ease-out-soft) infinite;
+}
+
+.loading-dot {
+  animation: loading-dot 1.35s ease-in-out infinite;
+}
+
+.loading-marker {
+  animation: loading-marker 2.2s ease-in-out infinite;
+}
+
+body {
+  background: var(--muted);
+  color: var(--foreground);
+  font-family: var(--font-pretendard);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+/* 애니메이션은 opacity와 transform만 쓰고, 사용자가 줄이기를 원하면 사실상 끈다 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .skeleton-shimmer::after {
+    animation: none !important;
+    opacity: 0;
+  }
+
+  .loading-dot,
+  .loading-marker {
+    animation: none !important;
+  }
+}
