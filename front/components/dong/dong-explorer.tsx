@@ -31,7 +31,7 @@ type DongExplorerProps = {
   meta: Meta;
   guNames: string[];
   tags: string[];
-  /** 동 대표 좌표. 법정동 경계 GeoJSON이 없어 단지 좌표 평균을 쓴다 */
+  /** 경계 라벨과 경계가 없는 동의 대체 위치에 쓰는 동 대표 좌표 */
   centers: Record<string, { lat: number; lng: number }>;
   kakaoJsKey?: string;
 };
@@ -298,6 +298,7 @@ export function DongExplorer({
               onSelect={showDongMap ? selectDong : selectGu}
               kakaoJsKey={kakaoJsKey}
               itemKind={showDongMap ? "dong" : "gu"}
+              activeGuName={filter.gu}
             />
           </div>
         </details>

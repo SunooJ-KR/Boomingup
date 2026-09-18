@@ -510,7 +510,7 @@ async function fetchComplexes(sggCd: string, umdNm: string): Promise<Complex[]> 
   }));
 }
 
-/** 지도 마커용 동 대표 좌표. 경계 GeoJSON이 없어 최근 거래 단지 좌표의 평균을 쓴다. */
+/** 지도 라벨과 경계가 없는 동의 대체 위치에 쓰는 동 대표 좌표. */
 export async function fetchDongCenters(): Promise<Record<string, { lat: number; lng: number }>> {
   const rows = await query<{ dong: string; lat: number; lng: number }>(
     `with pairs as (

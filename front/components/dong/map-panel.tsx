@@ -3,6 +3,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { FOOTNOTES } from "@/lib/format";
+import {
+  boundaryId,
+  boundsOfFeatures,
+  polygonsOf,
+  visibleBoundaries,
+  type BoundaryData,
+  type BoundaryFeature,
+  type DongBoundaryFeature,
+  type FeatureCollection,
+  type GuBoundaryFeature,
+} from "@/lib/boundary";
 import { boundsOf, projectToBounds, type Bounds } from "@/lib/map";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +35,7 @@ type MapPanelProps = {
   onSelect: (id: string) => void;
   kakaoJsKey?: string;
   itemKind?: "gu" | "dong";
+  activeGuName?: string | null;
 };
 
 type Mode = "loading" | "kakao" | "fallback";
@@ -39,28 +51,60 @@ export function MapPanel({
   onSelect,
   kakaoJsKey,
   itemKind = "dong",
+  activeGuName,
 }: MapPanelProps) {
   const [mode, setMode] = useState<Mode>(kakaoJsKey ? "loading" : "fallback");
+  const [boundaryData, setBoundaryData] = useState<BoundaryData | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<KakaoMap | null>(null);
   const overlaysRef = useRef(new Map<string, KakaoOverlay>());
+  const polygonsRef = useRef<KakaoPolygon[]>([]);
   // 마커 DOM은 매번 다시 만들지 않으므로 최신 콜백을 ref로 들고 있는다
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
 
-  const bounds = useMemo(() => boundsOf(items), [items]);
+  const itemBounds = useMemo(() => boundsOf(items), [items]);
+  const itemIds = useMemo(() => items.map((item) => item.id), [items]);
+  const boundaryFeatures = useMemo(
+    () => boundaryData ? visibleBoundaries(boundaryData, itemKind, itemIds, activeGuName) : [],
+    [activeGuName, boundaryData, itemIds, itemKind],
+  );
+  const boundaryBounds = useMemo(() => boundsOfFeatures(boundaryFeatures), [boundaryFeatures]);
+  const mapBounds = boundaryBounds ?? itemBounds;
   const selectedItem = useMemo(
     () => items.find((item) => item.id === selectedId) ?? null,
     [items, selectedId],
   );
+  const selectedBoundary = useMemo(
+    () => boundaryFeatures.find((feature) => boundaryId(feature) === selectedId) ?? null,
+    [boundaryFeatures, selectedId],
+  );
+  const selectedBoundaryBounds = useMemo(
+    () => selectedBoundary ? boundsOfFeatures([selectedBoundary]) : null,
+    [selectedBoundary],
+  );
   const previewBounds = useMemo(
-    () => (selectedItem ? boundsOf([selectedItem]) : bounds),
-    [bounds, selectedItem],
+    () => selectedBoundaryBounds ?? (selectedItem ? boundsOf([selectedItem]) : mapBounds),
+    [mapBounds, selectedBoundaryBounds, selectedItem],
   );
   const previewItems = useMemo(
     () => (selectedItem ? [selectedItem] : items),
     [items, selectedItem],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    loadBoundaryData()
+      .then((data) => {
+        if (!cancelled) setBoundaryData(data);
+      })
+      .catch(() => {
+        // 경계가 실패해도 기존 라벨 지도는 계속 쓸 수 있다.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!kakaoJsKey) return;
@@ -83,6 +127,43 @@ export function MapPanel({
       cancelled = true;
     };
   }, [kakaoJsKey]);
+
+  // 자치구·법정동 면을 라벨보다 먼저 그린다. 선택 가능한 영역은 면을 눌러도 같은 동작을 한다.
+  useEffect(() => {
+    const kakao = getKakao();
+    const map = mapRef.current;
+    if (mode !== "kakao" || !kakao || !map) return;
+
+    polygonsRef.current.forEach((polygon) => polygon.setMap(null));
+    polygonsRef.current = [];
+    const selectableIds = new Set(itemIds);
+
+    boundaryFeatures.forEach((feature) => {
+      const id = boundaryId(feature);
+      const selected = id === selectedId;
+      polygonsOf(feature.geometry).forEach((rings) => {
+        const polygon = new kakao.maps.Polygon({
+          path: rings.map((ring) => ring.map(([lng, lat]) => new kakao.maps.LatLng(lat, lng))),
+          strokeWeight: selected ? 3 : itemKind === "gu" ? 2 : 1,
+          strokeColor: selected ? "#4136e8" : itemKind === "gu" ? "#525866" : "#70798b",
+          strokeOpacity: selected ? 0.95 : itemKind === "gu" ? 0.72 : 0.48,
+          strokeStyle: "solid",
+          fillColor: selected || itemKind === "gu" ? "#4136e8" : "#ffffff",
+          fillOpacity: selected ? 0.16 : itemKind === "gu" ? 0.035 : 0.01,
+        });
+        if (selectableIds.has(id)) {
+          kakao.maps.event.addListener(polygon, "click", () => onSelectRef.current(id));
+        }
+        polygon.setMap(map);
+        polygonsRef.current.push(polygon);
+      });
+    });
+
+    return () => {
+      polygonsRef.current.forEach((polygon) => polygon.setMap(null));
+      polygonsRef.current = [];
+    };
+  }, [boundaryFeatures, itemIds, itemKind, mode, selectedId]);
 
   // ponytail: 마커를 그릴 때마다 다시 만든다. 동은 최대 346개라 이 정도면 충분하고,
   // 더 늘어나면 MarkerClusterer와 bounds 기준 렌더링으로 올린다.
@@ -121,24 +202,34 @@ export function MapPanel({
     if (mode !== "kakao" || !kakao || !map || items.length === 0) return;
     map.setBounds(
       new kakao.maps.LatLngBounds(
-        new kakao.maps.LatLng(bounds.minLat, bounds.minLng),
-        new kakao.maps.LatLng(bounds.maxLat, bounds.maxLng),
+        new kakao.maps.LatLng(mapBounds.minLat, mapBounds.minLng),
+        new kakao.maps.LatLng(mapBounds.maxLat, mapBounds.maxLng),
       ),
     );
-  }, [bounds, items.length, mode]);
+  }, [items.length, mapBounds, mode]);
 
-  // 동을 고르면 현재보다 축소하지 않는 범위에서 동 단위 수준으로 확대하고 가운데로 옮긴다.
+  // 동을 고르면 실제 경계가 모두 보이는 범위로 맞춘다. 경계가 없을 때만 대표 좌표를 쓴다.
   useEffect(() => {
     const kakao = getKakao();
     const map = mapRef.current;
-    if (mode !== "kakao" || !kakao || !map || itemKind !== "dong" || !selectedItem) return;
+    if (mode !== "kakao" || !kakao || !map || itemKind !== "dong") return;
+    if (selectedBoundaryBounds) {
+      map.setBounds(
+        new kakao.maps.LatLngBounds(
+          new kakao.maps.LatLng(selectedBoundaryBounds.minLat, selectedBoundaryBounds.minLng),
+          new kakao.maps.LatLng(selectedBoundaryBounds.maxLat, selectedBoundaryBounds.maxLng),
+        ),
+      );
+      return;
+    }
+    if (!selectedItem) return;
     const position = new kakao.maps.LatLng(selectedItem.lat, selectedItem.lng);
     map.setLevel(Math.min(map.getLevel(), SELECTED_DONG_LEVEL), {
       anchor: position,
       animate: true,
     });
     map.panTo(position);
-  }, [itemKind, mode, selectedItem]);
+  }, [itemKind, mode, selectedBoundaryBounds, selectedItem]);
 
   return (
     // 좌측 동 목록 열과 같은 높이에서 --map-peek만큼 줄인다.
@@ -164,6 +255,7 @@ export function MapPanel({
           selectedId={selectedId}
           onSelect={onSelect}
           itemKind={itemKind}
+          boundaries={boundaryFeatures}
         />
       )}
 
@@ -196,9 +288,37 @@ function FallbackPreview({
   selectedId,
   onSelect,
   itemKind = "dong",
-}: Omit<MapPanelProps, "kakaoJsKey"> & { bounds: Bounds }) {
+  boundaries,
+}: Omit<MapPanelProps, "kakaoJsKey"> & { bounds: Bounds; boundaries: BoundaryFeature[] }) {
+  const selectableIds = new Set(items.map((item) => item.id));
   return (
     <div className="relative h-[320px] w-full bg-muted lg:h-auto lg:min-h-0 lg:flex-1">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        className="absolute inset-0 h-full w-full"
+      >
+        {boundaries.map((feature) => {
+          const id = boundaryId(feature);
+          const selected = id === selectedId;
+          return (
+            <path
+              key={id}
+              d={boundaryPath(feature, bounds)}
+              fill={selected || itemKind === "gu" ? "#4136e8" : "#ffffff"}
+              fillOpacity={selected ? 0.16 : itemKind === "gu" ? 0.035 : 0.01}
+              fillRule="evenodd"
+              stroke={selected ? "#4136e8" : itemKind === "gu" ? "#525866" : "#70798b"}
+              strokeOpacity={selected ? 0.95 : itemKind === "gu" ? 0.72 : 0.48}
+              strokeWidth={selected ? 0.8 : itemKind === "gu" ? 0.5 : 0.28}
+              vectorEffect="non-scaling-stroke"
+              onClick={selectableIds.has(id) ? () => onSelect(id) : undefined}
+              className={selectableIds.has(id) ? "cursor-pointer" : undefined}
+            />
+          );
+        })}
+      </svg>
       {items.map((item) => {
         const { x, y } = projectToBounds(item, bounds);
         return (
@@ -220,6 +340,15 @@ function FallbackPreview({
       })}
     </div>
   );
+}
+
+function boundaryPath(feature: BoundaryFeature, bounds: Bounds): string {
+  return polygonsOf(feature.geometry)
+    .flatMap((polygon) => polygon.map((ring) => {
+      const points = ring.map(([lng, lat]) => projectToBounds({ lat, lng }, bounds));
+      return points.map(({ x, y }, index) => `${index === 0 ? "M" : "L"}${x} ${y}`).join(" ") + " Z";
+    }))
+    .join(" ");
 }
 
 /**
@@ -266,6 +395,7 @@ type KakaoMap = {
   setBounds: (bounds: KakaoLatLngBounds) => void;
 };
 type KakaoOverlay = { setMap: (map: KakaoMap | null) => void };
+type KakaoPolygon = { setMap: (map: KakaoMap | null) => void };
 type Kakao = {
   maps: {
     load: (callback: () => void) => void;
@@ -277,6 +407,18 @@ type Kakao = {
       content: HTMLElement;
       zIndex: number;
     }) => KakaoOverlay;
+    Polygon: new (options: {
+      path: KakaoLatLng[][];
+      strokeWeight: number;
+      strokeColor: string;
+      strokeOpacity: number;
+      strokeStyle: "solid";
+      fillColor: string;
+      fillOpacity: number;
+    }) => KakaoPolygon;
+    event: {
+      addListener: (target: KakaoPolygon, event: "click", handler: () => void) => void;
+    };
   };
 };
 
@@ -285,6 +427,27 @@ function getKakao(): Kakao | null {
 }
 
 let sdkPromise: Promise<Kakao> | null = null;
+let boundaryPromise: Promise<BoundaryData> | null = null;
+
+function loadBoundaryData(): Promise<BoundaryData> {
+  if (boundaryPromise) return boundaryPromise;
+
+  boundaryPromise = Promise.all([
+    fetch("/data/dong-boundary.geojson").then(readGeoJson<DongBoundaryFeature>),
+    fetch("/data/gu-boundary.geojson").then(readGeoJson<GuBoundaryFeature>),
+  ])
+    .then(([dongs, gus]) => ({ dongs: dongs.features, gus: gus.features }))
+    .catch((error) => {
+      boundaryPromise = null;
+      throw error;
+    });
+  return boundaryPromise;
+}
+
+function readGeoJson<T extends BoundaryFeature>(response: Response): Promise<FeatureCollection<T>> {
+  if (!response.ok) throw new Error(`경계 조회 실패: ${response.status}`);
+  return response.json() as Promise<FeatureCollection<T>>;
+}
 
 function loadKakaoSdk(key: string): Promise<Kakao> {
   if (sdkPromise) return sdkPromise;
