@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:test": "next dev --port 3001",
     "build": "next build",
     "start": "next start",
     "test": "node --test lib/*.test.ts",

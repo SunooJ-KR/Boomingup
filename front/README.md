@@ -6,7 +6,8 @@
 
 ```bash
 npm install
-npm run dev      # 개발 서버 (http://localhost:3000)
+npm run dev      # 개발 서버 및 Kakao 지도 확인 (http://localhost:3000)
+npm run dev:test # 테스트 전용 서버 (http://localhost:3001)
 npm run typecheck
 npm run test     # 필터·파생 로직 단위 테스트
 npm run build
