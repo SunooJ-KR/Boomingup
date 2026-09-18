@@ -37,7 +37,13 @@ export function AppHeader({ asOfQuarter, salePeriod }: AppHeaderProps) {
   return (
     <header ref={ref} className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1400px] flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3">
-        <span className="text-base font-bold text-foreground">Boomingup</span>
+        <a
+          href="/"
+          aria-label="모든 검색 조건을 초기화하고 처음으로 이동"
+          className="rounded-sm text-base font-bold text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          Boomingup
+        </a>
         <span className="text-xs text-muted-foreground">
           기준 {formatQuarter(asOfQuarter)} · 매매 {salePeriod}
         </span>
