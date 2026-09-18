@@ -17,7 +17,7 @@ export function StructureCard({
   return (
     <Card>
       <CardBody className="space-y-2">
-        <SectionHeading eyebrow="구조" title="구조 유형" />
+        <SectionHeading eyebrow="비슷한 지역 묶음" title="클러스터 성질" />
         <p className="text-sm text-foreground">{structure.desc}</p>
         <p className="text-xs text-muted-foreground">{structureFootnote(meta)}</p>
       </CardBody>

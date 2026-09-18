@@ -21,8 +21,8 @@ export const SEOUL_BOUNDS: Bounds = {
  */
 const MIN_SPAN_LAT = 0.02;
 const MIN_SPAN_LNG = 0.025;
-/** 가장자리 동이 화면 끝에 붙지 않도록 범위의 15%를 여유로 둔다 */
-const PADDING_RATIO = 0.15;
+/** 보이는 범위가 지도 한 축의 90%를 차지하도록 양쪽에 약 5.6%씩 여유를 둔다. */
+const PADDING_RATIO = 1 / 18;
 
 /** 보이는 동을 모두 담는 범위. 자치구를 고르면 그 자치구만 담긴 범위가 나온다. */
 export function boundsOf(points: LatLng[]): Bounds {

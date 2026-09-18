@@ -4,6 +4,14 @@
 
 법정동 경계는 GIS Developer의 행정구역(읍면동) 2023-07 자료를 사용하며, 원본은 도로명주소 DB입니다. 화면·문서 출처 표기는 `행정구역 경계: GIS Developer(gisdeveloper.co.kr), 원본 도로명주소 DB`를 사용합니다.
 
+`003`과 `004`는 2026-09-17에 운영 DB에 적용했습니다. `check_schema.sql` 점검 222개가 모두 일치합니다.
+
+### 이미 있는 snapshot에 테이블 하나만 채울 때
+
+`004`처럼 테이블을 뒤에 더하면 그 테이블만 비어 있고 나머지는 이미 채워져 있습니다. 원칙은 `50.load_db.py`로 새 snapshot을 만들어 전부 다시 넣는 것이지만, 그러려면 `output/11.1`·`11.2`·`19.1`·`41.1`과 정비사업 xlsx까지 있어야 합니다. 원천이 없는 장비에서는 새로 만든 빈 테이블에만 행을 넣는 편이 낫습니다. 이미 서비스 중인 값을 바꾸지 않기 때문입니다.
+
+그때도 검사는 `50.load_db.py`의 함수를 그대로 불러 씁니다. 따로 짜면 두 경로의 검사가 갈라집니다. `_read_tsv`로 헤더를 맞추고, `_strict_number`·`_require_enum`·`validate_sample_flags`·`validate_peer_dongs`로 값을 거른 뒤, active snapshot을 읽어 그 snapshot의 대상 테이블이 비어 있는지와 `app.dong`에 없는 동이 없는지를 확인하고 `_copy_frame`으로 넣습니다. 넣은 뒤 행 수와 FK를 확인하고, `--commit`을 주지 않으면 rollback합니다.
+
 정제 snapshot 적재는 기본적으로 rollback하는 dry-run입니다. 판단 보조 산출물 `output/69.1.dong_support.txt`도 다른 정제 테이블과 같은 snapshot에 함께 들어갑니다.
 
 ```bash

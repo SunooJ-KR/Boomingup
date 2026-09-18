@@ -5,8 +5,10 @@ import { test } from "node:test";
 import {
   EMPTY_FILTER,
   filterDongs,
+  hasDetailFilter,
   isFilterActive,
   priceBandsOf,
+  regionTagLabel,
   type DongFilter,
 } from "./filter.ts";
 import type { DongSummary } from "./types.ts";
@@ -97,4 +99,68 @@ test("가격대 구간은 서로 겹치지 않고 전체를 덮는다", () => {
   }
   // 값이 적으면 구간을 만들지 않는다
   assert.deepEqual(priceBandsOf(list.slice(0, 3)), []);
+});
+
+test("상세 조건 여부는 검색어와 자치구를 제외하고 판단한다", () => {
+  assert.equal(hasDetailFilter(withFilter({ query: "개포", gu: "강남구" })), false);
+  assert.equal(hasDetailFilter(withFilter({ flagged: true })), true);
+  assert.equal(hasDetailFilter(withFilter({ priceBand: [1000, 2000] })), true);
+  assert.equal(hasDetailFilter(withFilter({ structureTypes: [1] })), true);
+  assert.equal(hasDetailFilter(withFilter({ tags: ["거래 많은 동"] })), true);
+});
+
+test("지역 태그 이름은 정렬 기준이 드러나게 바꾼다", () => {
+  assert.equal(regionTagLabel("거래 많은 동"), "거래 많은 순");
+  assert.equal(regionTagLabel("정비사업 정보 있음"), "정비사업 구역 많은 순");
+  assert.equal(regionTagLabel("알 수 없는 태그"), "알 수 없는 태그");
+});
+
+test("지역 태그를 선택하면 해당 관측값의 내림차순으로 정렬한다", () => {
+  const tagged = [
+    {
+      ...dongs[0],
+      dong_id: "a",
+      umd_name: "첫째동",
+      tags: ["전세가율 높은 동"],
+      tag_sort_values: { "전세가율 높은 동": 0.62 },
+    },
+    {
+      ...dongs[0],
+      dong_id: "b",
+      umd_name: "둘째동",
+      tags: ["전세가율 높은 동"],
+      tag_sort_values: { "전세가율 높은 동": 0.74 },
+    },
+  ] as DongSummary[];
+
+  assert.deepEqual(
+    names(filterDongs(tagged, withFilter({ tags: ["전세가율 높은 동"] }))),
+    ["둘째동", "첫째동"],
+  );
+});
+
+test("거래 태그도 화면용 건수가 아니라 태그 산정값으로 정렬한다", () => {
+  const tagged = [
+    {
+      ...dongs[0],
+      dong_id: "a",
+      umd_name: "첫째동",
+      n_sales_4q: 900,
+      tags: ["거래 많은 동"],
+      tag_sort_values: { "거래 많은 동": 120 },
+    },
+    {
+      ...dongs[0],
+      dong_id: "b",
+      umd_name: "둘째동",
+      n_sales_4q: 500,
+      tags: ["거래 많은 동"],
+      tag_sort_values: { "거래 많은 동": 240 },
+    },
+  ] as DongSummary[];
+
+  assert.deepEqual(
+    names(filterDongs(tagged, withFilter({ tags: ["거래 많은 동"] }))),
+    ["둘째동", "첫째동"],
+  );
 });

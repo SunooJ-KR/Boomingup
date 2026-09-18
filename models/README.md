@@ -42,7 +42,7 @@ models/.venv/Scripts/python.exe -c "import numpy,pandas,scipy,lightgbm,requests,
 | `statsmodels` | HAC/DM 검정 등 통계 검정 후보 |
 | `requests`, `openpyxl` | 외부 데이터 수집, 엑셀 원천 파일 처리 |
 | `psycopg[binary]` | PostgreSQL 적재와 DB 연동 |
-| `pyproj`, `pyshp` | 행정동 경계 좌표 변환과 shapefile 처리 |
+| `pyproj`, `pyshp`, `shapely` | 법정동 경계 좌표 변환, 자치구 결합, 웹용 단순화 |
 
 ## 실행 전 요구사항
 
@@ -75,9 +75,17 @@ $PY = "models/.venv/Scripts/python.exe"
 
 ```powershell
 $PY = "models/.venv/Scripts/python.exe"
-& $PY -c "import numpy,pandas,scipy,lightgbm,psycopg,pyproj,shapefile,sklearn,statsmodels; print('imports ok')"
+& $PY -c "import numpy,pandas,scipy,lightgbm,psycopg,pyproj,shapefile,shapely,sklearn,statsmodels; print('imports ok')"
 & $PY models/index/test_dong_index.py
 & $PY models/index/test_realtime_two_stage.py
+```
+
+법정동 원본을 웹 지도 경계로 내보낼 때는 지수 산출 뒤 다음 순서로 실행한다.
+
+```powershell
+& $PY models/index/test_dong_boundary.py
+& $PY models/index/52.build_dong_boundary.py
+& $PY models/index/53.export_front_boundary.py
 ```
 
 데이터 원천이 없거나 DB 연결이 없으면 전체 파이프라인은 실패할 수 있다. 이 경우 Python 환경 문제가 아니라 입력 데이터 또는 접속 설정 문제로 분리해서 본다.

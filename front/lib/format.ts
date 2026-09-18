@@ -1,6 +1,7 @@
 // 화면 문구는 docs/wording-guide.md가 정본이다. §3의 문장을 글자 그대로 옮긴다.
 // 여기서 임의로 다듬지 않는다. 새 문장이 필요하면 그 문서에 먼저 추가한다.
 import type { DeltaState, IndexSeBand, Meta, PeakState, SampleFlag } from "./types";
+import { shiftQuarter } from "./quarter.ts";
 
 /** 상세 화면 표본 상태 블록. flag가 여럿이면 이 순서대로 줄을 나눠 전부 보여 준다 */
 export const SAMPLE_FLAG_ORDER: SampleFlag[] = [
@@ -48,9 +49,23 @@ export function indexSeBandSentence(band: IndexSeBand | null): string | null {
   return band === null ? null : INDEX_SE_BAND_SENTENCE[band];
 }
 
-/** "지난 12개월 변화 +15.7% · 서울 12.7%" */
-export function changeHeadline(dongPct: number | null, seoulPct: number | null): string {
-  return `지난 12개월 변화 ${formatPct(dongPct)} · 서울 ${formatPct(seoulPct)}`;
+/** "2026Q2" -> "2025년 2분기 → 2026년 2분기" */
+export function formatTwelveMonthRange(quarter: string): string {
+  return `${formatQuarter(shiftQuarter(quarter, -4))} → ${formatQuarter(quarter)}`;
+}
+
+/** 변화율 숫자를 초보자가 읽을 수 있는 한 문장으로 바꾼다. */
+export function changeMeaningSentence(value: number | null): string {
+  if (value === null || Number.isNaN(value)) {
+    return "이 기간의 가격 지수 변화를 계산할 수 없어요.";
+  }
+  if (value > 0) {
+    return `이 동의 전반적인 가격 수준이 1년 전보다 ${formatAbsPct(value)} 높게 관측됐다는 뜻이에요.`;
+  }
+  if (value < 0) {
+    return `이 동의 전반적인 가격 수준이 1년 전보다 ${formatAbsPct(value)} 낮게 관측됐다는 뜻이에요.`;
+  }
+  return "이 동의 전반적인 가격 수준이 1년 전과 같게 관측됐다는 뜻이에요.";
 }
 
 /** 서울 평균과의 차이. 구분되지 않으면 값 대신 그렇다고 적는다 */
@@ -90,7 +105,7 @@ export const FOOTNOTES = {
   change: "변화율은 동 가격 지수 기준이에요. 서울 평균 자체의 오차는 표시하지 않아요.",
   peak: "동 가격 지수 기준이에요. 단지별 신고가와 달라요.",
   redevelop: "2026년 6월 자료예요. 해제·완료된 구역은 반영되지 않았어요.",
-  map: "색은 표본 상태와 구조 유형이에요. 변화율이 아니에요.",
+  map: "색은 표본 상태와 클러스터 구분이에요. 변화율이 아니에요.",
   fallback: "샘플 데이터예요. 실제 수치가 아니에요.",
   service: "이 화면은 지나간 거래를 정리한 것이고, 매수·매도 판단을 대신하지 않아요.",
 } as const;
@@ -101,6 +116,24 @@ export function sampleFootnote(meta: Meta): string {
 
 export function structureFootnote(meta: Meta): string {
   return `가격·전세가율·세대수·신축·위치가 비슷한 동끼리 묶은 결과예요. ${meta.cluster_as_of} 기준이고 시장 상황에 따라 바뀔 수 있어요.`;
+}
+
+const CLUSTER_FILTER_LABEL: Record<string, string> = {
+  "평당가 높음 · 강남 7km대": "가격대 높음 · 강남 가까움",
+  "강남 13km대 · 도심 9km대": "강남·도심에서 먼 편",
+  "신축 비중 높음 · 아파트 세대수 적음": "신축 많음 · 아파트 세대 적음",
+  "아파트 세대수 적음 · 도심 3km대": "아파트 세대 적음 · 도심 가까움",
+};
+
+/** 모델 산출 설명을 상세 필터에서 바로 이해할 수 있는 이름으로 바꾼다. */
+export function compactClusterDesc(description: string): string {
+  return (
+    CLUSTER_FILTER_LABEL[description] ??
+    description
+      .replaceAll("아파트 세대수", "아파트 세대")
+      .replaceAll("신축 비중 높음", "신축 많음")
+      .replaceAll("평당가", "가격대")
+  );
 }
 
 /** 변화율은 항상 부호를 붙여 보여준다. 값이 없으면 "-" */

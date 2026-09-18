@@ -141,6 +141,13 @@ export async function fetchDongs(asOfQuarter: string): Promise<DongSummary[]> {
     structure_type: row.structure_type ?? null,
     structure_desc: row.structure_desc ?? null,
     tags: tags[at],
+    tag_sort_values: {
+      "정비사업 정보 있음": numberOrNull(row.redevelop_zone_count),
+      "거래 많은 동": numberOrNull(row.n_sales_4q),
+      "전세가율 높은 동": numberOrNull(row.jeonse_ratio_4q),
+      "최근 준공 많은 동": numberOrNull(row.completed_share_8q),
+      "30년 이상 단지 많은 동": numberOrNull(row.old30_share_4q),
+    },
   }));
 }
 
@@ -503,7 +510,7 @@ async function fetchComplexes(sggCd: string, umdNm: string): Promise<Complex[]> 
   }));
 }
 
-/** 지도 마커용 동 대표 좌표. 경계 GeoJSON이 없어 최근 거래 단지 좌표의 평균을 쓴다. */
+/** 지도 라벨과 경계가 없는 동의 대체 위치에 쓰는 동 대표 좌표. */
 export async function fetchDongCenters(): Promise<Record<string, { lat: number; lng: number }>> {
   const rows = await query<{ dong: string; lat: number; lng: number }>(
     `with pairs as (

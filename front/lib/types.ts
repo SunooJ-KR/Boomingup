@@ -22,6 +22,8 @@ export type DongSummary = {
   structure_type: number | null;
   structure_desc: string | null;
   tags?: string[];
+  /** 지역 태그 선택 뒤 내림차순 정렬에 쓰는 원래 관측값 */
+  tag_sort_values?: Record<string, number | null>;
 };
 
 /** 표본 상태. 이 값이 없으면 변화율을 읽는 기준도 없다 */

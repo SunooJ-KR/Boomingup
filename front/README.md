@@ -6,7 +6,8 @@
 
 ```bash
 npm install
-npm run dev      # 개발 서버 (http://localhost:3000)
+npm run dev      # 개발 서버 및 Kakao 지도 확인 (http://localhost:3000)
+npm run dev:test # 테스트 전용 서버 (http://localhost:3001)
 npm run typecheck
 npm run test     # 필터·파생 로직 단위 테스트
 npm run build
@@ -54,6 +55,7 @@ KAKAO_JS_KEY=...                         # 없으면 지도는 좌표 미리보�
 
 ## 지도
 
-법정동 경계 GeoJSON 대신 최근 매매가 있는 단지 좌표의 평균을 동 대표 좌표로 쓴다(결정 21).
+지도는 `public/data/dong-boundary.geojson`과 `gu-boundary.geojson`의 경계를 먼저 사용한다.
+단지 좌표 평균은 경계 라벨 위치와 경계가 없는 서비스 동의 대체 위치에만 쓴다(결정 59).
 Kakao SDK는 클라이언트에서만 불러오고, 키가 없거나 로딩이 실패하면 좌표 미리보기로 폴백한다.
 실제 지도를 확인하려면 Kakao 개발자 콘솔에 실행 도메인(`http://localhost:3000` 등)을 등록해야 한다.

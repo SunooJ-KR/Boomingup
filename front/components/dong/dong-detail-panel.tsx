@@ -4,6 +4,7 @@ import { ComplexList } from "@/components/dong/complex-list";
 import { EmptyState } from "@/components/dong/empty-state";
 import { FactsPanel } from "@/components/dong/facts-panel";
 import { FlowsCard } from "@/components/dong/flows-card";
+import { InterpretationGuide } from "@/components/dong/interpretation-guide";
 import { PeersCard } from "@/components/dong/peers-card";
 import { SampleCard } from "@/components/dong/sample-card";
 import { StructureCard } from "@/components/dong/structure-card";
@@ -81,6 +82,7 @@ export function DongDetailPanel({
     <div className="animate-rise-in space-y-3">
       {header}
 
+      <InterpretationGuide />
       <SampleCard sample={detail.sample} meta={meta} />
       <ChangeCard change={detail.change} reference={detail.reference} meta={meta} />
       <FlowsCard flows={detail.flows} />

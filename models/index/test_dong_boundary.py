@@ -28,12 +28,12 @@ spec.loader.exec_module(boundary)
 # ============================================================================
 
 def project_ring(ring: list[list[float]], transformer: Transformer) -> list[tuple[float, float]]:
-    """경위도 링을 원천 EPSG:5179 좌표로 바꾼다."""
+    """경위도 링을 원천 EPSG:5186 좌표로 바꾼다."""
     return [transformer.transform(longitude, latitude) for longitude, latitude in ring]
 
 
-to_5179 = Transformer.from_crs("EPSG:4326", "EPSG:5179", always_xy=True)
-to_4326 = Transformer.from_crs("EPSG:5179", "EPSG:4326", always_xy=True)
+to_5186 = Transformer.from_crs("EPSG:4326", "EPSG:5186", always_xy=True)
+to_4326 = Transformer.from_crs("EPSG:5186", "EPSG:4326", always_xy=True)
 
 # 원천 Shapefile 규약: 외곽은 시계 방향, 구멍은 반시계 방향이다.
 outer_one_ccw = [
@@ -49,14 +49,14 @@ outer_two_ccw = [
     [126.970000, 37.560000], [126.970000, 37.550000],
 ]
 source_rings = [list(reversed(outer_one_ccw)), hole_one_ccw, list(reversed(outer_two_ccw))]
-source_points = [point for ring in source_rings for point in project_ring(ring, to_5179)]
+source_points = [point for ring in source_rings for point in project_ring(ring, to_5186)]
 part_starts = []
 offset = 0
 for ring in source_rings:
     part_starts.append(offset)
     offset += len(ring)
 shape = SimpleNamespace(points=source_points, parts=part_starts)
-record = {"EMD_CD": "11110101", "EMD_KOR_NM": "청운동", "EMD_ENG_NM": "Cheongun-dong"}
+record = {"EMD_CD": "11110101", "COL_ADM_SE": "11110", "EMD_NM": "청운동"}
 
 
 # ============================================================================
@@ -72,14 +72,14 @@ assert properties == {
     "sgg_cd": "11110",
     "emd_cd": "11110101",
     "umd_nm": "청운동",
-    "eng_nm": "Cheongun-dong",
+    "eng_nm": "",
     "in_index": True,
 }
 assert geometry["type"] == "MultiPolygon"
 assert len(geometry["coordinates"]) == 2
 assert hole_count == 1
 
-# EPSG:5179 → EPSG:4326 결과는 [경도, 위도] 순서이고 소수점 여섯째 자리까지 저장된다.
+# EPSG:5186 → EPSG:4326 결과는 [경도, 위도] 순서이고 소수점 여섯째 자리까지 저장된다.
 first_longitude, first_latitude = geometry["coordinates"][0][0][0]
 assert (first_longitude, first_latitude) == (126.95, 37.55)
 

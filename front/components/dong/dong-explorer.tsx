@@ -12,10 +12,10 @@ import { Button } from "@/components/ui/button";
 import {
   EMPTY_FILTER,
   filterDongs,
-  isFilterActive,
   priceBandsOf,
   type DongFilter,
 } from "@/lib/filter";
+import { guSummariesOf } from "@/lib/gu";
 import { clampPage, fitPageSize, pageCount } from "@/lib/paginate";
 import type { DongDetail, DongSummary, Meta } from "@/lib/types";
 
@@ -31,7 +31,7 @@ type DongExplorerProps = {
   meta: Meta;
   guNames: string[];
   tags: string[];
-  /** 동 대표 좌표. 법정동 경계 GeoJSON이 없어 단지 좌표 평균을 쓴다 */
+  /** 경계 라벨과 경계가 없는 동의 대체 위치에 쓰는 동 대표 좌표 */
   centers: Record<string, { lat: number; lng: number }>;
   kakaoJsKey?: string;
 };
@@ -55,6 +55,7 @@ export function DongExplorer({
   const listBoxRef = useRef<HTMLDivElement>(null);
   const cache = useRef(new Map<string, DongDetail>());
 
+  const guSummaries = useMemo(() => guSummariesOf(dongs, centers), [dongs, centers]);
   const visibleDongs = useMemo(() => filterDongs(dongs, filter), [dongs, filter]);
   const priceBands = useMemo(() => priceBandsOf(dongs), [dongs]);
 
@@ -76,9 +77,31 @@ export function DongExplorer({
   const currentPage = clampPage(page, visibleDongs.length, pageSize);
   const pagedDongs = visibleDongs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  const changeFilter = useCallback((next: DongFilter) => {
-    setFilter(next);
+  const changeFilter = useCallback(
+    (next: DongFilter) => {
+      if (next.gu !== filter.gu) setSelectedId(null);
+      setFilter(next);
+      setPage(1);
+    },
+    [filter.gu],
+  );
+
+  const selectGu = useCallback((guName: string) => {
+    setFilter({ ...EMPTY_FILTER, gu: guName });
+    setSelectedId(null);
     setPage(1);
+  }, []);
+
+  const showAllGu = useCallback(() => {
+    setFilter(EMPTY_FILTER);
+    setSelectedId(null);
+    setPage(1);
+  }, []);
+
+  // 목록에서 동을 골라도 탐색 맥락은 유지하고 상세만 연다.
+  // 자치구 전환은 지도나 자치구 선택 상자에서 명시적으로 선택할 때만 일어난다.
+  const selectDong = useCallback((dongId: string) => {
+    setSelectedId(dongId);
   }, []);
 
   const changePage = useCallback((next: number) => {
@@ -108,12 +131,20 @@ export function DongExplorer({
     const observer = new ResizeObserver(measure);
     observer.observe(box);
     return () => observer.disconnect();
-  }, []);
+  }, [filter.gu]);
 
-  // 지도는 페이지와 상관없이 필터에 걸린 동을 전부 찍는다
+  // 지도는 페이지와 상관없이 필터에 걸린 동을 전부 찍는다.
+  // 상세의 함께 볼 동처럼 현재 필터 밖의 동을 골라도 선택 마커는 지도에 포함한다.
+  const mapDongs = useMemo(() => {
+    if (!selectedDong || visibleDongs.some((dong) => dong.dong_id === selectedDong.dong_id)) {
+      return visibleDongs;
+    }
+    return [...visibleDongs, selectedDong];
+  }, [selectedDong, visibleDongs]);
+
   const mapItems = useMemo<MapItem[]>(
     () =>
-      visibleDongs.flatMap((dong) => {
+      mapDongs.flatMap((dong) => {
         const center = centers[dong.dong_id];
         if (!center) return [];
         return [
@@ -128,8 +159,28 @@ export function DongExplorer({
           },
         ];
       }),
-    [visibleDongs, centers],
+    [mapDongs, centers],
   );
+
+  const guMapItems = useMemo<MapItem[]>(
+    () =>
+      guSummaries.flatMap((gu) =>
+        gu.center
+          ? [
+              {
+                id: gu.name,
+                title: gu.name,
+                lat: gu.center.lat,
+                lng: gu.center.lng,
+                structureType: null,
+                flagged: false,
+              },
+            ]
+          : [],
+      ),
+    [guSummaries],
+  );
+  const showDongMap = filter.gu !== null || selectedId !== null;
 
   // 상세는 API에서 선택 시점에 가져온다. 동이 300개가 넘어 첫 화면에 다 실어 보내지 않는다.
   useEffect(() => {
@@ -200,6 +251,7 @@ export function DongExplorer({
           <SearchPanel
             filter={filter}
             onChange={changeFilter}
+            onBack={filter.gu === null ? undefined : showAllGu}
             guNames={guNames}
             tags={tags}
             priceBands={priceBands}
@@ -214,15 +266,17 @@ export function DongExplorer({
               title="검색 조건에 맞는 동이 없어요."
               description="검색어를 줄이거나 필터를 풀어보세요."
               action={
-                isFilterActive(filter) ? (
-                  <Button variant="outline" size="sm" onClick={() => changeFilter(EMPTY_FILTER)}>
-                    필터 지우기
-                  </Button>
-                ) : undefined
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => changeFilter({ ...EMPTY_FILTER, gu: filter.gu })}
+                >
+                  필터 지우기
+                </Button>
               }
             />
           ) : (
-            <DongList dongs={pagedDongs} selectedId={selectedId} onSelect={setSelectedId} />
+            <DongList dongs={pagedDongs} selectedId={selectedId} onSelect={selectDong} />
           )}
         </div>
 
@@ -239,10 +293,13 @@ export function DongExplorer({
           </summary>
           <div className="mt-2 lg:mt-0">
             <MapPanel
-              items={mapItems}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
+              items={showDongMap ? mapItems : guMapItems}
+              selectedId={showDongMap ? selectedId : null}
+              onSelect={showDongMap ? selectDong : selectGu}
+              onReset={showAllGu}
               kakaoJsKey={kakaoJsKey}
+              itemKind={showDongMap ? "dong" : "gu"}
+              activeGuName={filter.gu}
             />
           </div>
         </details>
@@ -254,17 +311,23 @@ export function DongExplorer({
             등장 효과는 DongDetailPanel이 자기 안에서 건다. 스크롤 기준이 되는 요소에
             transform이 걸려 있으면 그만큼 어긋난 위치에 멈추기 때문이다.
             머리말에 가리지 않게 하는 여백은 globals.css의 scroll-padding-top이 맡는다. */}
-        <section ref={detailRef} aria-label="선택한 동 상세" aria-busy={detailState === "loading"}>
-          <DongDetailPanel
-            key={selectedId ?? "idle"}
-            dong={selectedDong}
-            detail={detail}
-            meta={meta}
-            state={detailState}
-            onRetry={retry}
-            onSelect={setSelectedId}
-          />
-        </section>
+        {selectedId !== null ? (
+          <section
+            ref={detailRef}
+            aria-label="선택한 동 상세"
+            aria-busy={detailState === "loading"}
+          >
+            <DongDetailPanel
+              key={selectedId ?? "idle"}
+              dong={selectedDong}
+              detail={detail}
+              meta={meta}
+              state={detailState}
+              onRetry={retry}
+              onSelect={selectDong}
+            />
+          </section>
+        ) : null}
       </div>
     </div>
   );

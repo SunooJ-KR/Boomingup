@@ -2,7 +2,20 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { FOOTNOTES } from "@/lib/format";
+import {
+  boundaryId,
+  boundsOfFeatures,
+  polygonsOf,
+  tightBoundsOfFeatures,
+  visibleBoundaries,
+  type BoundaryData,
+  type BoundaryFeature,
+  type DongBoundaryFeature,
+  type FeatureCollection,
+  type GuBoundaryFeature,
+} from "@/lib/boundary";
 import { boundsOf, projectToBounds, type Bounds } from "@/lib/map";
 import { cn } from "@/lib/utils";
 
@@ -22,27 +35,88 @@ type MapPanelProps = {
   items: MapItem[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onReset: () => void;
   kakaoJsKey?: string;
+  itemKind?: "gu" | "dong";
+  activeGuName?: string | null;
 };
 
 type Mode = "loading" | "kakao" | "fallback";
 
 const SDK_TIMEOUT_MS = 8000;
 const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 };
+/** 카카오 지도는 숫자가 작을수록 확대된다. 동과 주변을 함께 볼 수 있는 수준이다. */
+const SELECTED_DONG_LEVEL = 5;
 
-export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelProps) {
+export function MapPanel({
+  items,
+  selectedId,
+  onSelect,
+  onReset,
+  kakaoJsKey,
+  itemKind = "dong",
+  activeGuName,
+}: MapPanelProps) {
   const [mode, setMode] = useState<Mode>(kakaoJsKey ? "loading" : "fallback");
+  const [boundaryData, setBoundaryData] = useState<BoundaryData | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const hoverLabelRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<KakaoMap | null>(null);
-  const overlaysRef = useRef(new Map<string, KakaoOverlay>());
+  const polygonsRef = useRef<KakaoPolygon[]>([]);
+  const polygonsByIdRef = useRef(new Map<string, KakaoPolygon[]>());
+  const hoveredAreaIdRef = useRef<string | null>(null);
   // 마커 DOM은 매번 다시 만들지 않으므로 최신 콜백을 ref로 들고 있는다
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
-  // 동을 고를 때는 목록이 바뀐 것이 아니므로 범위를 다시 잡지 않는다
-  const itemsRef = useRef(items);
-  itemsRef.current = items;
 
-  const bounds = useMemo(() => boundsOf(items), [items]);
+  const itemBounds = useMemo(() => boundsOf(items), [items]);
+  const itemIds = useMemo(() => items.map((item) => item.id), [items]);
+  const itemTitles = useMemo(() => new Map(items.map((item) => [item.id, item.title])), [items]);
+  const boundaryFeatures = useMemo(
+    () => boundaryData ? visibleBoundaries(boundaryData, itemKind, itemIds, activeGuName) : [],
+    [activeGuName, boundaryData, itemIds, itemKind],
+  );
+  const boundaryBounds = useMemo(
+    () => itemKind === "gu"
+      ? tightBoundsOfFeatures(boundaryFeatures)
+      : boundsOfFeatures(boundaryFeatures),
+    [boundaryFeatures, itemKind],
+  );
+  const mapBounds = boundaryBounds ?? itemBounds;
+  const selectedItem = useMemo(
+    () => items.find((item) => item.id === selectedId) ?? null,
+    [items, selectedId],
+  );
+  const selectedBoundary = useMemo(
+    () => boundaryFeatures.find((feature) => boundaryId(feature) === selectedId) ?? null,
+    [boundaryFeatures, selectedId],
+  );
+  const selectedBoundaryBounds = useMemo(
+    () => selectedBoundary ? boundsOfFeatures([selectedBoundary]) : null,
+    [selectedBoundary],
+  );
+  const previewBounds = useMemo(
+    () => selectedBoundaryBounds ?? (selectedItem ? boundsOf([selectedItem]) : mapBounds),
+    [mapBounds, selectedBoundaryBounds, selectedItem],
+  );
+  const previewItems = useMemo(
+    () => (selectedItem ? [selectedItem] : items),
+    [items, selectedItem],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    loadBoundaryData()
+      .then((data) => {
+        if (!cancelled) setBoundaryData(data);
+      })
+      .catch(() => {
+        // 경계가 실패해도 기존 라벨 지도는 계속 쓸 수 있다.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!kakaoJsKey) return;
@@ -66,34 +140,86 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
     };
   }, [kakaoJsKey]);
 
-  // ponytail: 마커를 그릴 때마다 다시 만든다. 동은 최대 346개라 이 정도면 충분하고,
-  // 더 늘어나면 MarkerClusterer와 bounds 기준 렌더링으로 올린다.
+  // 자치구·법정동 면을 라벨보다 먼저 그린다. 선택 가능한 영역은 면을 눌러도 같은 동작을 한다.
   useEffect(() => {
     const kakao = getKakao();
     const map = mapRef.current;
     if (mode !== "kakao" || !kakao || !map) return;
 
-    overlaysRef.current.forEach((overlay) => overlay.setMap(null));
-    overlaysRef.current.clear();
+    polygonsRef.current.forEach((polygon) => polygon.setMap(null));
+    polygonsRef.current = [];
+    polygonsByIdRef.current.clear();
+    const selectableIds = new Set(itemIds);
 
-    items.forEach((item) => {
-      const marker = document.createElement("button");
-      marker.type = "button";
-      marker.title = item.title;
-      marker.setAttribute("aria-label", `${item.title} 선택`);
-      marker.textContent = item.title;
-      marker.className = markerClassName(item, item.id === selectedId);
-      marker.addEventListener("click", () => onSelectRef.current(item.id));
-
-      const overlay = new kakao.maps.CustomOverlay({
-        position: new kakao.maps.LatLng(item.lat, item.lng),
-        content: marker,
-        zIndex: item.id === selectedId ? 10 : 1,
+    boundaryFeatures.forEach((feature) => {
+      const id = boundaryId(feature);
+      const selected = id === selectedId;
+      polygonsOf(feature.geometry).forEach((rings) => {
+        const polygon = new kakao.maps.Polygon({
+          path: rings.map((ring) => ring.map(([lng, lat]) => new kakao.maps.LatLng(lat, lng))),
+          strokeWeight: selected ? 1.5 : 1,
+          strokeColor: selected ? "#4136e8" : itemKind === "gu" ? "#525866" : "#70798b",
+          strokeOpacity: selected ? 0.95 : itemKind === "gu" ? 0.72 : 0.48,
+          strokeStyle: "solid",
+          fillColor: selected || itemKind === "gu" ? "#4136e8" : "#ffffff",
+          fillOpacity: selected ? 0.16 : itemKind === "gu" ? 0.035 : 0.01,
+        });
+        if (selectableIds.has(id)) {
+          kakao.maps.event.addListener(polygon, "click", () => {
+            hideMapAreaLabel(hoverLabelRef.current);
+            onSelectRef.current(id);
+          });
+          kakao.maps.event.addListener(polygon, "mouseover", (mouseEvent) => {
+            const previousId = hoveredAreaIdRef.current;
+            if (previousId && previousId !== id) {
+              setMapAreaActive(previousId, previousId === selectedId, itemKind, polygonsByIdRef.current);
+            }
+            hoveredAreaIdRef.current = id;
+            setMapAreaActive(
+              id,
+              true,
+              itemKind,
+              polygonsByIdRef.current,
+            );
+            showMapAreaLabel(
+              hoverLabelRef.current,
+              itemTitles.get(id) ?? id,
+              map,
+              mouseEvent.latLng,
+            );
+          });
+          kakao.maps.event.addListener(polygon, "mousemove", (mouseEvent) => {
+            if (hoveredAreaIdRef.current !== id) return;
+            positionMapAreaLabel(hoverLabelRef.current, map, mouseEvent.latLng);
+          });
+          kakao.maps.event.addListener(polygon, "mouseout", () => {
+            if (hoveredAreaIdRef.current !== id) return;
+            hoveredAreaIdRef.current = null;
+            setMapAreaActive(
+              id,
+              selected,
+              itemKind,
+              polygonsByIdRef.current,
+            );
+            hideMapAreaLabel(hoverLabelRef.current);
+          });
+        }
+        polygon.setMap(map);
+        polygonsRef.current.push(polygon);
+        const sameAreaPolygons = polygonsByIdRef.current.get(id) ?? [];
+        sameAreaPolygons.push(polygon);
+        polygonsByIdRef.current.set(id, sameAreaPolygons);
       });
-      overlay.setMap(map);
-      overlaysRef.current.set(item.id, overlay);
     });
-  }, [items, mode, selectedId]);
+
+    return () => {
+      hoveredAreaIdRef.current = null;
+      hideMapAreaLabel(hoverLabelRef.current);
+      polygonsRef.current.forEach((polygon) => polygon.setMap(null));
+      polygonsRef.current = [];
+      polygonsByIdRef.current.clear();
+    };
+  }, [boundaryFeatures, itemIds, itemKind, itemTitles, mode, selectedId]);
 
   // 선택한 동이 화면 밖이면 지도를 옮긴다
   // 자치구를 고르는 등 조건이 바뀌어 보이는 동이 달라지면 그 범위로 지도를 맞춘다
@@ -103,31 +229,44 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
     if (mode !== "kakao" || !kakao || !map || items.length === 0) return;
     map.setBounds(
       new kakao.maps.LatLngBounds(
-        new kakao.maps.LatLng(bounds.minLat, bounds.minLng),
-        new kakao.maps.LatLng(bounds.maxLat, bounds.maxLng),
+        new kakao.maps.LatLng(mapBounds.minLat, mapBounds.minLng),
+        new kakao.maps.LatLng(mapBounds.maxLat, mapBounds.maxLng),
       ),
     );
-  }, [bounds, items.length, mode]);
+  }, [items.length, mapBounds, mode]);
 
-  // 동을 고르면 확대 수준은 그대로 두고 그 동이 가운데에 오게만 옮긴다
+  // 동을 고르면 실제 경계가 모두 보이는 범위로 맞춘다. 경계가 없을 때만 대표 좌표를 쓴다.
   useEffect(() => {
     const kakao = getKakao();
     const map = mapRef.current;
-    if (mode !== "kakao" || !kakao || !map || !selectedId) return;
-    const selected = itemsRef.current.find((item) => item.id === selectedId);
-    if (!selected) return;
-    map.panTo(new kakao.maps.LatLng(selected.lat, selected.lng));
-  }, [selectedId, mode]);
+    if (mode !== "kakao" || !kakao || !map || itemKind !== "dong") return;
+    if (selectedBoundaryBounds) {
+      map.setBounds(
+        new kakao.maps.LatLngBounds(
+          new kakao.maps.LatLng(selectedBoundaryBounds.minLat, selectedBoundaryBounds.minLng),
+          new kakao.maps.LatLng(selectedBoundaryBounds.maxLat, selectedBoundaryBounds.maxLng),
+        ),
+      );
+      return;
+    }
+    if (!selectedItem) return;
+    const position = new kakao.maps.LatLng(selectedItem.lat, selectedItem.lng);
+    map.setLevel(Math.min(map.getLevel(), SELECTED_DONG_LEVEL), {
+      anchor: position,
+      animate: true,
+    });
+    map.panTo(position);
+  }, [itemKind, mode, selectedBoundaryBounds, selectedItem]);
 
   return (
     // 좌측 동 목록 열과 같은 높이에서 --map-peek만큼 줄인다.
     // 지도로 화면이 꽉 차 보이지 않게 하고, 아래에 상세가 이어진다는 것도 함께 보여 준다
-    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-panel lg:flex lg:h-[calc(var(--app-column-h)-var(--map-peek))] lg:flex-col">
+    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-panel">
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">지도</p>
         <p className="text-xs text-muted-foreground">
           {mode === "kakao"
-            ? `${items.length}개 동`
+            ? `${items.length}개 ${itemKind === "gu" ? "자치구" : "법정동"}`
             : mode === "loading"
               ? "지도를 불러오고 있어요"
               : "좌표 미리보기"}
@@ -135,13 +274,32 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
       </div>
 
       {mode === "kakao" || mode === "loading" ? (
-        <div ref={containerRef} className="h-[320px] w-full bg-muted lg:h-auto lg:min-h-0 lg:flex-1" />
+        <div className="relative aspect-square w-full bg-muted">
+          <div ref={containerRef} className="absolute inset-0" />
+          <div
+            ref={hoverLabelRef}
+            aria-hidden="true"
+            className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-[calc(100%+0.75rem)] rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground opacity-0 shadow-float transition-opacity duration-100"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="absolute bottom-4 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap bg-card shadow-float"
+            onClick={onReset}
+          >
+            검색 초기화
+          </Button>
+        </div>
       ) : (
         <FallbackPreview
-          items={items}
-          bounds={bounds}
+          items={previewItems}
+          bounds={previewBounds}
           selectedId={selectedId}
           onSelect={onSelect}
+          onReset={onReset}
+          itemKind={itemKind}
+          boundaries={boundaryFeatures}
         />
       )}
 
@@ -153,7 +311,11 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
 
       {items.length === 0 ? (
         <p className="shrink-0 border-t border-border px-3 py-2 text-xs text-muted-foreground">
-          보여줄 좌표가 없어요. 목록에서 동을 선택해주세요.
+          보여줄 좌표가 없어요. 왼쪽 목록에서 지역을 선택해주세요.
+        </p>
+      ) : itemKind === "gu" ? (
+        <p className="shrink-0 border-t border-border px-3 py-2 text-xs text-muted-foreground">
+          자치구를 선택하면 해당 지역으로 확대되고 법정동이 나타나요.
         </p>
       ) : (
         <p className="shrink-0 border-t border-border px-3 py-2 text-xs text-muted-foreground">
@@ -169,9 +331,46 @@ function FallbackPreview({
   bounds,
   selectedId,
   onSelect,
-}: Omit<MapPanelProps, "kakaoJsKey"> & { bounds: Bounds }) {
+  onReset,
+  itemKind = "dong",
+  boundaries,
+}: Omit<MapPanelProps, "kakaoJsKey"> & {
+  bounds: Bounds;
+  boundaries: BoundaryFeature[];
+}) {
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const selectableIds = new Set(items.map((item) => item.id));
   return (
-    <div className="relative h-[320px] w-full bg-muted lg:h-auto lg:min-h-0 lg:flex-1">
+    <div className="relative aspect-square w-full bg-muted">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        className="absolute inset-0 h-full w-full"
+      >
+        {boundaries.map((feature) => {
+          const id = boundaryId(feature);
+          const selected = id === selectedId;
+          const active = selected || id === hoveredId;
+          return (
+            <path
+              key={id}
+              d={boundaryPath(feature, bounds)}
+              fill={active || itemKind === "gu" ? "#4136e8" : "#ffffff"}
+              fillOpacity={active ? 0.2 : itemKind === "gu" ? 0.035 : 0.01}
+              fillRule="evenodd"
+              stroke={active ? "#4136e8" : itemKind === "gu" ? "#525866" : "#70798b"}
+              strokeOpacity={active ? 0.95 : itemKind === "gu" ? 0.72 : 0.48}
+              strokeWidth={active ? 0.65 : 0.4}
+              vectorEffect="non-scaling-stroke"
+              onClick={selectableIds.has(id) ? () => onSelect(id) : undefined}
+              onMouseEnter={selectableIds.has(id) ? () => setHoveredId(id) : undefined}
+              onMouseLeave={selectableIds.has(id) ? () => setHoveredId(null) : undefined}
+              className={selectableIds.has(id) ? "cursor-pointer transition-[fill-opacity,stroke] duration-150" : undefined}
+            />
+          );
+        })}
+      </svg>
       {items.map((item) => {
         const { x, y } = projectToBounds(item, bounds);
         return (
@@ -181,18 +380,43 @@ function FallbackPreview({
             title={item.title}
             aria-label={`${item.title} 선택`}
             onClick={() => onSelect(item.id)}
+            onFocus={() => setHoveredId(item.id)}
+            onBlur={() => setHoveredId(null)}
             style={{ left: `${x}%`, top: `${y}%` }}
             className={cn(
               "absolute -translate-x-1/2 -translate-y-1/2",
-              markerClassName(item, item.id === selectedId),
+              markerClassName(
+                item,
+                item.id === selectedId,
+                itemKind,
+                item.id === selectedId || hoveredId === item.id,
+              ),
             )}
           >
             {item.title}
           </button>
         );
       })}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="absolute bottom-4 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap bg-card shadow-float"
+        onClick={onReset}
+      >
+        검색 초기화
+      </Button>
     </div>
   );
+}
+
+function boundaryPath(feature: BoundaryFeature, bounds: Bounds): string {
+  return polygonsOf(feature.geometry)
+    .flatMap((polygon) => polygon.map((ring) => {
+      const points = ring.map(([lng, lat]) => projectToBounds({ lat, lng }, bounds));
+      return points.map(({ x, y }, index) => `${index === 0 ? "M" : "L"}${x} ${y}`).join(" ") + " Z";
+    }))
+    .join(" ");
 }
 
 /**
@@ -202,18 +426,78 @@ function FallbackPreview({
 const STRUCTURE_BG = ["bg-structure-0", "bg-structure-1", "bg-structure-2", "bg-structure-3"];
 
 /** 색은 구조 유형, 흐린 정도는 표본 주의 여부다. 변화율로는 색칠하지 않는다. */
-function markerClassName(item: MapItem, selected: boolean) {
+function markerClassName(
+  item: MapItem,
+  selected: boolean,
+  itemKind: "gu" | "dong",
+  active = false,
+) {
+  if (itemKind === "gu") {
+    return cn(
+      "pointer-events-none rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-float transition-[opacity,transform] duration-150 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring",
+      active ? "scale-100 opacity-100" : "scale-95 opacity-0",
+      selected ? "scale-110 ring-2 ring-ring" : "",
+    );
+  }
+
   const background =
     item.structureType === null
       ? "bg-neutral-strong"
       : (STRUCTURE_BG[item.structureType] ?? "bg-neutral-strong");
 
   return cn(
-    "rounded-sm px-1.5 py-0.5 text-[11px] font-medium text-primary-foreground shadow-float transition-transform duration-150",
+    "pointer-events-none rounded-sm px-1.5 py-0.5 text-[11px] font-medium text-primary-foreground shadow-float transition-[opacity,transform] duration-150 focus-visible:ring-2 focus-visible:ring-ring",
     background,
-    item.flagged ? "opacity-60" : "",
+    active ? (item.flagged ? "opacity-60" : "opacity-100") : "scale-95 opacity-0",
     selected ? "scale-110 ring-2 ring-ring" : "",
   );
+}
+
+function setMapAreaActive(
+  id: string,
+  active: boolean,
+  itemKind: "gu" | "dong",
+  polygonsById: Map<string, KakaoPolygon[]>,
+) {
+  polygonsById.get(id)?.forEach((polygon) => {
+    polygon.setOptions({
+      strokeWeight: active ? 1.5 : 1,
+      strokeColor: active ? "#4136e8" : itemKind === "gu" ? "#525866" : "#70798b",
+      strokeOpacity: active ? 0.95 : itemKind === "gu" ? 0.72 : 0.48,
+      fillColor: active || itemKind === "gu" ? "#4136e8" : "#ffffff",
+      fillOpacity: active ? 0.2 : itemKind === "gu" ? 0.035 : 0.01,
+    });
+  });
+}
+
+function showMapAreaLabel(
+  label: HTMLDivElement | null,
+  title: string,
+  map: KakaoMap,
+  position: KakaoLatLng,
+) {
+  if (!label) return;
+  label.textContent = title;
+  positionMapAreaLabel(label, map, position);
+  label.classList.remove("opacity-0");
+  label.classList.add("opacity-100");
+}
+
+function positionMapAreaLabel(
+  label: HTMLDivElement | null,
+  map: KakaoMap,
+  position: KakaoLatLng,
+) {
+  if (!label) return;
+  const point = map.getProjection().containerPointFromCoords(position);
+  label.style.left = `${point.x}px`;
+  label.style.top = `${point.y}px`;
+}
+
+function hideMapAreaLabel(label: HTMLDivElement | null) {
+  if (!label) return;
+  label.classList.remove("opacity-100");
+  label.classList.add("opacity-0");
 }
 
 /* ---------------------------------------------------------------- */
@@ -223,21 +507,50 @@ function markerClassName(item: MapItem, selected: boolean) {
 type KakaoLatLng = object;
 type KakaoLatLngBounds = object;
 type KakaoMap = {
+  getLevel: () => number;
+  getProjection: () => KakaoMapProjection;
   panTo: (latlng: KakaoLatLng) => void;
+  setLevel: (
+    level: number,
+    options?: { anchor?: KakaoLatLng; animate?: boolean | { duration: number } },
+  ) => void;
   setBounds: (bounds: KakaoLatLngBounds) => void;
 };
-type KakaoOverlay = { setMap: (map: KakaoMap | null) => void };
+type KakaoPoint = { x: number; y: number };
+type KakaoMapProjection = { containerPointFromCoords: (latlng: KakaoLatLng) => KakaoPoint };
+type KakaoMouseEvent = { latLng: KakaoLatLng };
+type KakaoPolygon = {
+  setMap: (map: KakaoMap | null) => void;
+  setOptions: (options: {
+    strokeWeight: number;
+    strokeColor: string;
+    strokeOpacity: number;
+    fillColor: string;
+    fillOpacity: number;
+  }) => void;
+};
 type Kakao = {
   maps: {
     load: (callback: () => void) => void;
     Map: new (container: HTMLElement, options: { center: KakaoLatLng; level: number }) => KakaoMap;
     LatLng: new (lat: number, lng: number) => KakaoLatLng;
     LatLngBounds: new (sw: KakaoLatLng, ne: KakaoLatLng) => KakaoLatLngBounds;
-    CustomOverlay: new (options: {
-      position: KakaoLatLng;
-      content: HTMLElement;
-      zIndex: number;
-    }) => KakaoOverlay;
+    Polygon: new (options: {
+      path: KakaoLatLng[][];
+      strokeWeight: number;
+      strokeColor: string;
+      strokeOpacity: number;
+      strokeStyle: "solid";
+      fillColor: string;
+      fillOpacity: number;
+    }) => KakaoPolygon;
+    event: {
+      addListener: (
+        target: KakaoPolygon,
+        event: "click" | "mouseover" | "mousemove" | "mouseout",
+        handler: (event: KakaoMouseEvent) => void,
+      ) => void;
+    };
   };
 };
 
@@ -246,6 +559,27 @@ function getKakao(): Kakao | null {
 }
 
 let sdkPromise: Promise<Kakao> | null = null;
+let boundaryPromise: Promise<BoundaryData> | null = null;
+
+function loadBoundaryData(): Promise<BoundaryData> {
+  if (boundaryPromise) return boundaryPromise;
+
+  boundaryPromise = Promise.all([
+    fetch("/data/dong-boundary.geojson").then(readGeoJson<DongBoundaryFeature>),
+    fetch("/data/gu-boundary.geojson").then(readGeoJson<GuBoundaryFeature>),
+  ])
+    .then(([dongs, gus]) => ({ dongs: dongs.features, gus: gus.features }))
+    .catch((error) => {
+      boundaryPromise = null;
+      throw error;
+    });
+  return boundaryPromise;
+}
+
+function readGeoJson<T extends BoundaryFeature>(response: Response): Promise<FeatureCollection<T>> {
+  if (!response.ok) throw new Error(`경계 조회 실패: ${response.status}`);
+  return response.json() as Promise<FeatureCollection<T>>;
+}
 
 function loadKakaoSdk(key: string): Promise<Kakao> {
   if (sdkPromise) return sdkPromise;

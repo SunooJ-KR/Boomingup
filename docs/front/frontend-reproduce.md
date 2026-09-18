@@ -186,7 +186,7 @@ script.src =
 3. `kakao.maps.load()` 콜백 안에서 `new kakao.maps.Map()`을 만든다.
 4. item별로 `CustomOverlay`에 버튼 DOM을 넣어 접근 가능한 마커를 만든다.
 5. 넓은 줌에서는 `MarkerClusterer`에 오버레이를 넣어 숫자 묶음으로 표시한다.
-6. 선택된 item이 화면 밖이면 `map.panTo()`로 이동한다.
+6. 선택한 법정동이 있으면 `map.setLevel(5)`로 확대하고 `map.panTo()`로 중심을 옮긴다. 사용자가 이미 더 확대했다면 현재 수준을 유지한다.
 7. SDK 로드 실패 또는 timeout이면 좌표 미리보기로 폴백한다.
 
 Kakao 개발자 콘솔에는 실행 도메인을 등록해야 한다.
@@ -299,6 +299,6 @@ mobile:
 - Kakao 키가 있을 때 실제 지도와 마커가 보인다.
 - 현재 도메인이 Kakao JavaScript SDK 도메인에 등록되어 있다.
 - 마커 클릭 시 `selectedId`가 바뀐다.
-- 선택 item이 지도 화면 밖에 있을 때 `panTo()`로 이동한다.
+- 법정동을 선택하면 지도 레벨이 5 이하로 확대되고 `panTo()`로 중심이 이동한다.
 - 모바일 폭에서 검색, 지도, 상세 영역이 겹치지 않는다.
 - `prefers-reduced-motion: reduce`에서 애니메이션이 사실상 꺼진다.

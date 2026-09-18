@@ -1,13 +1,22 @@
 "use client";
 
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ArrowLeft, ChevronDown, Search } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { EMPTY_FILTER, isFilterActive, type DongFilter } from "@/lib/filter";
-import { formatManwon } from "@/lib/format";
+import {
+  EMPTY_FILTER,
+  hasDetailFilter,
+  regionTagLabel,
+  type DongFilter,
+} from "@/lib/filter";
+import { compactClusterDesc, formatManwon } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export type StructureOption = { type: number; desc: string };
+type FilterSectionId = "sample" | "price" | "cluster" | "tag";
 
 type SearchPanelProps = {
   filter: DongFilter;
@@ -19,6 +28,7 @@ type SearchPanelProps = {
   /** 구조 유형 칩. 번호 대신 자동 설명을 붙인다 */
   structureOptions: StructureOption[];
   resultCount: number;
+  onBack?: () => void;
 };
 
 export function SearchPanel({
@@ -29,11 +39,44 @@ export function SearchPanel({
   priceBands,
   structureOptions,
   resultCount,
+  onBack,
 }: SearchPanelProps) {
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [openFilterSection, setOpenFilterSection] = useState<FilterSectionId | null>(null);
+  const filterMenuRef = useRef<HTMLDivElement>(null);
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!filterOpen) return;
+
+    const closeOnPointerOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !filterMenuRef.current?.contains(event.target)) {
+        setFilterOpen(false);
+      }
+    };
+    const closeOnFocusOutside = (event: FocusEvent) => {
+      if (event.target instanceof Node && !filterMenuRef.current?.contains(event.target)) {
+        setFilterOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setFilterOpen(false);
+      filterButtonRef.current?.focus();
+    };
+
+    document.addEventListener("pointerdown", closeOnPointerOutside);
+    document.addEventListener("focusin", closeOnFocusOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnPointerOutside);
+      document.removeEventListener("focusin", closeOnFocusOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [filterOpen]);
+
   const toggleTag = (tag: string) => {
-    const next = filter.tags.includes(tag)
-      ? filter.tags.filter((item) => item !== tag)
-      : [...filter.tags, tag];
+    const next = filter.tags.includes(tag) ? [] : [tag];
     onChange({ ...filter, tags: next });
   };
 
@@ -54,56 +97,122 @@ export function SearchPanel({
     (filter.priceBand === null ? 0 : 1) +
     filter.structureTypes.length +
     filter.tags.length;
+  const refinementActive =
+    filter.query.trim() !== "" ||
+    hasDetailFilter(filter);
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-1.5">
-        <label htmlFor="dong-search" className="text-sm font-medium text-foreground">
-          법정동 검색
-        </label>
-        <Input
-          id="dong-search"
-          type="search"
-          placeholder="예: 개포동, 강남구"
-          value={filter.query}
-          onChange={(event) => onChange({ ...filter, query: event.target.value })}
-        />
+    <div className="space-y-3 rounded-lg border border-border bg-card p-4 shadow-panel">
+      {filter.gu !== null && onBack ? (
+        <div className="flex items-center justify-between gap-2 border-b border-border pb-3">
+          <Button variant="ghost" size="sm" onClick={onBack} className="-ml-3">
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            서울 전체
+          </Button>
+          <Badge variant="accent" className="px-2.5 py-1 text-sm">
+            {filter.gu}
+          </Badge>
+        </div>
+      ) : null}
+
+      <div>
+        <p className="text-xs font-semibold tracking-wide text-primary">지역 찾기</p>
+        <h2 className="mt-1 text-lg font-bold text-foreground">어느 동을 살펴볼까요?</h2>
       </div>
 
-      <div className="space-y-1.5">
-        <label htmlFor="dong-gu" className="text-sm font-medium text-foreground">
-          자치구
-        </label>
-        <select
-          id="dong-gu"
-          className="h-10 w-full rounded-md border border-border bg-input px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          value={filter.gu ?? ""}
-          onChange={(event) => onChange({ ...filter, gu: event.target.value || null })}
+      <div className="space-y-2">
+        <div className="flex items-end justify-between gap-2">
+          <label htmlFor="dong-search" className="text-sm font-bold text-foreground">
+            법정동 검색
+          </label>
+          <span className="text-xs text-muted-foreground">동 이름 또는 자치구 이름</span>
+        </div>
+        <div className="relative">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-primary"
+          />
+          <Input
+            id="dong-search"
+            type="search"
+            placeholder="예: 개포동, 강남구"
+            value={filter.query}
+            onChange={(event) => onChange({ ...filter, query: event.target.value })}
+            className="h-12 border-primary/40 bg-card pl-11 text-base shadow-sm transition-colors hover:border-primary focus-visible:border-primary"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2 rounded-md bg-muted p-3">
+        <label
+          htmlFor="dong-gu"
+          className="text-sm font-bold text-foreground"
         >
-          <option value="">전체</option>
-          {guNames.map((gu) => (
-            <option key={gu} value={gu}>
-              {gu}
-            </option>
-          ))}
-        </select>
+          자치구 선택
+        </label>
+        <div className="relative">
+          <select
+            id="dong-gu"
+            className="h-11 w-full appearance-none rounded-md border border-border bg-card px-3 pr-10 text-sm font-medium text-foreground shadow-sm hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            value={filter.gu ?? ""}
+            onChange={(event) => onChange({ ...filter, gu: event.target.value || null })}
+          >
+            <option value="">서울 전체</option>
+            {guNames.map((gu) => (
+              <option key={gu} value={gu}>
+                {gu}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            aria-hidden="true"
+            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          />
+        </div>
       </div>
 
-      {/* 칩이 좌측 열 높이의 절반쯤을 먹어 목록이 밀린다.
-          접어 두고 몇 개 걸렸는지만 알려준 뒤, 필요할 때 펼치게 한다. */}
-      {/* open을 값으로 넘기면 다시 그릴 때마다 React가 상태를 되돌려 펼친 칩이 접힌다.
-          열고 닫는 상태는 브라우저에 맡기고 여기서는 몇 개 걸렸는지만 알려준다. */}
-      <details className="rounded-md border border-border bg-card px-3 py-2">
-        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-foreground">
-          <span>상세 필터</span>
-          <span className="text-xs font-normal text-muted-foreground">
-            {detailCount > 0 ? `${detailCount}개 적용` : "전체"}
+      {/* 필터는 목록 높이를 줄이지 않도록 떠 있는 패널로 연다.
+          바깥 클릭·포커스 이동·Escape로 닫혀 별도 닫기 동작을 요구하지 않는다. */}
+      <div ref={filterMenuRef} className="relative">
+        <button
+          ref={filterButtonRef}
+          type="button"
+          aria-expanded={filterOpen}
+          aria-controls="condition-filter-menu"
+          onClick={() => setFilterOpen((open) => !open)}
+          className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2 text-sm font-bold text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+        >
+          <span>조건 필터</span>
+          <span className="flex items-center gap-2">
+            <Badge variant={detailCount > 0 ? "accent" : "neutral"}>
+              {detailCount > 0 ? `${detailCount}개 적용` : "선택 안 함"}
+            </Badge>
+            <ChevronDown
+              aria-hidden="true"
+              className={cn(
+                "size-4 text-muted-foreground transition-transform",
+                filterOpen && "rotate-180",
+              )}
+            />
           </span>
-        </summary>
+        </button>
 
-        <div className="space-y-4 pt-3">
-          <fieldset className="space-y-1.5">
-            <legend className="text-sm font-medium text-foreground">표본 상태</legend>
+        {filterOpen ? (
+          <div
+            id="condition-filter-menu"
+            role="region"
+            aria-label="조건 필터 세부 항목"
+            className="absolute inset-x-0 top-full z-30 mt-2 max-h-[min(45dvh,24rem)] space-y-1 overflow-y-auto overscroll-contain rounded-md border border-border bg-muted p-2 shadow-float"
+          >
+          <FilterSection
+            id="sample"
+            label="표본 상태"
+            selectedCount={filter.flagged === null ? 0 : 1}
+            open={openFilterSection === "sample"}
+            onToggle={() =>
+              setOpenFilterSection((current) => (current === "sample" ? null : "sample"))
+            }
+          >
             <div className="flex flex-wrap gap-1.5">
               <FilterChip
                 label="주의 없음"
@@ -120,11 +229,18 @@ export function SearchPanel({
                 }
               />
             </div>
-          </fieldset>
+          </FilterSection>
 
           {priceBands.length > 0 ? (
-            <fieldset className="space-y-1.5">
-              <legend className="text-sm font-medium text-foreground">㎡당 매매 중앙가</legend>
+            <FilterSection
+              id="price"
+              label="㎡당 매매 중앙가"
+              selectedCount={filter.priceBand === null ? 0 : 1}
+              open={openFilterSection === "price"}
+              onToggle={() =>
+                setOpenFilterSection((current) => (current === "price" ? null : "price"))
+              }
+            >
               <div className="flex flex-wrap gap-1.5">
                 {priceBands.map((band) => (
                   <FilterChip
@@ -137,55 +253,125 @@ export function SearchPanel({
                   />
                 ))}
               </div>
-            </fieldset>
+            </FilterSection>
           ) : null}
 
           {structureOptions.length > 0 ? (
-            <fieldset className="space-y-1.5">
-              <legend className="text-sm font-medium text-foreground">구조 유형</legend>
+            <FilterSection
+              id="cluster"
+              label="클러스터"
+              selectedCount={filter.structureTypes.length}
+              open={openFilterSection === "cluster"}
+              onToggle={() =>
+                setOpenFilterSection((current) =>
+                  current === "cluster" ? null : "cluster",
+                )
+              }
+            >
               <div className="flex flex-wrap gap-1.5">
                 {structureOptions.map((option) => (
                   <FilterChip
                     key={option.type}
-                    label={option.desc}
+                    label={compactClusterDesc(option.desc)}
                     active={filter.structureTypes.includes(option.type)}
                     onClick={() => toggleStructure(option.type)}
                   />
                 ))}
               </div>
-            </fieldset>
+            </FilterSection>
           ) : null}
 
           {tags.length > 0 ? (
-            <fieldset className="space-y-1.5">
-              <legend className="text-sm font-medium text-foreground">지역 태그</legend>
+            <FilterSection
+              id="tag"
+              label="지역 태그 정렬"
+              selectedCount={filter.tags.length}
+              open={openFilterSection === "tag"}
+              onToggle={() =>
+                setOpenFilterSection((current) => (current === "tag" ? null : "tag"))
+              }
+            >
               <div className="flex flex-wrap gap-1.5">
                 {tags.map((tag) => (
                   <FilterChip
                     key={tag}
-                    label={tag}
+                    label={regionTagLabel(tag)}
                     active={filter.tags.includes(tag)}
                     onClick={() => toggleTag(tag)}
                   />
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                태그는 동네에서 관측된 특징이에요. 좋고 나쁨을 뜻하지 않아요.
+                하나를 선택하면 해당 특징이 두드러진 동을 많은 값부터 보여줘요.
               </p>
-            </fieldset>
+            </FilterSection>
           ) : null}
-        </div>
-      </details>
+          </div>
+        ) : null}
+      </div>
 
-      <div className="flex items-center justify-between">
-        <Badge variant="neutral">{resultCount}개 동</Badge>
-        {isFilterActive(filter) ? (
-          <Button variant="ghost" size="sm" onClick={() => onChange(EMPTY_FILTER)}>
+      <div className="flex items-center justify-between border-t border-border pt-3">
+        <p className="text-sm text-muted-foreground">
+          검색 결과 <strong className="font-bold text-foreground">{resultCount}개 동</strong>
+        </p>
+        {refinementActive ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onChange({ ...EMPTY_FILTER, gu: filter.gu })}
+          >
             필터 지우기
           </Button>
         ) : null}
       </div>
     </div>
+  );
+}
+
+function FilterSection({
+  id,
+  label,
+  selectedCount,
+  open,
+  onToggle,
+  children,
+}: {
+  id: FilterSectionId;
+  label: string;
+  selectedCount: number;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  const panelId = `condition-filter-${id}`;
+
+  return (
+    <section className="overflow-hidden rounded-md bg-card">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={onToggle}
+        className="flex min-h-10 w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      >
+        <span>{label}</span>
+        <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+          {selectedCount > 0 ? `${selectedCount}개 선택` : "전체"}
+          <ChevronDown
+            aria-hidden="true"
+            className={cn("size-4 transition-transform", open && "rotate-180")}
+          />
+        </span>
+      </button>
+      {open ? (
+        <div id={panelId} className="border-t border-border px-3 py-3">
+          <fieldset className="space-y-2">
+            <legend className="sr-only">{label}</legend>
+            {children}
+          </fieldset>
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -204,7 +390,7 @@ function FilterChip({
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "rounded-sm border px-2.5 py-1 text-xs font-medium transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "rounded-md border px-3 py-1.5 text-xs font-semibold transition-[background-color,border-color,color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active
           ? "border-primary bg-primary-soft text-primary"
           : "border-border bg-card text-muted-foreground hover:bg-muted",

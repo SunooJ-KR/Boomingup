@@ -182,7 +182,7 @@ DB 접속이 없거나 조회가 실패하면 `front/public/data/`의 샘플 JSO
 | `48.1~48.5` | `models/index/48.evaluate_realtime_two_stage.py` | 성능 지표(`docs/model-performance.md`) |
 | `49.model/model.json`, `49.1.latest_predictions.txt` | `models/index/49.build_final_model.py` | `app.dong_prediction` 적재 대기 |
 | `52.1.seoul_bjd_boundary.geojson`, `52.2.dong_boundary_match.txt` | `models/index/52.build_dong_boundary.py` | `app.dong_boundary` |
-| `front/public/data/dong-boundary.geojson`, `gu-boundary.geojson` | `models/index/53.export_front_boundary.py` | 지도 |
+| `front/public/data/dong-boundary.geojson`, `gu-boundary.geojson` | `models/index/53.export_front_boundary.py` | 지도. 법정동은 약 3m, 자치구는 약 5m 허용오차로 단순화 |
 | `69.1.dong_support.txt` (구현 예정) | `models/index/69` | `app.dong_support`. 표본 상태, 변화 표시, 구조 유형, 함께 볼 동 |
 
 원천 SHP가 없어도 `52.1`은 `app.dong_boundary`에서 복원할 수 있다(결정 45, 복원 SQL은

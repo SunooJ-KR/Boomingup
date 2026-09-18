@@ -3,9 +3,8 @@
 # ============================================================================
 # Author:      yjkim
 # Purpose:     서울 법정동 경계를 웹 지도용 GeoJSON으로 변환하고 지수 동과 대조한다
-# Description: GIS Developer(gisdeveloper.co.kr), 원본 도로명주소 DB의 2023-07
-#              법정동 SHP를 사용한다. 경계 출처 표기는
-#              "행정구역 경계: GIS Developer(gisdeveloper.co.kr), 원본 도로명주소 DB"이다.
+# Description: data/tb_etl_tp_admstr_zone_lgldong_bndry의 서울 법정동 SHP를
+#              EPSG:4326 GeoJSON으로 변환한다.
 # ============================================================================
 
 # ============================================================================
@@ -21,12 +20,15 @@ from typing import Any
 import pandas as pd
 import shapefile
 from pyproj import Transformer
+from shapely import orient_polygons
+from shapely.geometry import mapping, shape as shapely_shape
+from shapely.ops import transform as transform_geometry
 
 
 WORK_DIR = Path(__file__).resolve().parents[2]
 OUTPUT_DIR = WORK_DIR / "output"
-BOUNDARY_DIR = OUTPUT_DIR / "raw" / "boundary" / "emd_20230729"
-SHP_PATH = BOUNDARY_DIR / "emd.shp"
+BOUNDARY_DIR = WORK_DIR / "data" / "tb_etl_tp_admstr_zone_lgldong_bndry"
+SHP_PATH = BOUNDARY_DIR / "admstr_zone_lgldong_bndry_24.shp"
 INDEX_PATH = OUTPUT_DIR / "40.1.dong_index.txt"
 GEOJSON_PATH = OUTPUT_DIR / "52.1.seoul_bjd_boundary.geojson"
 MATCH_PATH = OUTPUT_DIR / "52.2.dong_boundary_match.txt"
@@ -107,6 +109,18 @@ def shape_to_geometry(shape: shapefile.Shape, transformer: Transformer) -> tuple
     링이 구멍이다. 변환 뒤에는 RFC 7946 right-hand rule에 맞춰 외곽은 반시계,
     구멍은 시계 방향으로 저장한다.
     """
+    # 실제 Shapefile은 링 방향만으로 구멍 여부를 판단하기 어려운 매우 얇은 분리 도형이
+    # 있을 수 있다. pyshp가 조립한 표준 GeoJSON 구조를 Shapely로 변환한다.
+    if hasattr(shape, "__geo_interface__"):
+        source_geometry = shapely_shape(shape.__geo_interface__)
+        transformed = transform_geometry(transformer.transform, source_geometry)
+        oriented = orient_polygons(transformed, exterior_cw=False)
+        geometry = round_geometry(mapping(oriented))
+        polygons = [oriented] if oriented.geom_type == "Polygon" else list(oriented.geoms)
+        hole_count = sum(len(polygon.interiors) for polygon in polygons)
+        return geometry, hole_count
+
+    # 단위 테스트의 단순 도형처럼 __geo_interface__가 없는 입력도 기존 방식으로 처리한다.
     rings = shape_rings(shape, transformer)
     outer_rings = [ring for ring in rings if signed_area(ring) < 0]
     hole_rings = [ring for ring in rings if signed_area(ring) > 0]
@@ -131,6 +145,18 @@ def shape_to_geometry(shape: shapefile.Shape, transformer: Transformer) -> tuple
     return {"type": "MultiPolygon", "coordinates": polygons}, len(hole_rings)
 
 
+def round_geometry(geometry: dict[str, Any]) -> dict[str, Any]:
+    """GeoJSON 좌표를 웹 지도에 충분한 소수점 여섯째 자리로 줄인다."""
+    def round_coordinates(value: Any) -> Any:
+        if isinstance(value, (list, tuple)):
+            if value and isinstance(value[0], (int, float)):
+                return [round(float(coordinate), 6) for coordinate in value]
+            return [round_coordinates(child) for child in value]
+        return value
+
+    return {"type": geometry["type"], "coordinates": round_coordinates(geometry["coordinates"])}
+
+
 def make_feature(
     shape: shapefile.Shape,
     record: dict[str, str],
@@ -139,17 +165,18 @@ def make_feature(
 ) -> tuple[dict[str, Any], int]:
     """SHP record 하나에서 GeoJSON Feature와 구멍 수를 만든다."""
     emd_cd = str(record["EMD_CD"]).strip()
-    umd_nm = str(record["EMD_KOR_NM"]).strip()
-    dong = f"{emd_cd[:5]}_{umd_nm}"
+    sgg_cd = str(record["COL_ADM_SE"]).strip()
+    umd_nm = str(record["EMD_NM"]).strip()
+    dong = f"{sgg_cd}_{umd_nm}"
     geometry, hole_count = shape_to_geometry(shape, transformer)
     return {
         "type": "Feature",
         "properties": {
             "dong": dong,
-            "sgg_cd": emd_cd[:5],
+            "sgg_cd": sgg_cd,
             "emd_cd": emd_cd,
             "umd_nm": umd_nm,
-            "eng_nm": str(record["EMD_ENG_NM"]).strip(),
+            "eng_nm": "",
             "in_index": dong in index_dongs,
         },
         "geometry": geometry,
@@ -182,7 +209,7 @@ def load_index_dongs(index_path: Path) -> list[str]:
 
 def build_features(index_dongs: set[str]) -> tuple[list[dict[str, Any]], int, int]:
     """서울 법정동 Feature를 만들고 멀티파트·구멍 동 수를 센다."""
-    transformer = Transformer.from_crs("EPSG:5179", "EPSG:4326", always_xy=True)
+    transformer = Transformer.from_crs("EPSG:5186", "EPSG:4326", always_xy=True)
     reader = shapefile.Reader(str(SHP_PATH), encoding="cp949")
     features: list[dict[str, Any]] = []
     multipart_count = 0

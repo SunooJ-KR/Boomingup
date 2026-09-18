@@ -21,10 +21,22 @@ export const EMPTY_FILTER: DongFilter = {
   tags: [],
 };
 
+const REGION_TAG_LABEL: Record<string, string> = {
+  "정비사업 정보 있음": "정비사업 구역 많은 순",
+  "거래 많은 동": "거래 많은 순",
+  "전세가율 높은 동": "전세가율 높은 순",
+  "최근 준공 많은 동": "최근 준공 많은 순",
+  "30년 이상 단지 많은 동": "노후 단지 많은 순",
+};
+
+export function regionTagLabel(tag: string): string {
+  return REGION_TAG_LABEL[tag] ?? tag;
+}
+
 /** 검색어는 동 이름과 자치구 이름 모두에 걸린다. 선택하지 않은 필터는 조건에서 빠진다. */
 export function filterDongs(dongs: DongSummary[], filter: DongFilter): DongSummary[] {
   const query = filter.query.trim();
-  return dongs.filter((dong) => {
+  const filtered = dongs.filter((dong) => {
     if (query && !`${dong.gu_name} ${dong.umd_name}`.includes(query)) return false;
     if (filter.gu && dong.gu_name !== filter.gu) return false;
     if (filter.flagged !== null && dong.sample_flags.length > 0 !== filter.flagged) return false;
@@ -44,12 +56,43 @@ export function filterDongs(dongs: DongSummary[], filter: DongFilter): DongSumma
     }
     return true;
   });
+
+  const sortTag = filter.tags[0];
+  if (!sortTag) return filtered;
+
+  return [...filtered].sort((a, b) => {
+    const aValue = tagSortValue(a, sortTag);
+    const bValue = tagSortValue(b, sortTag);
+    if (aValue === null && bValue === null) {
+      return `${a.gu_name} ${a.umd_name}`.localeCompare(`${b.gu_name} ${b.umd_name}`, "ko");
+    }
+    if (aValue === null) return 1;
+    if (bValue === null) return -1;
+    return bValue - aValue;
+  });
+}
+
+function tagSortValue(dong: DongSummary, tag: string): number | null {
+  const value = dong.tag_sort_values?.[tag];
+  if (value !== undefined && value !== null && Number.isFinite(value)) return value;
+  if (tag === "거래 많은 동") return dong.n_sales_4q;
+  return null;
 }
 
 export function isFilterActive(filter: DongFilter): boolean {
   return (
     filter.query.trim() !== "" ||
     filter.gu !== null ||
+    filter.flagged !== null ||
+    filter.priceBand !== null ||
+    filter.structureTypes.length > 0 ||
+    filter.tags.length > 0
+  );
+}
+
+/** 자치구와 검색어를 제외한 상세 조건이 하나라도 적용됐는지 확인한다. */
+export function hasDetailFilter(filter: DongFilter): boolean {
+  return (
     filter.flagged !== null ||
     filter.priceBand !== null ||
     filter.structureTypes.length > 0 ||

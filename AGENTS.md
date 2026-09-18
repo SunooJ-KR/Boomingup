@@ -14,7 +14,7 @@
 - `main`에 직접 push하지 않는다. 급한 수정도 브랜치와 PR을 거친다.
 - 모든 작업은 최신 `dev`에서 분기한 작업 브랜치에서 진행한다.
 - 작업 브랜치 → PR → `dev` → build 검증 → PR → `main` 순서를 지킨다.
-- GitHub 기본 브랜치는 `dev`다. `main`으로 올릴 때만 PR base를 직접 `main`으로 바꾼다.
+- GitHub 기본 브랜치는 `main`이다. 작업 브랜치 PR은 base를 `dev`로 직접 지정하고, `dev`를 `main`으로 올릴 때는 base를 `main`으로 둔다.
 - `main`에 hotfix가 들어갔으면 `main`을 `dev`로 다시 merge해 두 브랜치를 맞춘다.
 
 브랜치 이름 예시:

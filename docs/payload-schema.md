@@ -51,7 +51,14 @@
   "index_se_band": "LOW",
   "structure_type": 0,
   "structure_desc": "평당가 높음 · 강남 6km대",
-  "tags": ["정비사업 정보 있음", "거래 많은 동"]
+  "tags": ["정비사업 정보 있음", "거래 많은 동"],
+  "tag_sort_values": {
+    "정비사업 정보 있음": 6,
+    "거래 많은 동": 212,
+    "전세가율 높은 동": 0.48,
+    "최근 준공 많은 동": 0.07,
+    "30년 이상 단지 많은 동": 0.31
+  }
 }
 ```
 
@@ -64,6 +71,7 @@
 | `index_se_band` | `LOW` / `MID` / `HIGH` |
 | `structure_type`, `structure_desc` | 구조 유형 번호와 자동 설명. 없으면 `null` |
 | `tags` | 유지. 구조 유형은 태그가 아니라 별도 필드다 |
+| `tag_sort_values` | 지역 태그별 내림차순 정렬에 쓰는 원래 관측값. 관측값이 없으면 `null` |
 
 **목록에 변화율이 없다.** `change_12m`, `delta_12m`을 싣지 않는다. 목록 행에 변화율이 있으면 눈으로 정렬하게 된다. 변화율은 상세에서만 오차와 함께 본다.
 
@@ -77,9 +85,10 @@
 | 가격대 | `ppm2_med_4q_manwon` | 구간 `[min, max]`. 구간 경계는 프론트가 전체 분포의 4분위로 만든다 |
 | 표본 상태 | `sample_flags` | "주의 없음" = 빈 배열, "주의 있음" = 하나 이상 |
 | 구조 유형 | `structure_type` | 0~3 다중 선택 |
-| 지역 태그 | `tags` | 유지 |
+| 지역 태그 정렬 | `tags`, `tag_sort_values` | 한 번에 하나를 선택한다. 해당 태그가 있는 동만 남기고 원래 관측값이 큰 순서로 정렬한다 |
 
-정렬: `umd_name`, `gu_name`, `n_sales_4q`, `ppm2_med_4q_manwon`. 그 외 없음.
+기본 정렬: `umd_name`, `gu_name`, `n_sales_4q`, `ppm2_med_4q_manwon`. 지역 태그를 선택하면
+`tag_sort_values`의 해당 값을 우선하며, 값이 없는 동은 목록 뒤에 둔다.
 
 ## 4. 동 상세 (`detail`)
 
