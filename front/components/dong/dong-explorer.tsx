@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import {
   EMPTY_FILTER,
   filterDongs,
+  hasDetailFilter,
   priceBandsOf,
   type DongFilter,
 } from "@/lib/filter";
@@ -101,7 +102,9 @@ export function DongExplorer({
   const selectDong = useCallback(
     (dongId: string) => {
       const target = dongs.find((dong) => dong.dong_id === dongId);
-      if (target && target.gu_name !== filter.gu) {
+      // 상세 조건으로 좁힌 목록에서는 조건과 자치구 선택 상태를 그대로 둔다.
+      // 상세 조건이 없을 때만 고른 동의 자치구로 지도를 전환한다.
+      if (target && target.gu_name !== filter.gu && !hasDetailFilter(filter)) {
         setFilter({ ...EMPTY_FILTER, gu: target.gu_name });
         setPage(1);
       }
@@ -306,7 +309,7 @@ export function DongExplorer({
             등장 효과는 DongDetailPanel이 자기 안에서 건다. 스크롤 기준이 되는 요소에
             transform이 걸려 있으면 그만큼 어긋난 위치에 멈추기 때문이다.
             머리말에 가리지 않게 하는 여백은 globals.css의 scroll-padding-top이 맡는다. */}
-        {filter.gu !== null ? (
+        {selectedId !== null ? (
           <section
             ref={detailRef}
             aria-label="선택한 동 상세"
