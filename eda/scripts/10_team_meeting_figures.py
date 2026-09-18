@@ -438,4 +438,45 @@ style_ax(ax, "클러스터별 성향 — 가격 수준 vs 최근 1년 시장 대
 fig.tight_layout()
 save(fig, "14_cluster_profile_price_vs_momentum")
 
+# ============================================================
+# 15. 9번 축 클러스터링 검증 — 상관행렬 히트맵 + 같은/다른 클러스터 상관 비교
+# ============================================================
+corr_sorted = pd.read_csv("../output/09b_corr_matrix_sorted.csv", index_col=0)
+wb = pd.read_csv("../output/09b_within_vs_between_corr.csv")
+order_cluster = pd.read_csv("../output/09b_corr_matrix_order.csv", index_col=0)["cluster"].values
+
+fig, axes = plt.subplots(1, 2, figsize=(13, 6.2), gridspec_kw={"width_ratios": [1.3, 1]})
+
+ax = axes[0]
+im = ax.imshow(corr_sorted.values, cmap="RdBu_r", vmin=-0.5, vmax=0.5, aspect="auto")
+change_points = np.where(np.diff(order_cluster) != 0)[0] + 1
+for cp in change_points:
+    ax.axhline(cp - 0.5, color=NAVY, linewidth=1)
+    ax.axvline(cp - 0.5, color=NAVY, linewidth=1)
+ax.set_xticks([]); ax.set_yticks([])
+ax.set_title("동 간 상관계수(클러스터 순서 정렬)\n대각선 블록이 진할수록 클러스터링이 유효함", fontsize=12, color=NAVY, weight="bold")
+fig.colorbar(im, ax=ax, label="상관계수", fraction=0.046, pad=0.04)
+
+ax = axes[1]
+within = wb.loc[wb["group"] == "같은 클러스터", "corr"]
+between = wb.loc[wb["group"] == "다른 클러스터", "corr"]
+bp = ax.boxplot([within, between], tick_labels=["같은\n클러스터", "다른\n클러스터"], showmeans=True, patch_artist=True)
+for patch, color in zip(bp["boxes"], [TEAL, GREY]):
+    patch.set_facecolor(color); patch.set_alpha(0.5)
+style_ax(ax, "같은 클러스터 동끼리\n상관이 더 높은가", "", "상관계수")
+
+fig.tight_layout()
+save(fig, "09f_cluster_validation_heatmap")
+
+# ============================================================
+# 16. 9번 축 클러스터링 검증 — k별 실루엣 점수
+# ============================================================
+sil = pd.read_csv("../output/09b_silhouette_by_k.csv")
+fig, ax = plt.subplots(figsize=(8.5, 5.5))
+colors_sil = [RED if k == 6 else TEAL for k in sil["k"]]
+ax.bar(sil["k"], sil["silhouette"], color=colors_sil, zorder=3)
+style_ax(ax, "클러스터 개수(k)별 실루엣 점수 (빨강 = 이번에 쓴 k=6)", "클러스터 개수(k)", "실루엣 점수")
+fig.tight_layout()
+save(fig, "09g_silhouette_by_k")
+
 print("\n전체 그림 생성 완료:", OUT_DIR)
