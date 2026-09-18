@@ -1,4 +1,5 @@
 import { Card, CardBody } from "@/components/ui/card";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { formatManwon } from "@/lib/format";
 import type { AreaStat } from "@/lib/types";
@@ -32,7 +33,11 @@ export function AreaStatsCard({ stats, period }: AreaStatsCardProps) {
                   거래 수
                 </th>
                 <th scope="col" className="pb-1 text-right font-normal">
-                  중위 가격
+                  <InfoTooltip
+                    label="중위 가격"
+                    description="거래가격을 낮은 순서로 놓았을 때 가운데에 있는 값이에요. 평균과 달리 아주 높거나 낮은 한 건의 영향을 덜 받아요."
+                    align="right"
+                  />
                 </th>
                 <th scope="col" className="pb-1 text-right font-normal">
                   가격 범위

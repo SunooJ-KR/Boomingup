@@ -1,9 +1,11 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { EMPTY_FILTER, isFilterActive, type DongFilter } from "@/lib/filter";
+import { EMPTY_FILTER, type DongFilter } from "@/lib/filter";
 import { formatManwon } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +21,7 @@ type SearchPanelProps = {
   /** 구조 유형 칩. 번호 대신 자동 설명을 붙인다 */
   structureOptions: StructureOption[];
   resultCount: number;
+  onBack?: () => void;
 };
 
 export function SearchPanel({
@@ -29,6 +32,7 @@ export function SearchPanel({
   priceBands,
   structureOptions,
   resultCount,
+  onBack,
 }: SearchPanelProps) {
   const toggleTag = (tag: string) => {
     const next = filter.tags.includes(tag)
@@ -54,9 +58,25 @@ export function SearchPanel({
     (filter.priceBand === null ? 0 : 1) +
     filter.structureTypes.length +
     filter.tags.length;
+  const refinementActive =
+    filter.query.trim() !== "" ||
+    filter.flagged !== null ||
+    filter.priceBand !== null ||
+    filter.structureTypes.length > 0 ||
+    filter.tags.length > 0;
 
   return (
     <div className="space-y-4">
+      {filter.gu !== null && onBack ? (
+        <div className="flex items-center justify-between gap-2">
+          <Button variant="ghost" size="sm" onClick={onBack} className="-ml-3">
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            서울 전체
+          </Button>
+          <span className="text-sm font-bold text-foreground">{filter.gu}</span>
+        </div>
+      ) : null}
+
       <div className="space-y-1.5">
         <label htmlFor="dong-search" className="text-sm font-medium text-foreground">
           법정동 검색
@@ -179,8 +199,12 @@ export function SearchPanel({
 
       <div className="flex items-center justify-between">
         <Badge variant="neutral">{resultCount}개 동</Badge>
-        {isFilterActive(filter) ? (
-          <Button variant="ghost" size="sm" onClick={() => onChange(EMPTY_FILTER)}>
+        {refinementActive ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onChange({ ...EMPTY_FILTER, gu: filter.gu })}
+          >
             필터 지우기
           </Button>
         ) : null}

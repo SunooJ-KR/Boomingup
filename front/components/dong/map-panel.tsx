@@ -23,6 +23,7 @@ type MapPanelProps = {
   selectedId: string | null;
   onSelect: (id: string) => void;
   kakaoJsKey?: string;
+  itemKind?: "gu" | "dong";
 };
 
 type Mode = "loading" | "kakao" | "fallback";
@@ -30,7 +31,13 @@ type Mode = "loading" | "kakao" | "fallback";
 const SDK_TIMEOUT_MS = 8000;
 const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 };
 
-export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelProps) {
+export function MapPanel({
+  items,
+  selectedId,
+  onSelect,
+  kakaoJsKey,
+  itemKind = "dong",
+}: MapPanelProps) {
   const [mode, setMode] = useState<Mode>(kakaoJsKey ? "loading" : "fallback");
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<KakaoMap | null>(null);
@@ -82,7 +89,7 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
       marker.title = item.title;
       marker.setAttribute("aria-label", `${item.title} 선택`);
       marker.textContent = item.title;
-      marker.className = markerClassName(item, item.id === selectedId);
+      marker.className = markerClassName(item, item.id === selectedId, itemKind);
       marker.addEventListener("click", () => onSelectRef.current(item.id));
 
       const overlay = new kakao.maps.CustomOverlay({
@@ -93,7 +100,7 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
       overlay.setMap(map);
       overlaysRef.current.set(item.id, overlay);
     });
-  }, [items, mode, selectedId]);
+  }, [itemKind, items, mode, selectedId]);
 
   // 선택한 동이 화면 밖이면 지도를 옮긴다
   // 자치구를 고르는 등 조건이 바뀌어 보이는 동이 달라지면 그 범위로 지도를 맞춘다
@@ -127,7 +134,7 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">지도</p>
         <p className="text-xs text-muted-foreground">
           {mode === "kakao"
-            ? `${items.length}개 동`
+            ? `${items.length}개 ${itemKind === "gu" ? "자치구" : "법정동"}`
             : mode === "loading"
               ? "지도를 불러오고 있어요"
               : "좌표 미리보기"}
@@ -142,6 +149,7 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
           bounds={bounds}
           selectedId={selectedId}
           onSelect={onSelect}
+          itemKind={itemKind}
         />
       )}
 
@@ -153,7 +161,11 @@ export function MapPanel({ items, selectedId, onSelect, kakaoJsKey }: MapPanelPr
 
       {items.length === 0 ? (
         <p className="shrink-0 border-t border-border px-3 py-2 text-xs text-muted-foreground">
-          보여줄 좌표가 없어요. 목록에서 동을 선택해주세요.
+          보여줄 좌표가 없어요. 왼쪽 목록에서 지역을 선택해주세요.
+        </p>
+      ) : itemKind === "gu" ? (
+        <p className="shrink-0 border-t border-border px-3 py-2 text-xs text-muted-foreground">
+          자치구를 선택하면 해당 지역으로 확대되고 법정동이 나타나요.
         </p>
       ) : (
         <p className="shrink-0 border-t border-border px-3 py-2 text-xs text-muted-foreground">
@@ -169,6 +181,7 @@ function FallbackPreview({
   bounds,
   selectedId,
   onSelect,
+  itemKind = "dong",
 }: Omit<MapPanelProps, "kakaoJsKey"> & { bounds: Bounds }) {
   return (
     <div className="relative h-[320px] w-full bg-muted lg:h-auto lg:min-h-0 lg:flex-1">
@@ -184,7 +197,7 @@ function FallbackPreview({
             style={{ left: `${x}%`, top: `${y}%` }}
             className={cn(
               "absolute -translate-x-1/2 -translate-y-1/2",
-              markerClassName(item, item.id === selectedId),
+              markerClassName(item, item.id === selectedId, itemKind),
             )}
           >
             {item.title}
@@ -202,7 +215,14 @@ function FallbackPreview({
 const STRUCTURE_BG = ["bg-structure-0", "bg-structure-1", "bg-structure-2", "bg-structure-3"];
 
 /** 색은 구조 유형, 흐린 정도는 표본 주의 여부다. 변화율로는 색칠하지 않는다. */
-function markerClassName(item: MapItem, selected: boolean) {
+function markerClassName(item: MapItem, selected: boolean, itemKind: "gu" | "dong") {
+  if (itemKind === "gu") {
+    return cn(
+      "rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-float transition-transform duration-150 hover:scale-105",
+      selected ? "scale-110 ring-2 ring-ring" : "",
+    );
+  }
+
   const background =
     item.structureType === null
       ? "bg-neutral-strong"
