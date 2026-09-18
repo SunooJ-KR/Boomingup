@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import {
   EMPTY_FILTER,
   filterDongs,
-  hasDetailFilter,
   priceBandsOf,
   type DongFilter,
 } from "@/lib/filter";
@@ -99,21 +98,11 @@ export function DongExplorer({
     setPage(1);
   }, []);
 
-  const selectDong = useCallback(
-    (dongId: string) => {
-      const target = dongs.find((dong) => dong.dong_id === dongId);
-      // 상세 조건으로 좁힌 목록에서는 조건과 자치구 선택 상태를 그대로 둔다.
-      // 상세 조건이 없을 때만 고른 동의 자치구로 지도를 전환한다.
-      if (target && target.gu_name !== filter.gu && !hasDetailFilter(filter)) {
-        setFilter({ ...EMPTY_FILTER, gu: target.gu_name });
-        setPage(1);
-      }
-      setSelectedId(dongId);
-    },
-    // 자치구뿐 아니라 상세 조건이 바뀔 때도 최신 필터를 참조해야 한다.
-    // 그렇지 않으면 처음 렌더링의 빈 조건을 보고 자치구 선택으로 잘못 전환한다.
-    [dongs, filter],
-  );
+  // 목록에서 동을 골라도 탐색 맥락은 유지하고 상세만 연다.
+  // 자치구 전환은 지도나 자치구 선택 상자에서 명시적으로 선택할 때만 일어난다.
+  const selectDong = useCallback((dongId: string) => {
+    setSelectedId(dongId);
+  }, []);
 
   const changePage = useCallback((next: number) => {
     setPage(next);
