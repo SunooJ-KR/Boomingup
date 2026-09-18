@@ -1,5 +1,4 @@
 import { Card, CardBody } from "@/components/ui/card";
-import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { structureFootnote } from "@/lib/format";
 import type { DongStructure, Meta } from "@/lib/types";
@@ -18,13 +17,8 @@ export function StructureCard({
   return (
     <Card>
       <CardBody className="space-y-2">
-        <SectionHeading eyebrow="구조" title="구조 유형" />
-        <p className="text-sm text-foreground">
-          <InfoTooltip
-            label={structure.desc}
-            description="가격·전세가율·세대수·신축 비중·위치가 비슷한 동끼리 묶은 설명이에요. 좋고 나쁨을 나눈 순위가 아니에요."
-          />
-        </p>
+        <SectionHeading eyebrow="비슷한 지역 묶음" title="클러스터 성질" />
+        <p className="text-sm text-foreground">{structure.desc}</p>
         <p className="text-xs text-muted-foreground">{structureFootnote(meta)}</p>
       </CardBody>
     </Card>

@@ -57,6 +57,16 @@ export function isFilterActive(filter: DongFilter): boolean {
   );
 }
 
+/** 자치구와 검색어를 제외한 상세 조건이 하나라도 적용됐는지 확인한다. */
+export function hasDetailFilter(filter: DongFilter): boolean {
+  return (
+    filter.flagged !== null ||
+    filter.priceBand !== null ||
+    filter.structureTypes.length > 0 ||
+    filter.tags.length > 0
+  );
+}
+
 /**
  * 가격대 구간을 전체 분포의 4분위로 만든다(payload-schema.md §3.1).
  * 값이 있는 동만 쓰고, 서로 겹치지 않게 앞 구간의 끝 다음 값부터 다음 구간을 시작한다.

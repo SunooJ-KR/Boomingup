@@ -105,7 +105,7 @@ export const FOOTNOTES = {
   change: "변화율은 동 가격 지수 기준이에요. 서울 평균 자체의 오차는 표시하지 않아요.",
   peak: "동 가격 지수 기준이에요. 단지별 신고가와 달라요.",
   redevelop: "2026년 6월 자료예요. 해제·완료된 구역은 반영되지 않았어요.",
-  map: "색은 표본 상태와 구조 유형이에요. 변화율이 아니에요.",
+  map: "색은 표본 상태와 클러스터 구분이에요. 변화율이 아니에요.",
   fallback: "샘플 데이터예요. 실제 수치가 아니에요.",
   service: "이 화면은 지나간 거래를 정리한 것이고, 매수·매도 판단을 대신하지 않아요.",
 } as const;
@@ -116,6 +116,24 @@ export function sampleFootnote(meta: Meta): string {
 
 export function structureFootnote(meta: Meta): string {
   return `가격·전세가율·세대수·신축·위치가 비슷한 동끼리 묶은 결과예요. ${meta.cluster_as_of} 기준이고 시장 상황에 따라 바뀔 수 있어요.`;
+}
+
+const CLUSTER_FILTER_LABEL: Record<string, string> = {
+  "평당가 높음 · 강남 7km대": "가격대 높음 · 강남 가까움",
+  "강남 13km대 · 도심 9km대": "강남·도심에서 먼 편",
+  "신축 비중 높음 · 아파트 세대수 적음": "신축 많음 · 아파트 세대 적음",
+  "아파트 세대수 적음 · 도심 3km대": "아파트 세대 적음 · 도심 가까움",
+};
+
+/** 모델 산출 설명을 상세 필터에서 바로 이해할 수 있는 이름으로 바꾼다. */
+export function compactClusterDesc(description: string): string {
+  return (
+    CLUSTER_FILTER_LABEL[description] ??
+    description
+      .replaceAll("아파트 세대수", "아파트 세대")
+      .replaceAll("신축 비중 높음", "신축 많음")
+      .replaceAll("평당가", "가격대")
+  );
 }
 
 /** 변화율은 항상 부호를 붙여 보여준다. 값이 없으면 "-" */

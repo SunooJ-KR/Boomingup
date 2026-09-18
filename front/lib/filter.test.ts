@@ -5,6 +5,7 @@ import { test } from "node:test";
 import {
   EMPTY_FILTER,
   filterDongs,
+  hasDetailFilter,
   isFilterActive,
   priceBandsOf,
   type DongFilter,
@@ -97,4 +98,12 @@ test("가격대 구간은 서로 겹치지 않고 전체를 덮는다", () => {
   }
   // 값이 적으면 구간을 만들지 않는다
   assert.deepEqual(priceBandsOf(list.slice(0, 3)), []);
+});
+
+test("상세 조건 여부는 검색어와 자치구를 제외하고 판단한다", () => {
+  assert.equal(hasDetailFilter(withFilter({ query: "개포", gu: "강남구" })), false);
+  assert.equal(hasDetailFilter(withFilter({ flagged: true })), true);
+  assert.equal(hasDetailFilter(withFilter({ priceBand: [1000, 2000] })), true);
+  assert.equal(hasDetailFilter(withFilter({ structureTypes: [1] })), true);
+  assert.equal(hasDetailFilter(withFilter({ tags: ["거래 많은 동"] })), true);
 });

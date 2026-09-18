@@ -1,12 +1,12 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronDown, MapPinned, Search, SlidersHorizontal } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { EMPTY_FILTER, type DongFilter } from "@/lib/filter";
-import { formatManwon } from "@/lib/format";
+import { EMPTY_FILTER, hasDetailFilter, type DongFilter } from "@/lib/filter";
+import { compactClusterDesc, formatManwon } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export type StructureOption = { type: number; desc: string };
@@ -60,68 +60,101 @@ export function SearchPanel({
     filter.tags.length;
   const refinementActive =
     filter.query.trim() !== "" ||
-    filter.flagged !== null ||
-    filter.priceBand !== null ||
-    filter.structureTypes.length > 0 ||
-    filter.tags.length > 0;
+    hasDetailFilter(filter);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 rounded-lg border border-border bg-card p-4 shadow-panel">
       {filter.gu !== null && onBack ? (
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 border-b border-border pb-3">
           <Button variant="ghost" size="sm" onClick={onBack} className="-ml-3">
             <ArrowLeft aria-hidden="true" className="size-4" />
             서울 전체
           </Button>
-          <span className="text-sm font-bold text-foreground">{filter.gu}</span>
+          <Badge variant="accent" className="px-2.5 py-1 text-sm">
+            {filter.gu}
+          </Badge>
         </div>
       ) : null}
 
-      <div className="space-y-1.5">
-        <label htmlFor="dong-search" className="text-sm font-medium text-foreground">
-          법정동 검색
-        </label>
-        <Input
-          id="dong-search"
-          type="search"
-          placeholder="예: 개포동, 강남구"
-          value={filter.query}
-          onChange={(event) => onChange({ ...filter, query: event.target.value })}
-        />
+      <div>
+        <p className="text-xs font-semibold tracking-wide text-primary">지역 찾기</p>
+        <h2 className="mt-1 text-lg font-bold text-foreground">어느 동을 살펴볼까요?</h2>
       </div>
 
-      <div className="space-y-1.5">
-        <label htmlFor="dong-gu" className="text-sm font-medium text-foreground">
-          자치구
-        </label>
-        <select
-          id="dong-gu"
-          className="h-10 w-full rounded-md border border-border bg-input px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          value={filter.gu ?? ""}
-          onChange={(event) => onChange({ ...filter, gu: event.target.value || null })}
+      <div className="space-y-2">
+        <div className="flex items-end justify-between gap-2">
+          <label htmlFor="dong-search" className="text-sm font-bold text-foreground">
+            법정동 검색
+          </label>
+          <span className="text-xs text-muted-foreground">동 이름 또는 자치구 이름</span>
+        </div>
+        <div className="relative">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-primary"
+          />
+          <Input
+            id="dong-search"
+            type="search"
+            placeholder="예: 개포동, 강남구"
+            value={filter.query}
+            onChange={(event) => onChange({ ...filter, query: event.target.value })}
+            className="h-12 border-primary/40 bg-card pl-11 text-base shadow-sm transition-colors hover:border-primary focus-visible:border-primary"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2 rounded-md bg-muted p-3">
+        <label
+          htmlFor="dong-gu"
+          className="flex items-center gap-2 text-sm font-bold text-foreground"
         >
-          <option value="">전체</option>
-          {guNames.map((gu) => (
-            <option key={gu} value={gu}>
-              {gu}
-            </option>
-          ))}
-        </select>
+          <MapPinned aria-hidden="true" className="size-4 text-primary" />
+          자치구 선택
+        </label>
+        <div className="relative">
+          <select
+            id="dong-gu"
+            className="h-11 w-full appearance-none rounded-md border border-border bg-card px-3 pr-10 text-sm font-medium text-foreground shadow-sm hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            value={filter.gu ?? ""}
+            onChange={(event) => onChange({ ...filter, gu: event.target.value || null })}
+          >
+            <option value="">서울 전체</option>
+            {guNames.map((gu) => (
+              <option key={gu} value={gu}>
+                {gu}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            aria-hidden="true"
+            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          />
+        </div>
       </div>
 
       {/* 칩이 좌측 열 높이의 절반쯤을 먹어 목록이 밀린다.
           접어 두고 몇 개 걸렸는지만 알려준 뒤, 필요할 때 펼치게 한다. */}
       {/* open을 값으로 넘기면 다시 그릴 때마다 React가 상태를 되돌려 펼친 칩이 접힌다.
           열고 닫는 상태는 브라우저에 맡기고 여기서는 몇 개 걸렸는지만 알려준다. */}
-      <details className="rounded-md border border-border bg-card px-3 py-2">
-        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium text-foreground">
-          <span>상세 필터</span>
-          <span className="text-xs font-normal text-muted-foreground">
-            {detailCount > 0 ? `${detailCount}개 적용` : "전체"}
+      <details className="group overflow-hidden rounded-md border border-border bg-card">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-sm font-bold text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
+          <span className="flex items-center gap-2">
+            <SlidersHorizontal aria-hidden="true" className="size-4 text-primary" />
+            조건 필터
+          </span>
+          <span className="flex items-center gap-2">
+            <Badge variant={detailCount > 0 ? "accent" : "neutral"}>
+              {detailCount > 0 ? `${detailCount}개 적용` : "선택 안 함"}
+            </Badge>
+            <ChevronDown
+              aria-hidden="true"
+              className="size-4 text-muted-foreground transition-transform group-open:rotate-180"
+            />
           </span>
         </summary>
 
-        <div className="space-y-4 pt-3">
+        <div className="space-y-4 border-t border-border bg-muted/50 p-3">
           <fieldset className="space-y-1.5">
             <legend className="text-sm font-medium text-foreground">표본 상태</legend>
             <div className="flex flex-wrap gap-1.5">
@@ -162,12 +195,12 @@ export function SearchPanel({
 
           {structureOptions.length > 0 ? (
             <fieldset className="space-y-1.5">
-              <legend className="text-sm font-medium text-foreground">구조 유형</legend>
+              <legend className="text-sm font-medium text-foreground">클러스터</legend>
               <div className="flex flex-wrap gap-1.5">
                 {structureOptions.map((option) => (
                   <FilterChip
                     key={option.type}
-                    label={option.desc}
+                    label={compactClusterDesc(option.desc)}
                     active={filter.structureTypes.includes(option.type)}
                     onClick={() => toggleStructure(option.type)}
                   />
@@ -197,8 +230,10 @@ export function SearchPanel({
         </div>
       </details>
 
-      <div className="flex items-center justify-between">
-        <Badge variant="neutral">{resultCount}개 동</Badge>
+      <div className="flex items-center justify-between border-t border-border pt-3">
+        <p className="text-sm text-muted-foreground">
+          검색 결과 <strong className="font-bold text-foreground">{resultCount}개 동</strong>
+        </p>
         {refinementActive ? (
           <Button
             variant="ghost"
@@ -228,7 +263,7 @@ function FilterChip({
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "rounded-sm border px-2.5 py-1 text-xs font-medium transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "rounded-md border px-3 py-1.5 text-xs font-semibold transition-[background-color,border-color,color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active
           ? "border-primary bg-primary-soft text-primary"
           : "border-border bg-card text-muted-foreground hover:bg-muted",
