@@ -545,4 +545,27 @@ style_ax(ax, "클러스터 peer 모멘텀을 추가해도 예측 오차(MAE)가 
 fig.tight_layout()
 save(fig, "09i_peer_momentum_predictive_test")
 
+# ============================================================
+# 19. "유사 동 목록" 갱신 안정성 — 창 길이별 1년 갱신 시 상위5 유지율
+# ============================================================
+wu = pd.read_csv("../output/09d_window_update_stability.csv")
+wu_summary = wu.groupby("window").agg(
+    retention_median=("retention_median", "median"),
+    retention_mean=("retention_mean", "mean"),
+).reset_index()
+
+fig, ax = plt.subplots(figsize=(8.5, 5.8))
+ax.plot(wu_summary["window"], wu_summary["retention_mean"] * 5, marker="o", color=NAVY,
+        linewidth=2.2, markersize=7, label="평균 (5개 중 유지 개수)", zorder=4)
+ax.plot(wu_summary["window"], wu_summary["retention_median"] * 5, marker="s", color=TEAL,
+        linewidth=2.2, markersize=7, linestyle="--", label="중앙값 (5개 중 유지 개수)", zorder=4)
+ax.axhline(5, color="#C3C2B7", linewidth=1, linestyle=":")
+ax.text(wu_summary["window"].min(), 5.1, "5개 = 완전히 그대로 유지", fontsize=8.5, color=GREY)
+ax.set_ylim(0, 5.6)
+ax.legend(frameon=False, fontsize=9, loc="lower right")
+style_ax(ax, "창 길이를 늘려도 1년 갱신 시 유사 동 목록 유지율은 절반을 못 넘음",
+         "유사 동 계산에 쓴 창 길이(분기)", "1년 뒤 갱신에서도 유지된 유사 동 개수(5개 중)")
+fig.tight_layout()
+save(fig, "09j_similarity_list_update_stability")
+
 print("\n전체 그림 생성 완료:", OUT_DIR)
