@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BrainCircuit, Check, Circle, LoaderCircle } from "lucide-react";
+import { Check, Circle, LoaderCircle } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { ModelingBadge } from "@/components/dong/modeling-badge";
 import { Card, CardBody } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 const LOADING_STEPS = [
   "최근 거래와 표본 상태를 불러오고 있어요",
-  "머신러닝으로 분류된 지역 구조를 확인하고 있어요",
-  "특성이 비슷한 비교 동을 연결하고 있어요",
+  "통계 모델로 계산한 가격 지수와 오차를 확인하고 있어요",
+  "머신러닝으로 분류한 지역 구조와 비교 동을 연결하고 있어요",
 ] as const;
 
 const STEP_INTERVAL_MS = 450;
@@ -30,10 +30,7 @@ export function DongDetailLoading({ dongName }: { dongName: string }) {
     <Card className="border-primary/20">
       <CardBody className="space-y-5">
         <div className="space-y-2">
-          <Badge variant="accent" className="gap-1.5">
-            <BrainCircuit aria-hidden="true" className="size-3.5" />
-            머신러닝 지역 구조 분석
-          </Badge>
+          <ModelingBadge label="지역 비교 분석" />
           <div>
             <h2 className="text-base font-bold text-foreground">
               {dongName}의 비교 기준을 준비하고 있어요

@@ -1,8 +1,6 @@
 "use client";
 
-import { BrainCircuit } from "lucide-react";
-
-import { Badge } from "@/components/ui/badge";
+import { ModelingBadge } from "@/components/dong/modeling-badge";
 import { Card, CardBody } from "@/components/ui/card";
 import { SectionHeading } from "@/components/ui/section-heading";
 import type { DongPeer } from "@/lib/types";
@@ -21,10 +19,7 @@ export function PeersCard({ peers, onSelect }: PeersCardProps) {
     <Card>
       <CardBody className="space-y-3">
         <div className="space-y-2">
-          <Badge variant="accent" className="gap-1.5">
-            <BrainCircuit aria-hidden="true" className="size-3.5" />
-            머신러닝 유사도 탐색
-          </Badge>
+          <ModelingBadge label="유사도 탐색" />
           <SectionHeading
             title="함께 볼 동"
             description="같은 묶음 안에서 특성이 가장 비슷한 동이에요."

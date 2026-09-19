@@ -1,4 +1,5 @@
 import { Card, CardBody } from "@/components/ui/card";
+import { ModelingBadge } from "@/components/dong/modeling-badge";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import {
@@ -30,6 +31,7 @@ export function ChangeCard({ change, reference, meta }: ChangeCardProps) {
   return (
     <Card>
       <CardBody className="space-y-3">
+        <ModelingBadge label="가격 지수" />
         <SectionHeading
           eyebrow="과거 관측 · 1년 전과 비교"
           title="아파트 가격 지수는 얼마나 달라졌을까요?"
