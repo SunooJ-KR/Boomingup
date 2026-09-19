@@ -85,7 +85,12 @@ export function DongDetailPanel({
 
       <InterpretationGuide />
       <SampleCard sample={detail.sample} meta={meta} />
-      <ChangeCard change={detail.change} reference={detail.reference} meta={meta} />
+      <ChangeCard
+        change={detail.change}
+        reference={detail.reference}
+        meta={meta}
+        highError={detail.sample.flags.includes("HIGH_INDEX_ERROR")}
+      />
       <FlowsCard flows={detail.flows} />
 
       <FactsPanel

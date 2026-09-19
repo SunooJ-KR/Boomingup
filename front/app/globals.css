@@ -16,6 +16,13 @@
   --neutral-soft: #f0f1f4;
   --neutral-strong: #858b98;
 
+  /* 가격 지수 변화의 방향 색. 상승은 붉은색, 하락은 푸른색으로 국내 시장 관례를 따른다.
+     초록·빨강은 손익 배색이라 투자 판단으로 읽히므로 쓰지 않는다.
+     적·청은 적록색약에서도 구분된다. 면을 칠하면 색이 카드를 덮어 경고처럼 읽히므로
+     글자에만 쓴다. 그래서 배경용 연한 색은 두지 않는다. */
+  --change-up: #c2362f;
+  --change-down: #1f5fbf;
+
   /* 구조 유형 0~3의 지도 색. 순서에 뜻이 없는 구분용이라 밝기를 비슷하게 맞췄다.
      높낮이로 읽히면 안 되므로 같은 색의 진하기 단계로 두지 않는다. */
   --structure-0: #3b7dd8;
@@ -64,6 +71,8 @@ html {
   --color-ring: var(--ring);
   --color-neutral-soft: var(--neutral-soft);
   --color-neutral-strong: var(--neutral-strong);
+  --color-change-up: var(--change-up);
+  --color-change-down: var(--change-down);
   --color-structure-0: var(--structure-0);
   --color-structure-1: var(--structure-1);
   --color-structure-2: var(--structure-2);

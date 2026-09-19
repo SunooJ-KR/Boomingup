@@ -4,6 +4,8 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import {
   changeMeaningSentence,
+  changeTone,
+  CHANGE_TONE_CLASS,
   deltaSentence,
   FOOTNOTES,
   formatQuarter,
@@ -18,13 +20,15 @@ type ChangeCardProps = {
   change: DongChange;
   reference: { seoul_12m_pct: number | null };
   meta: Meta;
+  /** 지수 추정오차가 큰 동이면 변화값에 방향 색을 칠하지 않는다 */
+  highError?: boolean;
 };
 
 /**
  * 지난 12개월 변화와 5년 범위 위치. 값 옆에 오차를 항상 붙인다.
  * 서울 평균과 구분되지 않는 차이는 payload에 아예 없다. 프론트가 계산해 채우지 않는다.
  */
-export function ChangeCard({ change, reference, meta }: ChangeCardProps) {
+export function ChangeCard({ change, reference, meta, highError = false }: ChangeCardProps) {
   const delta = deltaSentence(change.delta_state, change.delta_12m_pct, change.delta_se_pct);
   const peak = peakSentence(change.peak_5y_state, change.peak_5y_gap_pct, change.peak_5y_gap_se_pct);
 
@@ -42,6 +46,7 @@ export function ChangeCard({ change, reference, meta }: ChangeCardProps) {
           <ChangeValue
             label="선택한 동"
             value={formatPct(change.dong_12m_pct)}
+            tone={changeTone(change.dong_12m_pct, highError)}
             tooltip="이 동의 여러 아파트 거래를 모아 계산한 가격 지수가 1년 동안 변한 정도예요. 개별 아파트의 실거래가 변화와는 달라요."
           />
           <ChangeValue
@@ -101,14 +106,21 @@ export function ChangeCard({ change, reference, meta }: ChangeCardProps) {
   );
 }
 
+/**
+ * 색은 선택한 동의 숫자 글자에만 준다. 상자 면을 칠하면 색이 넓어져 경고처럼 읽히고,
+ * 서울 전체 값까지 칠하면 두 색이 맞붙어 우열 비교로 읽힌다.
+ * 서울 대비 차이와 5년 최고 대비에도 같은 이유로 색을 넣지 않는다.
+ */
 function ChangeValue({
   label,
   value,
+  tone = "flat",
   tooltip,
   align = "left",
 }: {
   label: string;
   value: string;
+  tone?: keyof typeof CHANGE_TONE_CLASS;
   tooltip: string;
   align?: "left" | "right";
 }) {
@@ -117,7 +129,7 @@ function ChangeValue({
       <p className="text-xs text-muted-foreground">
         <InfoTooltip label={label} description={tooltip} align={align} />
       </p>
-      <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{value}</p>
+      <p className={`mt-1 text-2xl font-bold tabular-nums ${CHANGE_TONE_CLASS[tone]}`}>{value}</p>
       <p className="mt-1 text-xs text-muted-foreground">가격 지수의 1년 변화</p>
     </div>
   );

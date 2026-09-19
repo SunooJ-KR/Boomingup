@@ -143,6 +143,26 @@ export function formatPct(value: number | null | undefined) {
   return `${sign}${value.toFixed(1)}%`;
 }
 
+/**
+ * 가격 지수 변화의 방향 색. 상승은 붉은색, 하락은 푸른색이다.
+ * 지수 추정오차가 크거나 변화가 ±1% 안쪽이면 방향을 말할 근거가 모자라 중립색으로 둔다.
+ * 색만으로 뜻을 전하지 않도록 부호와 방향 문장은 그대로 둔다.
+ * ponytail: 변화의 정도는 숫자가 이미 말하므로 색 농도 단계는 두지 않았다.
+ * 실제 분포를 보고 단계가 필요해지면 soft 토큰을 단계별로 나눈다.
+ */
+export function changeTone(value: number | null | undefined, highError = false) {
+  if (highError || value === null || value === undefined || Number.isNaN(value)) return "flat";
+  if (Math.abs(value) < 1) return "flat";
+  return value > 0 ? "up" : "down";
+}
+
+/** 색은 숫자 글자에만 준다. 상자 면을 칠하면 색이 넓어져 경고처럼 읽힌다 */
+export const CHANGE_TONE_CLASS = {
+  up: "text-change-up",
+  down: "text-change-down",
+  flat: "text-foreground",
+} as const;
+
 /** 오차 폭처럼 부호가 뜻이 없는 값은 부호 없이 적는다 */
 export function formatAbsPct(value: number | null | undefined) {
   if (value === null || value === undefined || Number.isNaN(value)) return "-";

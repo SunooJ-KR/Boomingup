@@ -4,6 +4,7 @@ import { test } from "node:test";
 
 import {
   changeMeaningSentence,
+  changeTone,
   compactClusterDesc,
   formatQuarter,
   formatTwelveMonthRange,
@@ -58,4 +59,16 @@ test("클러스터 설명은 필터 버튼에 맞게 짧게 줄인다", () => {
     compactClusterDesc("아파트 세대수 적음 · 도심 3km대"),
     "아파트 세대 적음 · 도심 가까움",
   );
+});
+
+test("변화 방향 색은 오차가 크거나 변화가 작으면 중립으로 둔다", () => {
+  assert.equal(changeTone(7.6), "up");
+  assert.equal(changeTone(-4.8), "down");
+  assert.equal(changeTone(0.9), "flat");
+  assert.equal(changeTone(-0.9), "flat");
+  assert.equal(changeTone(0), "flat");
+  assert.equal(changeTone(null), "flat");
+  // 추정오차가 큰 동은 값이 커도 방향을 말하지 않는다
+  assert.equal(changeTone(7.6, true), "flat");
+  assert.equal(changeTone(-7.6, true), "flat");
 });
