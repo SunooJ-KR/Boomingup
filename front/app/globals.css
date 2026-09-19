@@ -35,8 +35,9 @@
   --app-header-h: 49px;
   --app-gutter: 1rem;
   --app-column-h: calc(100dvh - var(--app-header-h) - var(--app-gutter) * 2);
+  --map-mobile-h: clamp(20rem, 58dvh, 34rem);
   /* 지도 아래로 상세가 이만큼 비쳐 보인다. 화면이 지도로 꽉 차 보이지 않게 하고,
-     아래에 이어지는 내용이 있다는 것도 함께 알려 준다.
+     동을 선택한 뒤 아래에 이어지는 내용이 있다는 것도 함께 알려 준다.
      낮은 화면에서는 7rem이 지도 높이를 크게 깎아 먹으므로 화면 높이에 맞춰 같이 줄인다.
      화면이 747px보다 높으면 지금까지와 같은 7rem이다. */
   --map-peek: min(7rem, 15dvh);

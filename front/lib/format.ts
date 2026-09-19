@@ -111,11 +111,11 @@ export const FOOTNOTES = {
 } as const;
 
 export function sampleFootnote(meta: Meta): string {
-  return `최근 1년은 ${meta.as_of_quarter} 기준 직전 4분기예요.`;
+  return `최근 1년은 ${formatQuarter(meta.as_of_quarter)} 기준 직전 4분기예요.`;
 }
 
 export function structureFootnote(meta: Meta): string {
-  return `가격·전세가율·세대수·신축·위치가 비슷한 동끼리 묶은 결과예요. ${meta.cluster_as_of} 기준이고 시장 상황에 따라 바뀔 수 있어요.`;
+  return `가격·전세가율·세대수·신축·위치가 비슷한 동끼리 묶은 결과예요. ${formatQuarter(meta.cluster_as_of)} 기준이고 시장 상황에 따라 바뀔 수 있어요.`;
 }
 
 const CLUSTER_FILTER_LABEL: Record<string, string> = {
