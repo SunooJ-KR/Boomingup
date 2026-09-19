@@ -1,4 +1,5 @@
 import { Card, CardBody } from "@/components/ui/card";
+import { ModelingBadge } from "@/components/dong/modeling-badge";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { formatShare, indexSeBandSentence, sampleFlagSentences, sampleFootnote } from "@/lib/format";
@@ -20,6 +21,7 @@ export function SampleCard({ sample, meta }: SampleCardProps) {
   return (
     <Card>
       <CardBody className="space-y-3">
+        <ModelingBadge label="추정오차" />
         <SectionHeading eyebrow="표본 상태" title="이 동의 거래는 얼마나 있었나요" />
 
         {sentences.length > 0 ? (

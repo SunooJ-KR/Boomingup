@@ -9,8 +9,13 @@ export type DongFilter = {
   priceBand: [number, number] | null;
   /** 구조 유형 번호 다중 선택 */
   structureTypes: number[];
-  tags: string[];
 };
+
+export type SortDirection = "desc" | "asc";
+export type DongSort =
+  | { by: "default" }
+  | { by: "price"; direction: SortDirection }
+  | { by: "tag"; tag: string; direction: SortDirection };
 
 export const EMPTY_FILTER: DongFilter = {
   query: "",
@@ -18,25 +23,26 @@ export const EMPTY_FILTER: DongFilter = {
   flagged: null,
   priceBand: null,
   structureTypes: [],
-  tags: [],
 };
 
-const REGION_TAG_LABEL: Record<string, string> = {
-  "정비사업 정보 있음": "정비사업 구역 많은 순",
-  "거래 많은 동": "거래 많은 순",
-  "전세가율 높은 동": "전세가율 높은 순",
-  "최근 준공 많은 동": "최근 준공 많은 순",
-  "30년 이상 단지 많은 동": "노후 단지 많은 순",
+export const DEFAULT_DONG_SORT: DongSort = { by: "default" };
+
+const REGION_TAG_METRIC_LABEL: Record<string, string> = {
+  "정비사업 정보 있음": "정비사업 구역 수",
+  "거래 많은 동": "거래 건수",
+  "전세가율 높은 동": "전세가율",
+  "최근 준공 많은 동": "최근 준공 비중",
+  "30년 이상 단지 많은 동": "30년 이상 단지 비중",
 };
 
-export function regionTagLabel(tag: string): string {
-  return REGION_TAG_LABEL[tag] ?? tag;
+export function regionTagMetricLabel(tag: string): string {
+  return REGION_TAG_METRIC_LABEL[tag] ?? tag;
 }
 
 /** 검색어는 동 이름과 자치구 이름 모두에 걸린다. 선택하지 않은 필터는 조건에서 빠진다. */
 export function filterDongs(dongs: DongSummary[], filter: DongFilter): DongSummary[] {
   const query = filter.query.trim();
-  const filtered = dongs.filter((dong) => {
+  return dongs.filter((dong) => {
     if (query && !`${dong.gu_name} ${dong.umd_name}`.includes(query)) return false;
     if (filter.gu && dong.gu_name !== filter.gu) return false;
     if (filter.flagged !== null && dong.sample_flags.length > 0 !== filter.flagged) return false;
@@ -50,26 +56,34 @@ export function filterDongs(dongs: DongSummary[], filter: DongFilter): DongSumma
       if (dong.structure_type === null) return false;
       if (!filter.structureTypes.includes(dong.structure_type)) return false;
     }
-    if (filter.tags.length > 0) {
-      const tags = dong.tags ?? [];
-      if (!filter.tags.every((tag) => tags.includes(tag))) return false;
-    }
     return true;
   });
+}
 
-  const sortTag = filter.tags[0];
-  if (!sortTag) return filtered;
+/** 필터링된 동을 사용자가 고른 관측값으로 정렬한다. 값이 없으면 방향과 무관하게 뒤에 둔다. */
+export function sortDongs(dongs: DongSummary[], sort: DongSort): DongSummary[] {
+  if (sort.by === "default") return dongs;
 
-  return [...filtered].sort((a, b) => {
-    const aValue = tagSortValue(a, sortTag);
-    const bValue = tagSortValue(b, sortTag);
+  return [...dongs].sort((a, b) => {
+    const aValue = sortValue(a, sort);
+    const bValue = sortValue(b, sort);
     if (aValue === null && bValue === null) {
       return `${a.gu_name} ${a.umd_name}`.localeCompare(`${b.gu_name} ${b.umd_name}`, "ko");
     }
     if (aValue === null) return 1;
     if (bValue === null) return -1;
-    return bValue - aValue;
+    const valueOrder = sort.direction === "desc" ? bValue - aValue : aValue - bValue;
+    if (valueOrder !== 0) return valueOrder;
+    return `${a.gu_name} ${a.umd_name}`.localeCompare(`${b.gu_name} ${b.umd_name}`, "ko");
   });
+}
+
+function sortValue(dong: DongSummary, sort: Exclude<DongSort, { by: "default" }>): number | null {
+  if (sort.by === "price") {
+    const value = dong.ppm2_med_4q_manwon;
+    return value !== null && Number.isFinite(value) ? value : null;
+  }
+  return tagSortValue(dong, sort.tag);
 }
 
 function tagSortValue(dong: DongSummary, tag: string): number | null {
@@ -85,8 +99,7 @@ export function isFilterActive(filter: DongFilter): boolean {
     filter.gu !== null ||
     filter.flagged !== null ||
     filter.priceBand !== null ||
-    filter.structureTypes.length > 0 ||
-    filter.tags.length > 0
+    filter.structureTypes.length > 0
   );
 }
 
@@ -95,8 +108,7 @@ export function hasDetailFilter(filter: DongFilter): boolean {
   return (
     filter.flagged !== null ||
     filter.priceBand !== null ||
-    filter.structureTypes.length > 0 ||
-    filter.tags.length > 0
+    filter.structureTypes.length > 0
   );
 }
 

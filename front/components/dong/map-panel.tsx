@@ -17,6 +17,7 @@ import {
   type GuBoundaryFeature,
 } from "@/lib/boundary";
 import { boundsOf, projectToBounds, type Bounds } from "@/lib/map";
+import { structureBackgroundClass } from "@/lib/structure";
 import { cn } from "@/lib/utils";
 
 export type MapItem = {
@@ -140,6 +141,25 @@ export function MapPanel({
     };
   }, [kakaoJsKey]);
 
+  // 화면 회전, 창 크기 변경, 상세 노출로 지도 칸 크기가 달라져도 타일과 경계를 다시 맞춘다.
+  useEffect(() => {
+    const container = containerRef.current;
+    const map = mapRef.current;
+    if (mode !== "kakao" || !container || !map) return;
+
+    let frame = 0;
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => map.relayout());
+    });
+    observer.observe(container);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [mode]);
+
   // 자치구·법정동 면을 라벨보다 먼저 그린다. 선택 가능한 영역은 면을 눌러도 같은 동작을 한다.
   useEffect(() => {
     const kakao = getKakao();
@@ -259,12 +279,16 @@ export function MapPanel({
   }, [itemKind, mode, selectedBoundaryBounds, selectedItem]);
 
   return (
-    // 좁은 폭에서는 정사각형으로 두고, 넓은 폭에서는 좌측 동 목록 열과 같은 높이에서
-    // --map-peek만큼 줄인다. 지도로 화면이 꽉 차 보이지 않게 하고,
-    // 아래에 상세가 이어진다는 것도 함께 보여 준다.
-    // 정사각형을 넓은 폭까지 그대로 두면 지도 폭이 1000px에 가까워져 지도 하나가 화면보다 높아지고,
-    // 지도 안에 놓인 "검색 초기화" 단추와 아래 안내 문구가 화면 밖으로 밀린다.
-    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-panel">
+    // 선택 전에는 첫 화면을 채우고, 선택 뒤에는 아래 상세가 살짝 보이도록 높이를 줄인다.
+    // 좁은 폭에서는 가로 길이가 아니라 화면 높이를 기준으로 지도 높이를 제한한다.
+    <div
+      className={cn(
+        "overflow-hidden rounded-lg border border-border bg-card shadow-panel lg:flex lg:flex-col",
+        selectedId
+          ? "lg:h-[calc(var(--app-column-h)-var(--map-peek))]"
+          : "lg:h-[var(--app-column-h)]",
+      )}
+    >
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">지도</p>
         <p className="text-xs text-muted-foreground">
@@ -277,7 +301,7 @@ export function MapPanel({
       </div>
 
       {mode === "kakao" || mode === "loading" ? (
-        <div className="relative aspect-square w-full bg-muted lg:aspect-auto lg:h-[calc(var(--app-column-h)-var(--map-peek))] lg:min-h-[20rem]">
+        <div className="relative h-[var(--map-mobile-h)] w-full bg-muted lg:h-auto lg:min-h-0 lg:flex-1">
           <div ref={containerRef} className="absolute inset-0" />
           <div
             ref={hoverLabelRef}
@@ -344,7 +368,7 @@ function FallbackPreview({
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const selectableIds = new Set(items.map((item) => item.id));
   return (
-    <div className="relative aspect-square w-full bg-muted lg:aspect-auto lg:h-[calc(var(--app-column-h)-var(--map-peek))] lg:min-h-[20rem]">
+    <div className="relative h-[var(--map-mobile-h)] w-full bg-muted lg:h-auto lg:min-h-0 lg:flex-1">
       <svg
         aria-hidden="true"
         viewBox="0 0 100 100"
@@ -422,12 +446,6 @@ function boundaryPath(feature: BoundaryFeature, bounds: Bounds): string {
     .join(" ");
 }
 
-/**
- * 구조 유형별 색. Tailwind가 클래스 이름을 훑어야 하므로 문자열을 그대로 적는다.
- * 순서에 뜻이 없는 구분용이라 진하기 단계로 두지 않는다(globals.css의 --structure-*).
- */
-const STRUCTURE_BG = ["bg-structure-0", "bg-structure-1", "bg-structure-2", "bg-structure-3"];
-
 /** 색은 구조 유형, 흐린 정도는 표본 주의 여부다. 변화율로는 색칠하지 않는다. */
 function markerClassName(
   item: MapItem,
@@ -443,14 +461,9 @@ function markerClassName(
     );
   }
 
-  const background =
-    item.structureType === null
-      ? "bg-neutral-strong"
-      : (STRUCTURE_BG[item.structureType] ?? "bg-neutral-strong");
-
   return cn(
     "pointer-events-none rounded-sm px-1.5 py-0.5 text-[11px] font-medium text-primary-foreground shadow-float transition-[opacity,transform] duration-150 focus-visible:ring-2 focus-visible:ring-ring",
-    background,
+    structureBackgroundClass(item.structureType),
     active ? (item.flagged ? "opacity-60" : "opacity-100") : "scale-95 opacity-0",
     selected ? "scale-110 ring-2 ring-ring" : "",
   );
@@ -513,6 +526,7 @@ type KakaoMap = {
   getLevel: () => number;
   getProjection: () => KakaoMapProjection;
   panTo: (latlng: KakaoLatLng) => void;
+  relayout: () => void;
   setLevel: (
     level: number,
     options?: { anchor?: KakaoLatLng; animate?: boolean | { duration: number } },

@@ -2,7 +2,37 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { changeMeaningSentence, compactClusterDesc, formatTwelveMonthRange } from "./format.ts";
+import {
+  changeMeaningSentence,
+  changeTone,
+  compactClusterDesc,
+  formatQuarter,
+  formatTwelveMonthRange,
+  sampleFootnote,
+  structureFootnote,
+} from "./format.ts";
+import type { Meta } from "./types.ts";
+
+const META: Meta = {
+  as_of_quarter: "2026Q2",
+  data_period: { sale: "2006-01 ~ 2026-08", rent: "2011-01 ~ 2026-08" },
+  support_as_of: "2026Q2",
+  cluster_as_of: "2026Q2",
+  thresholds: {
+    few_sales: 20,
+    one_complex_share: 0.5,
+    high_index_se: 0.032,
+    delta_sigma: 2,
+  },
+  regulation_as_of: "2026-06-30",
+  seoul_apartment_permit_zone: true,
+};
+
+test("분기 코드를 사용자용 표현으로 바꾼다", () => {
+  assert.equal(formatQuarter("2026Q2"), "2026년 2분기");
+  assert.equal(sampleFootnote(META), "최근 1년은 2026년 2분기 기준 직전 4분기예요.");
+  assert.match(structureFootnote(META), /2026년 2분기 기준/);
+});
 
 test("지난 12개월을 시작 분기와 끝 분기로 풀어 쓴다", () => {
   assert.equal(formatTwelveMonthRange("2026Q2"), "2025년 2분기 → 2026년 2분기");
@@ -29,4 +59,16 @@ test("클러스터 설명은 필터 버튼에 맞게 짧게 줄인다", () => {
     compactClusterDesc("아파트 세대수 적음 · 도심 3km대"),
     "아파트 세대 적음 · 도심 가까움",
   );
+});
+
+test("변화 방향 색은 오차가 크거나 변화가 작으면 중립으로 둔다", () => {
+  assert.equal(changeTone(7.6), "up");
+  assert.equal(changeTone(-4.8), "down");
+  assert.equal(changeTone(0.9), "flat");
+  assert.equal(changeTone(-0.9), "flat");
+  assert.equal(changeTone(0), "flat");
+  assert.equal(changeTone(null), "flat");
+  // 추정오차가 큰 동은 값이 커도 방향을 말하지 않는다
+  assert.equal(changeTone(7.6, true), "flat");
+  assert.equal(changeTone(-7.6, true), "flat");
 });

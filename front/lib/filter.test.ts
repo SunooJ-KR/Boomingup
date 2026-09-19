@@ -8,7 +8,8 @@ import {
   hasDetailFilter,
   isFilterActive,
   priceBandsOf,
-  regionTagLabel,
+  regionTagMetricLabel,
+  sortDongs,
   type DongFilter,
 } from "./filter.ts";
 import type { DongSummary } from "./types.ts";
@@ -21,6 +22,7 @@ const dongs = [
     sample_flags: [],
     structure_type: 0,
     tags: ["정비사업 정보 있음"],
+    tag_sort_values: { "정비사업 정보 있음": 2, "전세가율 높은 동": 0.45 },
   },
   {
     gu_name: "마포구",
@@ -29,6 +31,7 @@ const dongs = [
     sample_flags: ["FEW_SALES"],
     structure_type: 1,
     tags: [],
+    tag_sort_values: { "정비사업 정보 있음": 0, "전세가율 높은 동": 0.52 },
   },
   {
     gu_name: "강남구",
@@ -37,6 +40,7 @@ const dongs = [
     sample_flags: ["HIGH_INDEX_ERROR"],
     structure_type: null,
     tags: ["전세가율 높은 동"],
+    tag_sort_values: { "정비사업 정보 있음": null, "전세가율 높은 동": 0.74 },
   },
 ] as unknown as DongSummary[];
 
@@ -75,17 +79,6 @@ test("구조 유형이 없는 동은 유형을 고르면 남지 않는다", () =
   assert.deepEqual(names(filterDongs(dongs, withFilter({ structureTypes: [3] }))), []);
 });
 
-test("자치구, 태그 필터가 함께 걸린다", () => {
-  const filter = withFilter({ gu: "강남구", tags: ["정비사업 정보 있음"] });
-  assert.deepEqual(names(filterDongs(dongs, filter)), ["개포동"]);
-  assert.equal(isFilterActive(filter), true);
-});
-
-test("태그는 선택한 것을 모두 가진 동만 남긴다", () => {
-  const filter = withFilter({ tags: ["정비사업 정보 있음", "전세가율 높은 동"] });
-  assert.deepEqual(names(filterDongs(dongs, filter)), []);
-});
-
 test("가격대 구간은 서로 겹치지 않고 전체를 덮는다", () => {
   const list = [100, 200, 300, 400, 500, 600, 700, 800].map(
     (price) => ({ ppm2_med_4q_manwon: price }) as unknown as DongSummary,
@@ -106,61 +99,32 @@ test("상세 조건 여부는 검색어와 자치구를 제외하고 판단한�
   assert.equal(hasDetailFilter(withFilter({ flagged: true })), true);
   assert.equal(hasDetailFilter(withFilter({ priceBand: [1000, 2000] })), true);
   assert.equal(hasDetailFilter(withFilter({ structureTypes: [1] })), true);
-  assert.equal(hasDetailFilter(withFilter({ tags: ["거래 많은 동"] })), true);
 });
 
-test("지역 태그 이름은 정렬 기준이 드러나게 바꾼다", () => {
-  assert.equal(regionTagLabel("거래 많은 동"), "거래 많은 순");
-  assert.equal(regionTagLabel("정비사업 정보 있음"), "정비사업 구역 많은 순");
-  assert.equal(regionTagLabel("알 수 없는 태그"), "알 수 없는 태그");
+test("지역 특성 이름은 정렬할 관측값이 드러나게 바꾼다", () => {
+  assert.equal(regionTagMetricLabel("거래 많은 동"), "거래 건수");
+  assert.equal(regionTagMetricLabel("정비사업 정보 있음"), "정비사업 구역 수");
+  assert.equal(regionTagMetricLabel("알 수 없는 태그"), "알 수 없는 태그");
 });
 
-test("지역 태그를 선택하면 해당 관측값의 내림차순으로 정렬한다", () => {
-  const tagged = [
-    {
-      ...dongs[0],
-      dong_id: "a",
-      umd_name: "첫째동",
-      tags: ["전세가율 높은 동"],
-      tag_sort_values: { "전세가율 높은 동": 0.62 },
-    },
-    {
-      ...dongs[0],
-      dong_id: "b",
-      umd_name: "둘째동",
-      tags: ["전세가율 높은 동"],
-      tag_sort_values: { "전세가율 높은 동": 0.74 },
-    },
-  ] as DongSummary[];
-
+test("㎡당 중앙가는 높은순과 낮은순으로 정렬하고 결측값은 마지막에 둔다", () => {
   assert.deepEqual(
-    names(filterDongs(tagged, withFilter({ tags: ["전세가율 높은 동"] }))),
-    ["둘째동", "첫째동"],
+    names(sortDongs(dongs, { by: "price", direction: "desc" })),
+    ["개포동", "연남동", "대치동"],
+  );
+  assert.deepEqual(
+    names(sortDongs(dongs, { by: "price", direction: "asc" })),
+    ["연남동", "개포동", "대치동"],
   );
 });
 
-test("거래 태그도 화면용 건수가 아니라 태그 산정값으로 정렬한다", () => {
-  const tagged = [
-    {
-      ...dongs[0],
-      dong_id: "a",
-      umd_name: "첫째동",
-      n_sales_4q: 900,
-      tags: ["거래 많은 동"],
-      tag_sort_values: { "거래 많은 동": 120 },
-    },
-    {
-      ...dongs[0],
-      dong_id: "b",
-      umd_name: "둘째동",
-      n_sales_4q: 500,
-      tags: ["거래 많은 동"],
-      tag_sort_values: { "거래 많은 동": 240 },
-    },
-  ] as DongSummary[];
-
+test("지역 특성은 전체 동을 유지하면서 높은순과 낮은순으로 정렬한다", () => {
   assert.deepEqual(
-    names(filterDongs(tagged, withFilter({ tags: ["거래 많은 동"] }))),
-    ["둘째동", "첫째동"],
+    names(sortDongs(dongs, { by: "tag", tag: "전세가율 높은 동", direction: "desc" })),
+    ["대치동", "연남동", "개포동"],
+  );
+  assert.deepEqual(
+    names(sortDongs(dongs, { by: "tag", tag: "전세가율 높은 동", direction: "asc" })),
+    ["개포동", "연남동", "대치동"],
   );
 });

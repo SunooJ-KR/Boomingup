@@ -1,5 +1,6 @@
 "use client";
 
+import { ModelingBadge } from "@/components/dong/modeling-badge";
 import { Card, CardBody } from "@/components/ui/card";
 import { SectionHeading } from "@/components/ui/section-heading";
 import type { DongPeer } from "@/lib/types";
@@ -17,7 +18,13 @@ export function PeersCard({ peers, onSelect }: PeersCardProps) {
   return (
     <Card>
       <CardBody className="space-y-3">
-        <SectionHeading eyebrow="비교" title="함께 볼 동" />
+        <div className="space-y-2">
+          <ModelingBadge label="유사도 탐색" />
+          <SectionHeading
+            title="함께 볼 동"
+            description="같은 묶음 안에서 특성이 가장 비슷한 동이에요."
+          />
+        </div>
         <ul className="space-y-1.5">
           {peers.map((peer) => (
             <li key={peer.dong_id}>

@@ -36,7 +36,7 @@ export function AppHeader({ asOfQuarter, salePeriod }: AppHeaderProps) {
 
   return (
     <header ref={ref} className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur">
-      <div className="mx-auto flex max-w-[1400px] flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3">
+      <div className="mx-auto flex max-w-[1600px] flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3">
         <a
           href="/"
           aria-label="모든 검색 조건을 초기화하고 처음으로 이동"
