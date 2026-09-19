@@ -242,10 +242,14 @@ export function DongExplorer({
     <div className="grid gap-4 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
       {/* 동이 300개가 넘어 목록을 그대로 펼치면 문서가 4만px를 넘고 오른쪽 열이 통째로 빈다.
           넓은 폭에서는 검색과 페이지 번호를 고정하고 목록 칸만 남는 높이를 채운다.
-          높이와 위치는 globals.css의 --app-column-h, --app-header-h에서 나온다. */}
+          높이와 위치는 globals.css의 --app-column-h, --app-header-h에서 나온다.
+
+          화면이 낮으면(노트북, 화면 배율 150% 등) 검색 칸과 페이지 번호만으로도 열 높이를 넘는다.
+          그때 페이지 번호가 열 밖으로 밀려나는데, 이 열은 sticky라 화면을 내려도 따라오지 않아
+          영영 보이지 않았다. 넘치는 만큼은 열 안에서 스크롤해 닿을 수 있게 한다. */}
       <section
         aria-label="검색과 동 목록"
-        className="space-y-4 lg:sticky lg:top-[calc(var(--app-header-h)+var(--app-gutter))] lg:flex lg:h-[var(--app-column-h)] lg:flex-col lg:self-start lg:space-y-0 lg:pr-1"
+        className="space-y-4 lg:sticky lg:top-[calc(var(--app-header-h)+var(--app-gutter))] lg:flex lg:h-[var(--app-column-h)] lg:flex-col lg:self-start lg:space-y-0 lg:overflow-y-auto lg:overscroll-contain lg:pr-1"
       >
         <div className="lg:shrink-0 lg:pb-4">
           <SearchPanel
@@ -260,7 +264,9 @@ export function DongExplorer({
           />
         </div>
 
-        <div ref={listBoxRef} className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+        {/* min-h-0이 아니라 최소 높이를 준다. 0까지 줄어들면 낮은 화면에서 목록이 통째로 사라진다.
+            최소 높이보다 남는 자리가 적으면 그만큼 바깥 열이 스크롤된다. */}
+        <div ref={listBoxRef} className="lg:min-h-[12rem] lg:flex-1 lg:overflow-y-auto">
           {visibleDongs.length === 0 ? (
             <EmptyState
               title="검색 조건에 맞는 동이 없어요."

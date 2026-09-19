@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div className="min-h-screen" aria-busy="true">
+    <div className="min-h-dvh" aria-busy="true">
       <header className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-4 py-3">
           <span className="text-base font-bold text-foreground">Boomingup</span>
@@ -103,7 +103,7 @@ function MapSkeleton() {
   return (
     <section
       aria-hidden="true"
-      className="overflow-hidden rounded-lg border border-border bg-card shadow-panel lg:flex lg:h-[calc(var(--app-column-h)-var(--map-peek))] lg:flex-col"
+      className="overflow-hidden rounded-lg border border-border bg-card shadow-panel lg:flex lg:h-[calc(var(--app-column-h)-var(--map-peek))] lg:min-h-[20rem] lg:flex-col"
     >
       <div className="flex items-center justify-between border-b border-border px-3 py-2">
         <Skeleton className="h-3 w-9 rounded-full" />

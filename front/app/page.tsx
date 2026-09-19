@@ -14,7 +14,7 @@ export default async function Home() {
   const kakaoJsKey = readRootEnv("NEXT_PUBLIC_KAKAO_JS_KEY") ?? readRootEnv("KAKAO_JS_KEY");
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-dvh">
       <AppHeader asOfQuarter={meta.as_of_quarter} salePeriod={meta.data_period.sale} />
 
       <main className="mx-auto max-w-[1400px] px-4 py-4">

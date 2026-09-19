@@ -259,8 +259,11 @@ export function MapPanel({
   }, [itemKind, mode, selectedBoundaryBounds, selectedItem]);
 
   return (
-    // 좌측 동 목록 열과 같은 높이에서 --map-peek만큼 줄인다.
-    // 지도로 화면이 꽉 차 보이지 않게 하고, 아래에 상세가 이어진다는 것도 함께 보여 준다
+    // 좁은 폭에서는 정사각형으로 두고, 넓은 폭에서는 좌측 동 목록 열과 같은 높이에서
+    // --map-peek만큼 줄인다. 지도로 화면이 꽉 차 보이지 않게 하고,
+    // 아래에 상세가 이어진다는 것도 함께 보여 준다.
+    // 정사각형을 넓은 폭까지 그대로 두면 지도 폭이 1000px에 가까워져 지도 하나가 화면보다 높아지고,
+    // 지도 안에 놓인 "검색 초기화" 단추와 아래 안내 문구가 화면 밖으로 밀린다.
     <div className="overflow-hidden rounded-lg border border-border bg-card shadow-panel">
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">지도</p>
@@ -274,7 +277,7 @@ export function MapPanel({
       </div>
 
       {mode === "kakao" || mode === "loading" ? (
-        <div className="relative aspect-square w-full bg-muted">
+        <div className="relative aspect-square w-full bg-muted lg:aspect-auto lg:h-[calc(var(--app-column-h)-var(--map-peek))] lg:min-h-[20rem]">
           <div ref={containerRef} className="absolute inset-0" />
           <div
             ref={hoverLabelRef}
@@ -341,7 +344,7 @@ function FallbackPreview({
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const selectableIds = new Set(items.map((item) => item.id));
   return (
-    <div className="relative aspect-square w-full bg-muted">
+    <div className="relative aspect-square w-full bg-muted lg:aspect-auto lg:h-[calc(var(--app-column-h)-var(--map-peek))] lg:min-h-[20rem]">
       <svg
         aria-hidden="true"
         viewBox="0 0 100 100"
