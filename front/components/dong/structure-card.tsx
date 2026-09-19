@@ -1,3 +1,4 @@
+import { ModelingBadge } from "@/components/dong/modeling-badge";
 import { Card, CardBody } from "@/components/ui/card";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { structureFootnote } from "@/lib/format";
@@ -17,7 +18,8 @@ export function StructureCard({
   return (
     <Card>
       <CardBody className="space-y-2">
-        <SectionHeading eyebrow="비슷한 지역 묶음" title="클러스터 성질" />
+        <ModelingBadge label="군집화" />
+        <SectionHeading title="클러스터 성질" />
         <p className="text-sm text-foreground">{structure.desc}</p>
         <p className="text-xs text-muted-foreground">{structureFootnote(meta)}</p>
       </CardBody>

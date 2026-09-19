@@ -1,20 +1,20 @@
 export default function Loading() {
   return (
-    <div className="min-h-screen" aria-busy="true">
+    <div className="min-h-dvh" aria-busy="true">
       <header className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1400px] items-center gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-[1600px] items-center gap-3 px-4 py-3">
           <span className="text-base font-bold text-foreground">Boomingup</span>
           <Skeleton className="h-3 w-36 rounded-full" />
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1400px] px-4 py-4">
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
+      <main className="mx-auto max-w-[1600px] px-4 py-4">
+        <div className="grid gap-4 lg:grid-cols-[minmax(18rem,22.5rem)_minmax(0,1fr)] xl:gap-5 2xl:grid-cols-[minmax(20rem,25rem)_minmax(0,1fr)]">
           <section
             aria-label="지역 탐색 준비 중"
             className="space-y-4 lg:flex lg:h-[var(--app-column-h)] lg:flex-col lg:space-y-0 lg:pr-1"
           >
-            <div className="rounded-lg border border-border bg-card p-4 shadow-panel lg:shrink-0 lg:mb-4">
+            <div className="rounded-lg border border-border bg-card p-4 shadow-panel lg:mb-3 lg:shrink-0 lg:p-3 2xl:mb-4 2xl:p-4">
               <div role="status" aria-live="polite" className="flex items-start justify-between gap-4">
                 <div>
                   <h1 className="text-lg font-bold text-foreground">
@@ -44,23 +44,25 @@ export default function Loading() {
               </div>
             </div>
 
+            <div aria-hidden="true" className="flex items-center gap-2 pb-1.5 lg:shrink-0 2xl:pb-2">
+              <Skeleton className="h-8 flex-1 rounded-md bg-card" />
+              <Skeleton className="h-7 w-28 rounded-md bg-card" />
+            </div>
+
             <div aria-hidden="true" className="space-y-2 lg:min-h-0 lg:flex-1 lg:overflow-hidden">
-              {Array.from({ length: 5 }, (_, index) => (
+              {Array.from({ length: 7 }, (_, index) => (
                 <div
                   key={index}
-                  className="rounded-lg border border-border bg-card p-3 shadow-panel"
+                  className="rounded-lg border border-border bg-card px-3 py-2.5 shadow-panel lg:py-2 2xl:py-2.5"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-20 rounded-full" />
-                      <Skeleton className="h-3 w-32 rounded-full" />
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-16 rounded-full" />
+                      <Skeleton className="h-3 w-12 rounded-full" />
                     </div>
-                    <Skeleton className="h-6 w-14 rounded-full" />
+                    {index % 3 === 0 ? <Skeleton className="h-5 w-10 rounded-sm" /> : null}
                   </div>
-                  <div className="mt-3 flex gap-2">
-                    <Skeleton className="h-5 w-16 rounded-full" />
-                    <Skeleton className="h-5 w-24 rounded-full" />
-                  </div>
+                  <Skeleton className="mt-2 h-3 w-28 rounded-full" />
                 </div>
               ))}
             </div>
@@ -103,13 +105,13 @@ function MapSkeleton() {
   return (
     <section
       aria-hidden="true"
-      className="overflow-hidden rounded-lg border border-border bg-card shadow-panel lg:flex lg:h-[calc(var(--app-column-h)-var(--map-peek))] lg:flex-col"
+      className="overflow-hidden rounded-lg border border-border bg-card shadow-panel lg:flex lg:h-[var(--app-column-h)] lg:flex-col"
     >
       <div className="flex items-center justify-between border-b border-border px-3 py-2">
         <Skeleton className="h-3 w-9 rounded-full" />
         <Skeleton className="h-3 w-16 rounded-full" />
       </div>
-      <div className="skeleton-shimmer relative h-[420px] overflow-hidden bg-neutral-soft lg:h-auto lg:min-h-0 lg:flex-1">
+      <div className="skeleton-shimmer relative h-[var(--map-mobile-h)] overflow-hidden bg-neutral-soft lg:h-auto lg:min-h-0 lg:flex-1">
         <div className="absolute left-[4%] top-[20%] h-2 w-[88%] rotate-6 rounded-full bg-card/75" />
         <div className="absolute left-[12%] top-[58%] h-2 w-[80%] -rotate-12 rounded-full bg-card/70" />
         <div className="absolute left-[30%] top-[-5%] h-[110%] w-2 rotate-12 rounded-full bg-card/65" />

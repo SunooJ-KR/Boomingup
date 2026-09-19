@@ -31,15 +31,20 @@ test("페이지가 적으면 생략 표시 없이 전부 보여준다", () => {
 });
 
 test("한 페이지 개수는 목록 칸 높이에 들어가는 만큼으로 정해진다", () => {
-  // 높이 900에 항목 120짜리면 7개가 들어가지만 최소 8개는 보여준다
-  assert.equal(fitPageSize(900, 120), 8);
+  // 높이 900에 항목 120짜리면 들어가는 만큼인 7개를 보여준다
+  assert.equal(fitPageSize(900, 120), 7);
   assert.equal(fitPageSize(1800, 120), 15);
   // 화면이 아주 커도 상한을 넘지 않는다
   assert.equal(fitPageSize(9000, 120), 24);
 });
 
+test("칸이 아주 낮아도 최소 개수는 보여준다", () => {
+  // 목록 칸 최소 높이(12rem)에 항목 120짜리는 1개뿐이지만 목록으로 보이게 최소 개수를 채운다
+  assert.equal(fitPageSize(192, 120), 4);
+});
+
 test("높이를 재지 못하면 최소 개수로 돌아간다", () => {
-  assert.equal(fitPageSize(0, 120), 8);
-  assert.equal(fitPageSize(900, 0), 8);
-  assert.equal(fitPageSize(Number.NaN, 120), 8);
+  assert.equal(fitPageSize(0, 120), 4);
+  assert.equal(fitPageSize(900, 0), 4);
+  assert.equal(fitPageSize(Number.NaN, 120), 4);
 });

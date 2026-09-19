@@ -54,6 +54,7 @@
 | `payload-schema.md` | 프론트 payload v2와 DB·화면 변경 계약 |
 | `wording-guide.md` | 화면 문구, 금지 표현, 코드값 문장 사전 |
 | `ml-role-explainer.md` | 비개발자를 위한 머신러닝 역할 설명 |
+| `ai-usage.md` | 외부 심사·발표용 AI 활용 설명. 채택한 기법과 채택하지 않은 실험을 근거 수치와 함께 정리 |
 | `seoul-real-estate-investor-sentiment-analysis.md` | 제품 가설에 참고한 투자자 심리 2차 자료 |
 | `process.md` | 앞으로 만들 문서와 구현 작업 계획, Phase 게이트 |
 | `decisions.md` | 확정 결정과 근거. 결정 59~70이 현행 제품 기준 |

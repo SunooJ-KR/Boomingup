@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, Map as MapIcon } from "lucide-react";
 
 import { DongDetailPanel, type DetailState } from "@/components/dong/dong-detail-panel";
-import { DongList } from "@/components/dong/dong-list";
+import { DongList, DongListLegend } from "@/components/dong/dong-list";
+import { DongSortControl } from "@/components/dong/dong-sort-control";
 import { MapPanel, type MapItem } from "@/components/dong/map-panel";
 import { EmptyState } from "@/components/dong/empty-state";
 import { Pagination } from "@/components/dong/pagination";
@@ -11,9 +13,12 @@ import { SearchPanel, type StructureOption } from "@/components/dong/search-pane
 import { Button } from "@/components/ui/button";
 import {
   EMPTY_FILTER,
+  DEFAULT_DONG_SORT,
   filterDongs,
   priceBandsOf,
+  sortDongs,
   type DongFilter,
+  type DongSort,
 } from "@/lib/filter";
 import { guSummariesOf } from "@/lib/gu";
 import { clampPage, fitPageSize, pageCount } from "@/lib/paginate";
@@ -23,8 +28,10 @@ import type { DongDetail, DongSummary, Meta } from "@/lib/types";
 const DESKTOP_QUERY = "(min-width: 1024px)";
 /** 목록 칸 높이를 재기 전, 그리고 한 열로 쌓이는 좁은 화면에서 쓰는 한 페이지 개수 */
 const DEFAULT_PAGE_SIZE = 10;
-/** 목록 항목 사이 간격(space-y-2) */
+/** 목록 항목 사이 간격을 읽지 못했을 때 쓰는 기본값 */
 const ITEM_GAP_PX = 8;
+/** 최초 상세 조회가 너무 짧게 번쩍이지 않도록 분석 상태를 읽을 최소 시간 */
+const DETAIL_REVEAL_DELAY_MS = 1000;
 
 type DongExplorerProps = {
   dongs: DongSummary[];
@@ -45,6 +52,7 @@ export function DongExplorer({
   kakaoJsKey,
 }: DongExplorerProps) {
   const [filter, setFilter] = useState<DongFilter>(EMPTY_FILTER);
+  const [sort, setSort] = useState<DongSort>(DEFAULT_DONG_SORT);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<DongDetail | null>(null);
   const [detailState, setDetailState] = useState<DetailState>("idle");
@@ -56,7 +64,8 @@ export function DongExplorer({
   const cache = useRef(new Map<string, DongDetail>());
 
   const guSummaries = useMemo(() => guSummariesOf(dongs, centers), [dongs, centers]);
-  const visibleDongs = useMemo(() => filterDongs(dongs, filter), [dongs, filter]);
+  const filteredDongs = useMemo(() => filterDongs(dongs, filter), [dongs, filter]);
+  const visibleDongs = useMemo(() => sortDongs(filteredDongs, sort), [filteredDongs, sort]);
   const priceBands = useMemo(() => priceBandsOf(dongs), [dongs]);
 
   // 구조 유형 칩에는 번호 대신 자동 설명을 붙인다. 같은 유형은 설명도 같다.
@@ -94,7 +103,13 @@ export function DongExplorer({
 
   const showAllGu = useCallback(() => {
     setFilter(EMPTY_FILTER);
+    setSort(DEFAULT_DONG_SORT);
     setSelectedId(null);
+    setPage(1);
+  }, []);
+
+  const changeSort = useCallback((next: DongSort) => {
+    setSort(next);
     setPage(1);
   }, []);
 
@@ -124,7 +139,10 @@ export function DongExplorer({
       const items = [...box.querySelectorAll("li")];
       if (items.length === 0) return;
       const sum = items.reduce((total, li) => total + li.getBoundingClientRect().height, 0);
-      setPageSize(fitPageSize(box.clientHeight, sum / items.length + ITEM_GAP_PX));
+      const list = box.querySelector("ul");
+      const measuredGap = list ? Number.parseFloat(getComputedStyle(list).rowGap) : Number.NaN;
+      const itemGap = Number.isFinite(measuredGap) ? measuredGap : ITEM_GAP_PX;
+      setPageSize(fitPageSize(box.clientHeight, sum / items.length + itemGap));
     };
 
     measure();
@@ -198,6 +216,8 @@ export function DongExplorer({
     }
 
     let cancelled = false;
+    let revealTimer: number | undefined;
+    const startedAt = performance.now();
     setDetailState("loading");
     setDetail(null);
 
@@ -210,8 +230,15 @@ export function DongExplorer({
       .then(({ detail: loaded }) => {
         if (cancelled) return;
         cache.current.set(selectedId, loaded);
-        setDetail(loaded);
-        setDetailState("ready");
+        const remainingDelay = Math.max(
+          0,
+          DETAIL_REVEAL_DELAY_MS - (performance.now() - startedAt),
+        );
+        revealTimer = window.setTimeout(() => {
+          if (cancelled) return;
+          setDetail(loaded);
+          setDetailState("ready");
+        }, remainingDelay);
       })
       .catch(() => {
         if (cancelled) return;
@@ -221,6 +248,7 @@ export function DongExplorer({
 
     return () => {
       cancelled = true;
+      if (revealTimer !== undefined) window.clearTimeout(revealTimer);
     };
   }, [selectedId, meta.as_of_quarter, reloadToken]);
 
@@ -239,28 +267,41 @@ export function DongExplorer({
   }, [selectedId]);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
+    <div className="grid gap-4 lg:grid-cols-[minmax(18rem,22.5rem)_minmax(0,1fr)] xl:gap-5 2xl:grid-cols-[minmax(20rem,25rem)_minmax(0,1fr)]">
       {/* 동이 300개가 넘어 목록을 그대로 펼치면 문서가 4만px를 넘고 오른쪽 열이 통째로 빈다.
           넓은 폭에서는 검색과 페이지 번호를 고정하고 목록 칸만 남는 높이를 채운다.
-          높이와 위치는 globals.css의 --app-column-h, --app-header-h에서 나온다. */}
+          높이와 위치는 globals.css의 --app-column-h, --app-header-h에서 나온다.
+
+          화면이 낮으면(노트북, 화면 배율 150% 등) 검색 칸과 페이지 번호만으로도 열 높이를 넘는다.
+          그때 페이지 번호가 열 밖으로 밀려나는데, 이 열은 sticky라 화면을 내려도 따라오지 않아
+          영영 보이지 않았다. 넘치는 만큼은 열 안에서 스크롤해 닿을 수 있게 한다. */}
       <section
         aria-label="검색과 동 목록"
-        className="space-y-4 lg:sticky lg:top-[calc(var(--app-header-h)+var(--app-gutter))] lg:flex lg:h-[var(--app-column-h)] lg:flex-col lg:self-start lg:space-y-0 lg:pr-1"
+        className="space-y-4 lg:sticky lg:top-[calc(var(--app-header-h)+var(--app-gutter))] lg:flex lg:h-[var(--app-column-h)] lg:flex-col lg:self-start lg:space-y-0 lg:overflow-y-auto lg:overscroll-contain lg:pr-1 lg:[scrollbar-gutter:stable]"
       >
-        <div className="lg:shrink-0 lg:pb-4">
+        <div className="lg:shrink-0 lg:pb-3 2xl:pb-4">
           <SearchPanel
             filter={filter}
             onChange={changeFilter}
             onBack={filter.gu === null ? undefined : showAllGu}
             guNames={guNames}
-            tags={tags}
             priceBands={priceBands}
             structureOptions={structureOptions}
             resultCount={visibleDongs.length}
           />
         </div>
 
-        <div ref={listBoxRef} className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+        <div className="flex items-center gap-2 pb-1.5 lg:shrink-0 2xl:pb-2">
+          <DongSortControl sort={sort} tags={tags} onChange={changeSort} />
+          <DongListLegend options={structureOptions} />
+        </div>
+
+        {/* min-h-0이 아니라 최소 높이를 준다. 0까지 줄어들면 낮은 화면에서 목록이 통째로 사라진다.
+            최소 높이보다 남는 자리가 적으면 그만큼 바깥 열이 스크롤된다. */}
+        <div
+          ref={listBoxRef}
+          className="lg:min-h-[12rem] lg:flex-1 lg:overflow-y-auto lg:overscroll-contain lg:[scrollbar-gutter:stable]"
+        >
           {visibleDongs.length === 0 ? (
             <EmptyState
               title="검색 조건에 맞는 동이 없어요."
@@ -280,18 +321,24 @@ export function DongExplorer({
           )}
         </div>
 
-        <div className="mt-4 lg:mt-0 lg:shrink-0 lg:pt-4">
+        <div className="mt-4 lg:mt-0 lg:shrink-0 lg:pt-3 2xl:pt-4">
           <Pagination page={currentPage} totalPages={totalPages} onChange={changePage} />
         </div>
       </section>
 
-      <div className="space-y-4">
-        {/* 모바일에서는 목록과 상세 읽기가 먼저라 지도를 접어 둔다 */}
-        <details open>
-          <summary className="cursor-pointer list-none text-sm font-medium text-muted-foreground lg:hidden">
-            지도 보기
+      <div className="min-w-0 space-y-4">
+        <details open className="group">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between rounded-md border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-panel marker:content-none lg:hidden">
+            <span className="flex items-center gap-2">
+              <MapIcon aria-hidden="true" className="size-4 text-primary" />
+              지도
+            </span>
+            <ChevronDown
+              aria-hidden="true"
+              className="size-4 text-muted-foreground transition-transform group-open:rotate-180"
+            />
           </summary>
-          <div className="mt-2 lg:mt-0">
+          <div className="pt-2 lg:pt-0">
             <MapPanel
               items={showDongMap ? mapItems : guMapItems}
               selectedId={showDongMap ? selectedId : null}
