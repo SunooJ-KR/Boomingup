@@ -5,6 +5,7 @@ import { ChevronDown, Map as MapIcon } from "lucide-react";
 
 import { DongDetailPanel, type DetailState } from "@/components/dong/dong-detail-panel";
 import { DongList, DongListLegend } from "@/components/dong/dong-list";
+import { DongSortControl } from "@/components/dong/dong-sort-control";
 import { MapPanel, type MapItem } from "@/components/dong/map-panel";
 import { EmptyState } from "@/components/dong/empty-state";
 import { Pagination } from "@/components/dong/pagination";
@@ -12,9 +13,12 @@ import { SearchPanel, type StructureOption } from "@/components/dong/search-pane
 import { Button } from "@/components/ui/button";
 import {
   EMPTY_FILTER,
+  DEFAULT_DONG_SORT,
   filterDongs,
   priceBandsOf,
+  sortDongs,
   type DongFilter,
+  type DongSort,
 } from "@/lib/filter";
 import { guSummariesOf } from "@/lib/gu";
 import { clampPage, fitPageSize, pageCount } from "@/lib/paginate";
@@ -26,6 +30,8 @@ const DESKTOP_QUERY = "(min-width: 1024px)";
 const DEFAULT_PAGE_SIZE = 10;
 /** 목록 항목 사이 간격을 읽지 못했을 때 쓰는 기본값 */
 const ITEM_GAP_PX = 8;
+/** 최초 상세 조회가 너무 짧게 번쩍이지 않도록 분석 상태를 읽을 최소 시간 */
+const DETAIL_REVEAL_DELAY_MS = 1000;
 
 type DongExplorerProps = {
   dongs: DongSummary[];
@@ -46,6 +52,7 @@ export function DongExplorer({
   kakaoJsKey,
 }: DongExplorerProps) {
   const [filter, setFilter] = useState<DongFilter>(EMPTY_FILTER);
+  const [sort, setSort] = useState<DongSort>(DEFAULT_DONG_SORT);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<DongDetail | null>(null);
   const [detailState, setDetailState] = useState<DetailState>("idle");
@@ -57,7 +64,8 @@ export function DongExplorer({
   const cache = useRef(new Map<string, DongDetail>());
 
   const guSummaries = useMemo(() => guSummariesOf(dongs, centers), [dongs, centers]);
-  const visibleDongs = useMemo(() => filterDongs(dongs, filter), [dongs, filter]);
+  const filteredDongs = useMemo(() => filterDongs(dongs, filter), [dongs, filter]);
+  const visibleDongs = useMemo(() => sortDongs(filteredDongs, sort), [filteredDongs, sort]);
   const priceBands = useMemo(() => priceBandsOf(dongs), [dongs]);
 
   // 구조 유형 칩에는 번호 대신 자동 설명을 붙인다. 같은 유형은 설명도 같다.
@@ -95,7 +103,13 @@ export function DongExplorer({
 
   const showAllGu = useCallback(() => {
     setFilter(EMPTY_FILTER);
+    setSort(DEFAULT_DONG_SORT);
     setSelectedId(null);
+    setPage(1);
+  }, []);
+
+  const changeSort = useCallback((next: DongSort) => {
+    setSort(next);
     setPage(1);
   }, []);
 
@@ -202,6 +216,8 @@ export function DongExplorer({
     }
 
     let cancelled = false;
+    let revealTimer: number | undefined;
+    const startedAt = performance.now();
     setDetailState("loading");
     setDetail(null);
 
@@ -214,8 +230,15 @@ export function DongExplorer({
       .then(({ detail: loaded }) => {
         if (cancelled) return;
         cache.current.set(selectedId, loaded);
-        setDetail(loaded);
-        setDetailState("ready");
+        const remainingDelay = Math.max(
+          0,
+          DETAIL_REVEAL_DELAY_MS - (performance.now() - startedAt),
+        );
+        revealTimer = window.setTimeout(() => {
+          if (cancelled) return;
+          setDetail(loaded);
+          setDetailState("ready");
+        }, remainingDelay);
       })
       .catch(() => {
         if (cancelled) return;
@@ -225,6 +248,7 @@ export function DongExplorer({
 
     return () => {
       cancelled = true;
+      if (revealTimer !== undefined) window.clearTimeout(revealTimer);
     };
   }, [selectedId, meta.as_of_quarter, reloadToken]);
 
@@ -261,14 +285,14 @@ export function DongExplorer({
             onChange={changeFilter}
             onBack={filter.gu === null ? undefined : showAllGu}
             guNames={guNames}
-            tags={tags}
             priceBands={priceBands}
             structureOptions={structureOptions}
             resultCount={visibleDongs.length}
           />
         </div>
 
-        <div className="flex justify-end pb-1.5 lg:shrink-0 2xl:pb-2">
+        <div className="flex items-center gap-2 pb-1.5 lg:shrink-0 2xl:pb-2">
+          <DongSortControl sort={sort} tags={tags} onChange={changeSort} />
           <DongListLegend options={structureOptions} />
         </div>
 

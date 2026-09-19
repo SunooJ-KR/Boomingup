@@ -44,6 +44,11 @@ export default function Loading() {
               </div>
             </div>
 
+            <div aria-hidden="true" className="flex items-center gap-2 pb-1.5 lg:shrink-0 2xl:pb-2">
+              <Skeleton className="h-8 flex-1 rounded-md bg-card" />
+              <Skeleton className="h-7 w-28 rounded-md bg-card" />
+            </div>
+
             <div aria-hidden="true" className="space-y-2 lg:min-h-0 lg:flex-1 lg:overflow-hidden">
               {Array.from({ length: 7 }, (_, index) => (
                 <div

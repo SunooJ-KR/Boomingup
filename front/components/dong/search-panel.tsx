@@ -9,20 +9,19 @@ import { Input } from "@/components/ui/input";
 import {
   EMPTY_FILTER,
   hasDetailFilter,
-  regionTagLabel,
   type DongFilter,
 } from "@/lib/filter";
 import { compactClusterDesc, formatManwon } from "@/lib/format";
+import { structureBackgroundClass } from "@/lib/structure";
 import { cn } from "@/lib/utils";
 
 export type StructureOption = { type: number; desc: string };
-type FilterSectionId = "sample" | "price" | "cluster" | "tag";
+type FilterSectionId = "sample" | "price" | "cluster";
 
 type SearchPanelProps = {
   filter: DongFilter;
   onChange: (filter: DongFilter) => void;
   guNames: string[];
-  tags: string[];
   /** 가격대 칩. 전체 분포의 4분위로 화면이 만든다 */
   priceBands: [number, number][];
   /** 구조 유형 칩. 번호 대신 자동 설명을 붙인다 */
@@ -35,7 +34,6 @@ export function SearchPanel({
   filter,
   onChange,
   guNames,
-  tags,
   priceBands,
   structureOptions,
   resultCount,
@@ -76,11 +74,6 @@ export function SearchPanel({
     };
   }, [filterOpen]);
 
-  const toggleTag = (tag: string) => {
-    const next = filter.tags.includes(tag) ? [] : [tag];
-    onChange({ ...filter, tags: next });
-  };
-
   const toggleStructure = (type: number) => {
     const next = filter.structureTypes.includes(type)
       ? filter.structureTypes.filter((item) => item !== type)
@@ -96,8 +89,7 @@ export function SearchPanel({
   const detailCount =
     (filter.flagged === null ? 0 : 1) +
     (filter.priceBand === null ? 0 : 1) +
-    filter.structureTypes.length +
-    filter.tags.length;
+    filter.structureTypes.length;
   const refinementActive =
     filter.query.trim() !== "" ||
     hasDetailFilter(filter);
@@ -313,6 +305,7 @@ export function SearchPanel({
                         <FilterChip
                           key={option.type}
                           label={compactClusterDesc(option.desc)}
+                          colorClass={structureBackgroundClass(option.type)}
                           active={filter.structureTypes.includes(option.type)}
                           onClick={() => toggleStructure(option.type)}
                         />
@@ -321,31 +314,6 @@ export function SearchPanel({
                   </FilterSection>
                 ) : null}
 
-                {tags.length > 0 ? (
-                  <FilterSection
-                    id="tag"
-                    label="지역 태그 정렬"
-                    selectedCount={filter.tags.length}
-                    open={openFilterSection === "tag"}
-                    onToggle={() =>
-                      setOpenFilterSection((current) => (current === "tag" ? null : "tag"))
-                    }
-                  >
-                    <div className="flex flex-wrap gap-1.5">
-                      {tags.map((tag) => (
-                        <FilterChip
-                          key={tag}
-                          label={regionTagLabel(tag)}
-                          active={filter.tags.includes(tag)}
-                          onClick={() => toggleTag(tag)}
-                        />
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground lg:text-[11px] 2xl:text-xs">
-                      하나를 선택하면 해당 특징이 두드러진 동을 많은 값부터 보여줘요.
-                    </p>
-                  </FilterSection>
-                ) : null}
               </div>
             ) : null}
           </div>
@@ -420,10 +388,12 @@ function FilterSection({
 
 function FilterChip({
   label,
+  colorClass,
   active,
   onClick,
 }: {
   label: string;
+  colorClass?: string;
   active: boolean;
   onClick: () => void;
 }) {
@@ -433,12 +403,15 @@ function FilterChip({
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "rounded-md border px-3 py-1.5 text-xs font-semibold transition-[background-color,border-color,color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:text-[11px] 2xl:text-xs",
+        "inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold transition-[background-color,border-color,color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:text-[11px] 2xl:text-xs",
         active
           ? "border-primary bg-primary-soft text-primary"
           : "border-border bg-card text-muted-foreground hover:bg-muted",
       )}
     >
+      {colorClass ? (
+        <span aria-hidden="true" className={cn("size-2 shrink-0 rounded-full", colorClass)} />
+      ) : null}
       {label}
     </button>
   );

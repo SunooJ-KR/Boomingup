@@ -1,6 +1,7 @@
 import { AreaStatsCard } from "@/components/dong/area-stats-card";
 import { ChangeCard } from "@/components/dong/change-card";
 import { ComplexList } from "@/components/dong/complex-list";
+import { DongDetailLoading } from "@/components/dong/dong-detail-loading";
 import { EmptyState } from "@/components/dong/empty-state";
 import { FactsPanel } from "@/components/dong/facts-panel";
 import { FlowsCard } from "@/components/dong/flows-card";
@@ -51,7 +52,7 @@ export function DongDetailPanel({
     return (
       <div className="space-y-3">
         {header}
-        <EmptyState title="상세 정보를 불러오고 있어요." />
+        <DongDetailLoading dongName={dong.umd_name} />
       </div>
     );
   }
